@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
+
 interface Institution {
   id: number;
   name: string;
@@ -7,6 +8,15 @@ interface Institution {
   location: string;
   departments: string[];
 }
+
+interface Professor {
+  id: number;
+  name: string;
+  university: string;
+  department: string;
+  tags: string[];
+}
+
 const initialInstitutions = [
   {
     id: 1,
@@ -93,7 +103,7 @@ const initialProfReviews = [
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
-  const [authView, setAuthView] = useState('login'); // 'login', 'signup'
+  const [authView, setAuthView] = useState('login'); 
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
@@ -102,24 +112,22 @@ export default function App() {
   const [professors, setProfessors] = useState(initialProfessors);
   const [instReviews, setInstReviews] = useState(initialInstitutionReviews);
   const [profReviews, setProfReviews] = useState(initialProfReviews);
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'institution', 'department', 'professor', 'add-prof-review', 'add-inst-review', 'suggest', 'auth'
+  const [currentView, setCurrentView] = useState('home'); 
   const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
-  const [selectedDept, setSelectedDept] = useState(null);
-  const [selectedProf, setSelectedProf] = useState(null);
-
+  const [selectedDept, setSelectedDept] = useState<string | null>(null); 
+  const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
   const [profSort, setProfSort] = useState('newest');
   const [profTagFilter, setProfTagFilter] = useState('all');
 
-  // Suggestion State
   const [suggestionType, setSuggestionType] = useState('professor');
   const [suggestionTargetName, setSuggestionTargetName] = useState('');
   const [suggestionContent, setSuggestionContent] = useState('');
 
-  // Professor Review State
   const [reviewCourse, setReviewCourse] = useState('');
   const [isOnlineCourse, setIsOnlineCourse] = useState(false);
   const [reviewTeaching, setReviewTeaching] = useState(5);
@@ -129,7 +137,7 @@ export default function App() {
   const [reviewTextbook, setReviewTextbook] = useState('Không');
   const [reviewAttendance, setReviewAttendance] = useState('Có');
   const [reviewGrade, setReviewGrade] = useState('A');
-  const [reviewSelectedTags, setReviewSelectedTags] = useState([]);
+  const [reviewSelectedTags, setReviewSelectedTags] = useState<string[]>([]);
   const [reviewComment, setReviewComment] = useState('');
 
   useEffect(() => {
@@ -149,8 +157,7 @@ export default function App() {
     fetchData();
   }, []);
   
-  // Institution Review State
-  const [instMetrics, setInstMetrics] = useState({
+  const [instMetrics, setInstMetrics] = useState<Record<string, number>>({
     'Uy tín trường': 5,
     'Địa điểm': 5,
     'Cơ hội việc làm': 5,
@@ -166,16 +173,16 @@ export default function App() {
 
   const [feedbackMsg, setFeedbackMsg] = useState({ type: '', text: '' });
 
-  const calculateInstStats = (instId) => {
+  const calculateInstStats = (instId: number) => {
     const list = instReviews.filter(r => r.instId === instId);
-    if (list.length === 0) return { overall: 0, total: 0, metricsAvg: {} };
+    if (list.length === 0) return { overall: 0, total: 0, metricsAvg: {} as Record<string, string> };
     
     const criteriaKeys = ['Uy tín trường', 'Địa điểm', 'Cơ hội việc làm', 'Cơ sở vật chất', 'Mạng Internet', 'Đồ ăn', 'Câu lạc bộ', 'Đời sống xã hội', 'Độ hài lòng', 'An toàn'];
     let sumTotal = 0;
-    const metricsAvg = {};
+    const metricsAvg: Record<string, string> = {};
 
     criteriaKeys.forEach(key => {
-      const mSum = list.reduce((acc, r) => acc + (r.metrics[key] || 0), 0);
+      const mSum = list.reduce((acc, r) => acc + (r.metrics[key as keyof typeof r.metrics] || 0), 0);
       metricsAvg[key] = (mSum / list.length).toFixed(1);
       sumTotal += (mSum / list.length);
     });
@@ -184,7 +191,7 @@ export default function App() {
     return { overall: parseFloat(overall), total: list.length, metricsAvg };
   };
 
-  const calculateProfStats = (profId) => {
+  const calculateProfStats = (profId: number) => {
     const list = profReviews.filter(r => r.prof_id === profId);
     if (list.length === 0) return { avg_rating: 0, avg_difficulty: 0, total_ratings: 0, would_take_again_pct: 0 };
 
@@ -200,36 +207,43 @@ export default function App() {
     };
   };
 
-  const handleLogin = async (e) => {
-  e.preventDefault();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: authEmail,
-    password: authPassword,
-  });
-  if (error) {
-    setFeedbackMsg({ type: 'error', text: error.message });
-    return;
-  }
-  setCurrentUser({ email: data.user.email ?? '', name: data.user.email?.split('@')[0] ?? 'Unknown User' });
-  setFeedbackMsg({ type: 'success', text: 'Đăng nhập thành công!' });
-  setTimeout(() => setCurrentView('home'), 600);
-};
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: authEmail,
+      password: authPassword,
+    });
+    if (error) {
+      setFeedbackMsg({ type: 'error', text: error.message });
+      return;
+    }
+    
+    if (data.user) {
+      setCurrentUser({ 
+        email: data.user.email ?? '', 
+        name: data.user.email?.split('@')[0] ?? 'Unknown User' 
+      });
+    }
+    
+    setFeedbackMsg({ type: 'success', text: 'Đăng nhập thành công!' });
+    setTimeout(() => setCurrentView('home'), 600);
+  };
 
-  const handleSignup = async (e) => {
-  e.preventDefault();
-  const { data, error } = await supabase.auth.signUp({
-    email: authEmail,
-    password: authPassword,
-    options: { data: { full_name: authName } }
-  });
-  if (error) {
-    setFeedbackMsg({ type: 'error', text: error.message });
-    return;
-  }
-  setCurrentUser({ email: authEmail, name: authName });
-  setFeedbackMsg({ type: 'success', text: 'Tạo tài khoản thành công!' });
-  setTimeout(() => setCurrentView('home'), 600);
-};
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, error } = await supabase.auth.signUp({
+      email: authEmail,
+      password: authPassword,
+      options: { data: { full_name: authName } }
+    });
+    if (error) {
+      setFeedbackMsg({ type: 'error', text: error.message });
+      return;
+    }
+    setCurrentUser({ email: authEmail, name: authName });
+    setFeedbackMsg({ type: 'success', text: 'Tạo tài khoản thành công!' });
+    setTimeout(() => setCurrentView('home'), 600);
+  };
 
   const renderAuthModal = () => {
     return (
@@ -504,7 +518,7 @@ export default function App() {
                         <span className="text-sm text-gray-700 font-medium">{key}</span>
                         <div className="flex gap-1 w-32">
                           {[1, 2, 3, 4, 5].map(s => (
-                            <div key={s} className={`h-2 flex-1 rounded-full ${s <= val ? 'bg-green-300' : 'bg-gray-200'}`} />
+                            <div key={s} className={`h-2 flex-1 rounded-full ${s <= Number(val) ? 'bg-green-300' : 'bg-gray-200'}`} />
                           ))}
                         </div>
                       </div>
@@ -644,7 +658,7 @@ export default function App() {
     if (profSort === 'highest-quality') reviews.sort((a, b) => b.teaching_rating - a.teaching_rating);
     else if (profSort === 'lowest-quality') reviews.sort((a, b) => a.teaching_rating - b.teaching_rating);
     else if (profSort === 'highest-difficulty') reviews.sort((a, b) => b.difficulty_rating - a.difficulty_rating);
-    else reviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    else reviews.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     if (profTagFilter !== 'all') {
       reviews = reviews.filter(r => r.tags && r.tags.includes(profTagFilter));
@@ -790,40 +804,40 @@ export default function App() {
   const renderAddProfReview = () => {
     if (!selectedProf) return null;
 
-    const handleSub = async (e) => {
-    e.preventDefault();
-    if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-    if (!reviewCourse.trim() || !reviewComment.trim()) {
-      setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập mã môn học và nhận xét.' });
-      return;
-    }
+    const handleSub = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+      if (!reviewCourse.trim() || !reviewComment.trim()) {
+        setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập mã môn học và nhận xét.' });
+        return;
+      }
 
-    const newRev = {
-      prof_id: selectedProf.id,
-      user_email: currentUser.email,
-      course: reviewCourse.trim(),
-      teaching_rating: parseInt(reviewTeaching),
-      difficulty_rating: parseInt(reviewDifficulty),
-      would_take_again: reviewWouldTakeAgain,
-      for_credit: reviewForCredit,
-      textbook: reviewTextbook,
-      attendance: reviewAttendance,
-      grade: reviewGrade,
-      tags: reviewSelectedTags,
-      comment: reviewComment.trim()
+      const newRev = {
+        prof_id: selectedProf.id,
+        user_email: currentUser.email,
+        course: reviewCourse.trim(),
+        teaching_rating: reviewTeaching,
+        difficulty_rating: reviewDifficulty,
+        would_take_again: reviewWouldTakeAgain,
+        forCredit: reviewForCredit,
+        textbook: reviewTextbook,
+        attendance: reviewAttendance,
+        grade: reviewGrade,
+        tags: reviewSelectedTags,
+        comment: reviewComment.trim()
+      };
+
+      const { data, error } = await supabase.from('professor_reviews').insert([newRev]).select();
+      
+      if (error) {
+        setFeedbackMsg({ type: 'error', text: error.message });
+        return;
+      }
+
+      if (data) setProfReviews([data[0], ...profReviews]);
+      setFeedbackMsg({ type: 'success', text: 'Đánh giá đã được gửi thành công!' });
+      setTimeout(() => setCurrentView('professor'), 1000);
     };
-
-    const { data, error } = await supabase.from('professor_reviews').insert([newRev]).select();
-    
-    if (error) {
-      setFeedbackMsg({ type: 'error', text: error.message });
-      return;
-    }
-
-    if (data) setProfReviews([data[0], ...profReviews]);
-    setFeedbackMsg({ type: 'success', text: 'Đánh giá đã được gửi thành công!' });
-    setTimeout(() => setCurrentView('professor'), 1000);
-  };
 
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fadeIn py-6">
@@ -996,32 +1010,32 @@ export default function App() {
   const renderAddInstReview = () => {
     if (!selectedInst) return null;
 
-    const handleInstSub = async (e) => {
-    e.preventDefault();
-    if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-    if (!instReviewComment.trim()) {
-      setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập nhận xét.' });
-      return;
-    }
+    const handleInstSub = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+      if (!instReviewComment.trim()) {
+        setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập nhận xét.' });
+        return;
+      }
 
-    const newRev = {
-      inst_id: selectedInst.id,
-      user_email: currentUser.email,
-      metrics: { ...instMetrics },
-      comment: instReviewComment.trim()
+      const newRev = {
+        inst_id: selectedInst.id,
+        user_email: currentUser.email,
+        metrics: { ...instMetrics },
+        comment: instReviewComment.trim()
+      };
+
+      const { data, error } = await supabase.from('institution_reviews').insert([newRev]).select();
+
+      if (error) {
+        setFeedbackMsg({ type: 'error', text: error.message });
+        return;
+      }
+
+      if (data) setInstReviews([data[0], ...instReviews]);
+      setFeedbackMsg({ type: 'success', text: 'Đánh giá trường đã được gửi!' });
+      setTimeout(() => setCurrentView('institution'), 1000);
     };
-
-    const { data, error } = await supabase.from('institution_reviews').insert([newRev]).select();
-
-    if (error) {
-      setFeedbackMsg({ type: 'error', text: error.message });
-      return;
-    }
-
-    if (data) setInstReviews([data[0], ...instReviews]);
-    setFeedbackMsg({ type: 'success', text: 'Đánh giá trường đã được gửi!' });
-    setTimeout(() => setCurrentView('institution'), 1000);
-  };
 
     const criteriaList = ['Uy tín trường', 'Địa điểm', 'Cơ hội việc làm', 'Cơ sở vật chất', 'Mạng Internet', 'Đồ ăn', 'Câu lạc bộ', 'Đời sống xã hội', 'Độ hài lòng', 'An toàn'];
 
@@ -1083,34 +1097,34 @@ export default function App() {
   };
 
   const renderSuggest = () => {
-    const handleSubmitSuggest = async (e) => {
-    e.preventDefault();
-    if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-    if (!suggestionTargetName.trim()) {
-      setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập tên đối tượng đề xuất.' });
-      return;
-    }
+    const handleSubmitSuggest = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+      if (!suggestionTargetName.trim()) {
+        setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập tên đối tượng đề xuất.' });
+        return;
+      }
 
-    const newSugg = {
-      type: suggestionType,
-      target_name: suggestionTargetName.trim(),
-      content: suggestionContent.trim(),
-      user_email: currentUser.email,
-      status: 'Chờ xét duyệt'
+      const newSugg = {
+        type: suggestionType,
+        targetName: suggestionTargetName.trim(),
+        content: suggestionContent.trim(),
+        user_email: currentUser.email,
+        status: 'Chờ xét duyệt'
+      };
+
+      const { data, error } = await supabase.from('suggestions').insert([newSugg]).select();
+
+      if (error) {
+        setFeedbackMsg({ type: 'error', text: error.message });
+        return;
+      }
+
+      if (data) setSuggestions([data[0], ...suggestions]);
+      setFeedbackMsg({ type: 'success', text: 'Đề xuất đã được gửi thành công và đang chờ xét duyệt!' });
+      setSuggestionTargetName('');
+      setSuggestionContent('');
     };
-
-    const { data, error } = await supabase.from('suggestions').insert([newSugg]).select();
-
-    if (error) {
-      setFeedbackMsg({ type: 'error', text: error.message });
-      return;
-    }
-
-    if (data) setSuggestions([data[0], ...suggestions]);
-    setFeedbackMsg({ type: 'success', text: 'Đề xuất đã được gửi thành công và đang chờ xét duyệt!' });
-    setSuggestionTargetName('');
-    setSuggestionContent('');
-  };
 
     return (
       <div className="max-w-2xl mx-auto space-y-8 animate-fadeIn py-6">
