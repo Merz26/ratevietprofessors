@@ -102,10 +102,7 @@ export default function App() {
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
   const [profSort, setProfSort] = useState('newest');
   const [profTagFilter, setProfTagFilter] = useState('all');
-
-  const [suggestionTargetName, setSuggestionTargetName] = useState('');
-  const [suggestionContent, setSuggestionContent] = useState('')
-  
+ 
   useEffect(() => { //actually fetching supabase tables
     async function fetchData() {
       let { data: instData } = await supabase.from('institutions').select('*');
