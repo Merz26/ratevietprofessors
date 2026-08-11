@@ -204,7 +204,7 @@ export default function App() {
     setFeedbackMsg({ type: 'error', text: error.message });
     return;
   }
-  setCurrentUser({ email: data.user.email, name: data.user.email.split('@')[0] });
+  setCurrentUser({ email: data.user.email ?? '', name: data.user.email?.split('@')[0] ?? 'Unknown User' });
   setFeedbackMsg({ type: 'success', text: 'Đăng nhập thành công!' });
   setTimeout(() => setCurrentView('home'), 600);
 };
