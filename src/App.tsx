@@ -93,21 +93,41 @@ export default function App() {
   // ==========================================
   // DATA COLLECTIONS (Placeholder data cleared)
   // ==========================================
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [professors, setProfessors] = useState<Professor[]>([]);
-  
-  // Fetch institutions from Supabase on application load
-  useEffect(() => {
-    async function fetchInstitutions() {
-      const { data, error } = await supabase.from('institutions').select('*');
-      if (data && !error) {
-        setInstitutions(data);
-      } else if (error) {
-        console.error('Error fetching institutions:', error.message);
-      }
-    }
+  const [institutions, setInstitutions] = useState(initialInstitutions);
+  const [professors, setProfessors] = useState(initialProfessors);
+  const [instReviews, setInstReviews] = useState(initialInstitutionReviews);
+  const [profReviews, setProfReviews] = useState(initialProfReviews);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
-    fetchInstitutions();
+  const [currentView, setCurrentView] = useState('home'); 
+  const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
+  const [selectedDept, setSelectedDept] = useState<string | null>(null); 
+  const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [deptSearchTerm, setDeptSearchTerm] = useState('');
+  const [profSort, setProfSort] = useState('newest');
+  const [profTagFilter, setProfTagFilter] = useState('all');
+
+  const [suggestionType, setSuggestionType] = useState('professor');
+  const [suggestionTargetName, setSuggestionTargetName] = useState('');
+  const [suggestionContent, setSuggestionContent] = useState('')
+  
+  useEffect(() => { //actually fetching supabase tables
+    async function fetchData() {
+      let { data: instData } = await supabase.from('institutions').select('*');
+      if (instData) setInstitutions(instData);
+
+      let { data: profData } = await supabase.from('professors').select('*');
+      if (profData) setProfessors(profData);
+
+      let { data: instRevData } = await supabase.from('institution_reviews').select('*');
+      if (instRevData) setInstReviews(instRevData);
+
+      let { data: profRevData } = await supabase.from('professor_reviews').select('*');
+      if (profRevData) setProfReviews(profRevData);
+    }
+    fetchData();
   }, []);
 
   // ==========================================
