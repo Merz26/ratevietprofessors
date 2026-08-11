@@ -1490,28 +1490,29 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-blue-200">
-      {/* HEADER */}
-      <header className="bg-blue-600 text-white shadow-md sticky top-0 z-50">
+    // 1. App Wrapper: Flexbox, Min-Height 100vh, Dark Mode styling
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+      
+      {/* 2. HEADER */}
+      <header className="bg-brand dark:bg-gray-800 text-white shadow-md sticky top-0 z-50 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="text-xl font-black cursor-pointer tracking-tight flex items-center gap-2" onClick={navigateToHome}>
+          <div className="text-xl font-black cursor-pointer tracking-tight flex items-center gap-2" onClick={() => setCurrentView('home')}>
             🎓 RateVietProfessors
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {/* DARK MODE TOGGLE */}
             <button 
-              onClick={() => {
-                if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-                setCurrentView('suggest');
-              }} 
-              className="hidden sm:inline-block px-4 py-2 bg-blue-700 hover:bg-blue-800 rounded-xl text-xs font-bold transition-all border border-blue-500 whitespace-nowrap"
+              onClick={() => setIsDarkMode(!isDarkMode)} 
+              className="text-xl p-2 rounded-full hover:bg-white/20 transition"
+              title="Chế độ tối"
             >
-              + Đề xuất
+              {isDarkMode ? '☀️' : '🌙'}
             </button>
 
             {currentUser ? (
               <div className="flex items-center gap-4">
                 <span className="text-sm font-bold bg-blue-800 px-3 py-1.5 rounded-xl hidden sm:inline-block">👤 {currentUser.name}</span>
-                <button onClick={async () => { await supabase.auth.signOut(); navigateToHome(); }} className="px-3 py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold transition-all">Đăng xuất</button>
+                <button onClick={async () => { await supabase.auth.signOut(); setCurrentView('home'); }} className="px-3 py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold transition-all">Đăng xuất</button>
               </div>
             ) : (
               <button onClick={() => { setCurrentView('auth'); setAuthView('login'); }} className="px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Đăng nhập</button>
@@ -1520,17 +1521,30 @@ export default function App() {
         </div>
       </header>
 
-      {/* MAIN CONTENT ROUTER */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      {/* 3. MAIN CONTENT */}
+      <main className="flex-grow w-full max-w-6xl mx-auto px-6 py-8">
         {currentView === 'home' && renderHome()}
-        {currentView === 'auth' && renderAuthModal()}
         {currentView === 'institution' && renderInstitution()}
         {currentView === 'department' && renderDepartment()}
         {currentView === 'professor' && renderProfessor()}
         {currentView === 'add-prof-review' && renderAddProfReview()}
         {currentView === 'add-inst-review' && renderAddInstReview()}
         {currentView === 'suggest' && renderSuggest()}
+        {currentView === 'auth' && renderAuthModal()}
       </main>
+
+      {/* 4. PERSISTENT FOOTER */}
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 transition-colors duration-200">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+          <p>© {new Date().getFullYear()} RateVietProfessors. Nền tảng đánh giá giảng viên.</p>
+          <div className="mt-4 md:mt-0 flex gap-6 font-medium">
+            <a href="#" className="hover:text-brand dark:hover:text-white transition">Về chúng tôi</a>
+            <a href="#" className="hover:text-brand dark:hover:text-white transition">Quy tắc cộng đồng</a>
+            <a href="#" className="hover:text-brand dark:hover:text-white transition">Bảo mật</a>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }
