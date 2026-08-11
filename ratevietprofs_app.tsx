@@ -125,6 +125,23 @@ export default function App() {
   const [reviewSelectedTags, setReviewSelectedTags] = useState([]);
   const [reviewComment, setReviewComment] = useState('');
 
+  useEffect(() => {
+    async function fetchData() {
+      let { data: instData } = await supabase.from('institutions').select('*');
+      if (instData) setInstitutions(instData);
+
+      let { data: profData } = await supabase.from('professors').select('*');
+      if (profData) setProfessors(profData);
+
+      let { data: instRevData } = await supabase.from('institution_reviews').select('*');
+      if (instRevData) setInstReviews(instRevData);
+
+      let { data: profRevData } = await supabase.from('professor_reviews').select('*');
+      if (profRevData) setProfReviews(profRevData);
+    }
+    fetchData();
+  }, []);
+  
   // Institution Review State
   const [instMetrics, setInstMetrics] = useState({
     'Uy tín trường': 5,
@@ -176,32 +193,36 @@ export default function App() {
     };
   };
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (!authEmail.trim() || !authPassword.trim()) {
-      setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập đầy đủ email và mật khẩu.' });
-      return;
-    }
-    setCurrentUser({ email: authEmail, name: authEmail.split('@')[0] });
-    setFeedbackMsg({ type: 'success', text: 'Đăng nhập thành công!' });
-    setAuthEmail('');
-    setAuthPassword('');
-    setTimeout(() => setCurrentView('home'), 600);
-  };
+  const handleLogin = async (e) => {
+  e.preventDefault();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: authEmail,
+    password: authPassword,
+  });
+  if (error) {
+    setFeedbackMsg({ type: 'error', text: error.message });
+    return;
+  }
+  setCurrentUser({ email: data.user.email, name: data.user.email.split('@')[0] });
+  setFeedbackMsg({ type: 'success', text: 'Đăng nhập thành công!' });
+  setTimeout(() => setCurrentView('home'), 600);
+};
 
-  const handleSignup = (e) => {
-    e.preventDefault();
-    if (!authEmail.trim() || !authPassword.trim() || !authName.trim()) {
-      setFeedbackMsg({ type: 'error', text: 'Vui lòng điền đầy đủ thông tin đăng ký.' });
-      return;
-    }
-    setCurrentUser({ email: authEmail, name: authName });
-    setFeedbackMsg({ type: 'success', text: 'Tạo tài khoản thành công!' });
-    setAuthEmail('');
-    setAuthPassword('');
-    setAuthName('');
-    setTimeout(() => setCurrentView('home'), 600);
-  };
+  const handleSignup = async (e) => {
+  e.preventDefault();
+  const { data, error } = await supabase.auth.signUp({
+    email: authEmail,
+    password: authPassword,
+    options: { data: { full_name: authName } }
+  });
+  if (error) {
+    setFeedbackMsg({ type: 'error', text: error.message });
+    return;
+  }
+  setCurrentUser({ email: authEmail, name: authName });
+  setFeedbackMsg({ type: 'success', text: 'Tạo tài khoản thành công!' });
+  setTimeout(() => setCurrentView('home'), 600);
+};
 
   const renderAuthModal = () => {
     return (
