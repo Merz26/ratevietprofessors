@@ -172,6 +172,9 @@ export default function App() {
   const [profReviews, setProfReviews] = useState<ProfessorReview[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
+  // -- UI State --
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
   // -- Routing / Navigation State --
   const [currentView, setCurrentView] = useState<string>('home');
   const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
@@ -223,6 +226,16 @@ export default function App() {
   // 3. EFFECTS (LIFECYCLES)
   // ==========================================
 
+  // Effect: Toggle Dark Mode on the HTML root
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  //login
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
