@@ -52,11 +52,103 @@ export interface ProfessorReview {
 
 export interface Suggestion {
   id?: number;
-  type: string;
+  type: string; // 'professor' | 'institution' | 'department'
   targetName: string;
+  university?: string;
+  department?: string;
+  short_name?: string;
+  location?: string;
+  departments?: string[];
   content: string;
   user_email: string;
   status: string;
+  created_at?: string;
+}
+
+// 63 Provinces and Municipalities of Vietnam
+const VIETNAM_PROVINCES = [
+  "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu", "Bắc Ninh", 
+  "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước", "Bình Thuận", "Cà Mau", 
+  "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", 
+  "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", 
+  "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", 
+  "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lâm Đồng", "Lạng Sơn", 
+  "Lào Cai", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", 
+  "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", 
+  "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", 
+  "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", 
+  "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+];
+
+// ==========================================
+// SEARCHABLE SELECT COMPONENT
+// ==========================================
+function SearchableSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  label
+}: {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (val: string) => void;
+  placeholder: string;
+  label?: string;
+}) {
+  const [search, setSearch] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filtered = options.filter(o => 
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedOption = options.find(o => o.value === value);
+
+  return (
+    <div className="relative">
+      {label && <label className="block text-sm font-bold text-gray-700 mb-1">{label}</label>}
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white cursor-pointer flex justify-between items-center text-sm font-medium focus:ring-2 focus:ring-blue-500"
+      >
+        <span className={selectedOption ? 'text-gray-900' : 'text-gray-400'}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <span className="text-gray-400 text-xs">▼</span>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto p-2">
+          <input
+            type="text"
+            placeholder="Gõ để tìm kiếm..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full p-2 mb-2 text-xs border border-gray-200 rounded-lg outline-none focus:border-blue-500"
+            autoFocus
+          />
+          {filtered.length === 0 ? (
+            <div className="p-2 text-xs text-gray-400 text-center">Không tìm thấy kết quả</div>
+          ) : (
+            filtered.map(opt => (
+              <div
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                  setSearch('');
+                }}
+                className={`p-2.5 text-xs rounded-lg cursor-pointer hover:bg-blue-50 transition-colors ${opt.value === value ? 'bg-blue-100 font-bold text-blue-800' : 'text-gray-700'}`}
+              >
+                {opt.label}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function App() {
@@ -73,7 +165,7 @@ export default function App() {
   const [authName, setAuthName] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState({ type: '', text: '' });
 
-  // -- Database State (INITIALIZED AS EMPTY ARRAYS - NO DUMMY DATA) --
+  // -- Database State --
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [instReviews, setInstReviews] = useState<InstitutionReview[]>([]);
@@ -95,12 +187,19 @@ export default function App() {
   const [sortOption, setSortOption] = useState<'default' | 'rating' | 'reviews'>('default');
   const itemsPerPage = 28;
 
-  // -- Form State: Suggestions --
-  const [suggestionType, setSuggestionType] = useState('professor');
-  const [suggestionTargetName, setSuggestionTargetName] = useState('');
+  // -- Form State: Dynamic Suggestions --
+  const [suggestionType, setSuggestionType] = useState<'professor' | 'institution' | 'department'>('professor');
+  const [suggProfName, setSuggProfName] = useState('');
+  const [suggSelectedUniv, setSuggSelectedUniv] = useState('');
+  const [suggSelectedDept, setSuggSelectedDept] = useState('');
+  const [suggInstName, setSuggInstName] = useState('');
+  const [suggInstShortName, setSuggInstShortName] = useState('');
+  const [suggInstLocation, setSuggInstLocation] = useState('');
+  const [suggInstDepartmentsText, setSuggInstDepartmentsText] = useState('');
+  const [suggNewDeptName, setSuggNewDeptName] = useState('');
   const [suggestionContent, setSuggestionContent] = useState('');
 
-  // -- Form State: Professor Review --
+  // -- Form State: Review Forms --
   const [reviewCourse, setReviewCourse] = useState('');
   const [isOnlineCourse, setIsOnlineCourse] = useState(false);
   const [reviewTeaching, setReviewTeaching] = useState(5);
@@ -113,7 +212,6 @@ export default function App() {
   const [reviewSelectedTags, setReviewSelectedTags] = useState<string[]>([]);
   const [reviewComment, setReviewComment] = useState('');
 
-  // -- Form State: Institution Review --
   const [instMetrics, setInstMetrics] = useState<Record<string, number>>({
     'Uy tín trường': 5, 'Địa điểm': 5, 'Cơ hội việc làm': 5, 'Cơ sở vật chất': 5,
     'Mạng Internet': 5, 'Đồ ăn': 5, 'Câu lạc bộ': 5, 'Đời sống xã hội': 5,
@@ -125,7 +223,6 @@ export default function App() {
   // 3. EFFECTS (LIFECYCLES)
   // ==========================================
 
-  // Effect: Handle Persistent Login & Auth State Changes
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -152,26 +249,25 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Effect: Fetch Master Data on App Mount (Replaces Dummy Data)
   useEffect(() => {
     async function fetchData() {
-      // Use Promise.all to fetch everything concurrently from Supabase
-      const [instRes, profRes, instRevRes, profRevRes] = await Promise.all([
+      const [instRes, profRes, instRevRes, profRevRes, suggRes] = await Promise.all([
         supabase.from('institutions').select('*'),
         supabase.from('professors').select('*'),
         supabase.from('institution_reviews').select('*'),
-        supabase.from('professor_reviews').select('*')
+        supabase.from('professor_reviews').select('*'),
+        supabase.from('suggestions').select('*')
       ]);
 
       if (instRes.data) setInstitutions(instRes.data);
       if (profRes.data) setProfessors(profRes.data);
       if (instRevRes.data) setInstReviews(instRevRes.data);
       if (profRevRes.data) setProfReviews(profRevRes.data);
+      if (suggRes.data) setSuggestions(suggRes.data);
     }
     fetchData();
-  }, []); // The empty array ensures this only runs once when the app starts
+  }, []);
 
-  // Effect: Handle Browser Back/Forward buttons
   useEffect(() => {
     const handlePopState = () => {
       setCurrentView('home'); 
@@ -378,8 +474,6 @@ export default function App() {
                 onClick={() => {
                   if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
                   setSuggestionType('institution');
-                  setSuggestionTargetName('');
-                  setSuggestionContent('');
                   setCurrentView('suggest');
                 }}
                 className="text-sm font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-xl transition-all whitespace-nowrap"
@@ -449,7 +543,7 @@ export default function App() {
           <div>
             <span className="inline-block bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-xl text-xs mb-2">{selectedInst.short_name}</span>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-gray-900">{selectedInst.name}</h2>
-            <p className="text-gray-500 text-sm">{stats.total} Đánh giá tổng quan cơ sở đào tạo • {selectedInst.departments.length} Khoa / Viện</p>
+            <p className="text-gray-500 text-sm">{stats.total} Đánh giá tổng quan cơ sở đào tạo • {selectedInst.departments?.length || 0} Khoa / Viện</p>
           </div>
           <div className="flex gap-3 flex-wrap">
             <button 
@@ -465,8 +559,7 @@ export default function App() {
               onClick={() => {
                 if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
                 setSuggestionType('department');
-                setSuggestionTargetName('');
-                setSuggestionContent('');
+                setSuggSelectedUniv(selectedInst.name);
                 setCurrentView('suggest');
               }}
               className="px-5 py-3 bg-white text-blue-600 hover:bg-blue-50 font-bold rounded-2xl transition-all text-sm whitespace-nowrap border border-blue-500"
@@ -479,7 +572,7 @@ export default function App() {
         <div className="space-y-4">
           <h3 className="text-2xl font-black text-gray-900">Các Khoa / Viện trực thuộc</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {selectedInst.departments.map((dept, idx) => {
+            {selectedInst.departments?.map((dept, idx) => {
               const deptProfs = professors.filter(p => p.university === selectedInst.name && p.department === dept);
               return (
                 <div 
@@ -529,7 +622,7 @@ export default function App() {
                   <p className="text-gray-800 text-base font-medium">{rev.comment}</p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 pt-2">
-                    {Object.entries(rev.metrics).map(([key, val]) => (
+                    {Object.entries(rev.metrics || {}).map(([key, val]) => (
                       <div key={key} className="flex justify-between items-center py-1 border-b border-gray-50">
                         <span className="text-sm text-gray-700 font-medium">{key}</span>
                         <div className="flex gap-1 w-32">
@@ -594,8 +687,8 @@ export default function App() {
             onClick={() => {
               if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
               setSuggestionType('professor');
-              setSuggestionTargetName('');
-              setSuggestionContent('');
+              setSuggSelectedUniv(selectedInst.name);
+              setSuggSelectedDept(selectedDept);
               setCurrentView('suggest');
             }}
             className="px-5 py-3 bg-blue-600 text-white hover:bg-blue-700 font-bold rounded-2xl shadow transition-all text-sm whitespace-nowrap"
@@ -1104,22 +1197,69 @@ export default function App() {
     );
   };
 
+  // ==========================================
+  // DYNAMIC SUGGESTION RENDERER
+  // ==========================================
   const renderSuggest = () => {
+    // 1. Prepare options for University searchable select: "SHORT_NAME - Name"
+    const univOptions = institutions.map(i => ({
+      value: i.name,
+      label: `${i.short_name} - ${i.name}`
+    }));
+
+    // 2. Prepare options for Departments based on selected University
+    const selectedUnivObj = institutions.find(i => i.name === suggSelectedUniv);
+    const deptOptions = selectedUnivObj?.departments?.map(d => ({
+      value: d,
+      label: d
+    })) || [];
+
+    // 3. Prepare options for Vietnam Provinces
+    const provinceOptions = VIETNAM_PROVINCES.map(p => ({
+      value: p,
+      label: p
+    }));
+
     const handleSubmitSuggest = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-      if (!suggestionTargetName.trim()) {
-        setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập tên đối tượng đề xuất.' });
-        return;
-      }
 
-      const newSugg = {
+      let newSugg: Partial<Suggestion> = {
         type: suggestionType,
-        targetName: suggestionTargetName.trim(),
-        content: suggestionContent.trim(),
         user_email: currentUser.email,
+        content: suggestionContent.trim(),
         status: 'Chờ xét duyệt'
       };
+
+      if (suggestionType === 'professor') {
+        if (!suggProfName.trim() || !suggSelectedUniv || !suggSelectedDept) {
+          setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập đầy đủ tên giảng viên, trường đại học và khoa.' });
+          return;
+        }
+        newSugg.targetName = suggProfName.trim();
+        newSugg.university = suggSelectedUniv;
+        newSugg.department = suggSelectedDept;
+      } else if (suggestionType === 'institution') {
+        if (!suggInstName.trim() || !suggInstShortName.trim() || !suggInstLocation) {
+          setFeedbackMsg({ type: 'error', text: 'Vui lòng nhập tên trường, tên viết tắt và chọn tỉnh/thành phố.' });
+          return;
+        }
+        newSugg.targetName = suggInstName.trim();
+        newSugg.short_name = suggInstShortName.trim();
+        newSugg.location = suggInstLocation;
+        // Parse comma-separated text into array
+        newSugg.departments = suggInstDepartmentsText
+          ? suggInstDepartmentsText.split(',').map(d => d.trim()).filter(Boolean)
+          : [];
+      } else if (suggestionType === 'department') {
+        if (!suggSelectedUniv || !suggNewDeptName.trim()) {
+          setFeedbackMsg({ type: 'error', text: 'Vui lòng chọn trường và nhập tên khoa mới.' });
+          return;
+        }
+        newSugg.targetName = suggNewDeptName.trim();
+        newSugg.university = suggSelectedUniv;
+        newSugg.department = suggNewDeptName.trim();
+      }
 
       const { data, error } = await supabase.from('suggestions').insert([newSugg]).select();
 
@@ -1130,7 +1270,14 @@ export default function App() {
 
       if (data) setSuggestions([data[0] as Suggestion, ...suggestions]);
       setFeedbackMsg({ type: 'success', text: 'Đề xuất đã được gửi thành công và đang chờ xét duyệt!' });
-      setSuggestionTargetName('');
+
+      // Reset form fields
+      setSuggProfName('');
+      setSuggInstName('');
+      setSuggInstShortName('');
+      setSuggInstLocation('');
+      setSuggInstDepartmentsText('');
+      setSuggNewDeptName('');
       setSuggestionContent('');
     };
 
@@ -1151,32 +1298,135 @@ export default function App() {
 
           <form onSubmit={handleSubmitSuggest} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Loại đề xuất</label>
-              <select value={suggestionType} onChange={(e) => setSuggestionType(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none bg-gray-50 font-medium">
+              <label className="block text-sm font-bold text-gray-700 mb-2">Loại đề xuất *</label>
+              <select 
+                value={suggestionType} 
+                onChange={(e) => {
+                  setSuggestionType(e.target.value as any);
+                  setFeedbackMsg({ type: '', text: '' });
+                }} 
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none bg-gray-50 font-medium focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="professor">Giảng viên mới</option>
                 <option value="institution">Trường đại học mới</option>
                 <option value="department">Khoa / Viện mới</option>
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Tên đối tượng đề xuất *</label>
-              <input 
-                type="text"
-                value={suggestionTargetName}
-                onChange={(e) => setSuggestionTargetName(e.target.value)}
-                placeholder="VD: PGS. TS Nguyễn Văn B hoặc Trường Đại học X..."
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              />
-            </div>
+            {/* DYNAMIC FORM FIELDS BASED ON TYPE */}
+            {suggestionType === 'professor' && (
+              <div className="space-y-4 pt-2">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên giảng viên *</label>
+                  <input 
+                    type="text"
+                    value={suggProfName}
+                    onChange={(e) => setSuggProfName(e.target.value)}
+                    placeholder="VD: PGS. TS Nguyễn Văn B"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    required
+                  />
+                </div>
+
+                <SearchableSelect 
+                  label="Trường đại học *"
+                  placeholder="-- Chọn trường đại học --"
+                  options={univOptions}
+                  value={suggSelectedUniv}
+                  onChange={(val) => {
+                    setSuggSelectedUniv(val);
+                    setSuggSelectedDept(''); // reset dept selection when univ changes
+                  }}
+                />
+
+                <SearchableSelect 
+                  label="Khoa / Trực thuộc *"
+                  placeholder={suggSelectedUniv ? "-- Chọn khoa --" : "Vui lòng chọn trường trước"}
+                  options={deptOptions}
+                  value={suggSelectedDept}
+                  onChange={(val) => setSuggSelectedDept(val)}
+                />
+              </div>
+            )}
+
+            {suggestionType === 'institution' && (
+              <div className="space-y-4 pt-2">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên đầy đủ trường Đại học *</label>
+                  <input 
+                    type="text"
+                    value={suggInstName}
+                    onChange={(e) => setSuggInstName(e.target.value)}
+                    placeholder="VD: Trường Đại học Ngoại thương"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên viết tắt / Mã trường *</label>
+                  <input 
+                    type="text"
+                    value={suggInstShortName}
+                    onChange={(e) => setSuggInstShortName(e.target.value)}
+                    placeholder="VD: FTU"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    required
+                  />
+                </div>
+
+                <SearchableSelect 
+                  label="Tỉnh / Thành phố *"
+                  placeholder="-- Chọn tỉnh / thành phố --"
+                  options={provinceOptions}
+                  value={suggInstLocation}
+                  onChange={(val) => setSuggInstLocation(val)}
+                />
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Danh sách Khoa / Viện (không bắt buộc, phân cách bằng dấu phẩy)</label>
+                  <input 
+                    type="text"
+                    value={suggInstDepartmentsText}
+                    onChange={(e) => setSuggInstDepartmentsText(e.target.value)}
+                    placeholder="VD: Kinh tế Quốc tế, Quản trị Kinh doanh, Tài chính - Ngân hàng"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                  />
+                </div>
+              </div>
+            )}
+
+            {suggestionType === 'department' && (
+              <div className="space-y-4 pt-2">
+                <SearchableSelect 
+                  label="Trường đại học *"
+                  placeholder="-- Chọn trường đại học --"
+                  options={univOptions}
+                  value={suggSelectedUniv}
+                  onChange={(val) => setSuggSelectedUniv(val)}
+                />
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên Khoa / Viện mới *</label>
+                  <input 
+                    type="text"
+                    value={suggNewDeptName}
+                    onChange={(e) => setSuggNewDeptName(e.target.value)}
+                    placeholder="VD: Khoa Khởi nghiệp và Đổi mới Sáng tạo"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    required
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Thông tin chi tiết / Lý do bổ sung</label>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Ghi chú thêm / Lý do đề xuất</label>
               <textarea 
-                rows={4}
+                rows={3}
                 value={suggestionContent}
                 onChange={(e) => setSuggestionContent(e.target.value)}
-                placeholder="Cung cấp thêm thông tin xác thực..."
+                placeholder="Cung cấp thêm thông tin xác thực hoặc link bài báo/website..."
                 className="w-full p-4 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               ></textarea>
             </div>
@@ -1201,7 +1451,11 @@ export default function App() {
                   <div>
                     <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-lg mb-1 uppercase tracking-wider">{s.type}</span>
                     <h4 className="font-bold text-gray-900">{s.targetName}</h4>
-                    <p className="text-xs text-gray-500 mt-1">{s.content || 'Không có mô tả thêm'}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {s.university ? `${s.university} ` : ''} 
+                      {s.department ? `• ${s.department}` : ''}
+                      {s.location ? ` • ${s.location}` : ''}
+                    </p>
                     <p className="text-[10px] text-gray-400 mt-1">Gửi bởi: {s.user_email}</p>
                   </div>
                   <span className="text-xs font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">{s.status}</span>
@@ -1214,7 +1468,6 @@ export default function App() {
     );
   };
 
-  // Prevent UI flashing while checking session
   if (loadingSession) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50 text-gray-600 font-medium">
