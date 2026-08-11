@@ -93,13 +93,39 @@ export default function App() {
   // ==========================================
   // DATA COLLECTIONS (Placeholder data cleared)
   // ==========================================
+  const [institutions, setInstitutions] = useState(initialInstitutions);
+  const [professors, setProfessors] = useState(initialProfessors);
+  const [instReviews, setInstReviews] = useState(initialInstitutionReviews);
+  const [profReviews, setProfReviews] = useState(initialProfReviews);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
+  const [currentView, setCurrentView] = useState('home'); 
+  const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
+  const [selectedDept, setSelectedDept] = useState<string | null>(null); 
+  const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
   const [profSort, setProfSort] = useState('newest');
   const [profTagFilter, setProfTagFilter] = useState('all');
- 
-  useEffect(() => { //actually fetching supabase tables
+
+  const [suggestionType, setSuggestionType] = useState('professor');
+  const [suggestionTargetName, setSuggestionTargetName] = useState('');
+  const [suggestionContent, setSuggestionContent] = useState('');
+
+  const [reviewCourse, setReviewCourse] = useState('');
+  const [isOnlineCourse, setIsOnlineCourse] = useState(false);
+  const [reviewTeaching, setReviewTeaching] = useState(5);
+  const [reviewDifficulty, setReviewDifficulty] = useState(3);
+  const [reviewWouldTakeAgain, setReviewWouldTakeAgain] = useState(true);
+  const [reviewfor_credit, setReviewfor_credit] = useState('Có');
+  const [reviewTextbook, setReviewTextbook] = useState('Không');
+  const [reviewAttendance, setReviewAttendance] = useState('Có');
+  const [reviewGrade, setReviewGrade] = useState('A');
+  const [reviewSelectedTags, setReviewSelectedTags] = useState<string[]>([]);
+  const [reviewComment, setReviewComment] = useState('');
+
+  useEffect(() => {
     async function fetchData() {
       let { data: instData } = await supabase.from('institutions').select('*');
       if (instData) setInstitutions(instData);
@@ -115,6 +141,56 @@ export default function App() {
     }
     fetchData();
   }, []);
+  
+  const [instMetrics, setInstMetrics] = useState<Record<string, number>>({
+    'Uy tín trường': 5,
+    'Địa điểm': 5,
+    'Cơ hội việc làm': 5,
+    'Cơ sở vật chất': 5,
+    'Mạng Internet': 5,
+    'Đồ ăn': 5,
+    'Câu lạc bộ': 5,
+    'Đời sống xã hội': 5,
+    'Độ hài lòng': 5,
+    'An toàn': 5
+  });
+  const [instReviewComment, setInstReviewComment] = useState('');
+
+  const [feedbackMsg, setFeedbackMsg] = useState({ type: '', text: '' });
+
+  const calculateInstStats = (inst_id: number) => {
+    const list = instReviews.filter(r => r.inst_id === inst_id);
+    if (list.length === 0) return { overall: 0, total: 0, metricsAvg: {} as Record<string, string> };
+    
+    const criteriaKeys = ['Uy tín trường', 'Địa điểm', 'Cơ hội việc làm', 'Cơ sở vật chất', 'Mạng Internet', 'Đồ ăn', 'Câu lạc bộ', 'Đời sống xã hội', 'Độ hài lòng', 'An toàn'];
+    let sumTotal = 0;
+    const metricsAvg: Record<string, string> = {};
+
+    criteriaKeys.forEach(key => {
+      const mSum = list.reduce((acc, r) => acc + (r.metrics[key as keyof typeof r.metrics] || 0), 0);
+      metricsAvg[key] = (mSum / list.length).toFixed(1);
+      sumTotal += (mSum / list.length);
+    });
+
+    const overall = (sumTotal / criteriaKeys.length).toFixed(1);
+    return { overall: parseFloat(overall), total: list.length, metricsAvg };
+  };
+
+  const calculateProfStats = (prof_id: number) => {
+    const list = profReviews.filter(r => r.prof_id === prof_id);
+    if (list.length === 0) return { avg_rating: 0, avg_difficulty: 0, total_ratings: 0, would_take_again_pct: 0 };
+
+    const sumRating = list.reduce((acc, r) => acc + r.teaching_rating, 0);
+    const sumDiff = list.reduce((acc, r) => acc + r.difficulty_rating, 0);
+    const wouldTakeCount = list.filter(r => r.would_take_again).length;
+
+    return {
+      avg_rating: sumRating / list.length,
+      avg_difficulty: sumDiff / list.length,
+      total_ratings: list.length,
+      would_take_again_pct: Math.round((wouldTakeCount / list.length) * 100)
+    };
+  };
 
   // ==========================================
   // HELPER FUNCTIONS & CALCULATIONS
