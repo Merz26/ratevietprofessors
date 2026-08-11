@@ -93,13 +93,25 @@ export default function App() {
   // ==========================================
   // DATA COLLECTIONS (Placeholder data cleared)
   // ==========================================
-  const [institutions, setInstitutions] = useState<Institution[]>([
-    // Add production or database-fetched institutions here
-  ]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [professors, setProfessors] = useState<Professor[]>([]);
+  
+  useEffect(() => { //actually fetching supabase tables
+    async function fetchData() {
+      let { data: instData } = await supabase.from('institutions').select('*');
+      if (instData) setInstitutions(instData);
 
-  const [professors, setProfessors] = useState<Professor[]>([
-    // Add production or database-fetched professors here
-  ]);
+      let { data: profData } = await supabase.from('professors').select('*');
+      if (profData) setProfessors(profData);
+
+      let { data: instRevData } = await supabase.from('institution_reviews').select('*');
+      if (instRevData) setInstReviews(instRevData);
+
+      let { data: profRevData } = await supabase.from('professor_reviews').select('*');
+      if (profRevData) setProfReviews(profRevData);
+    }
+    fetchData();
+  }, []);
 
   // ==========================================
   // HELPER FUNCTIONS & CALCULATIONS
@@ -220,8 +232,8 @@ export default function App() {
                 className="px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="default">Mặc định</option>
-                <option value="rating">Xếp hạng cao nhất (Xếp hạng)</option>
-                <option value="reviews">Nổi bật (Nhiều đánh giá nhất)</option>
+                <option value="rating">Xếp hạng cao → thấp</option>
+                <option value="reviews">Nổi bật</option>
               </select>
 
               <button 
