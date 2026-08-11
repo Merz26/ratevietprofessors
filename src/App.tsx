@@ -59,7 +59,7 @@ const initialProfessors = [
 const initialInstitutionReviews = [
   {
     id: 101,
-    instId: 1,
+    inst_id: 1,
     user_email: 'sinhvien@hcmut.edu.vn',
     comment: 'Trường học tuyệt vời và khuôn viên rất đẹp!',
     created_at: '2026-08-06',
@@ -76,7 +76,7 @@ const initialInstitutionReviews = [
       'An toàn': 5
     },
     helpful: 4,
-    notHelpful: 0
+    not_helpful: 0
   }
 ];
 
@@ -89,7 +89,7 @@ const initialProfReviews = [
     teaching_rating: 5,
     difficulty_rating: 2,
     would_take_again: true,
-    forCredit: 'Có',
+    for_credit: 'Có',
     textbook: 'Không',
     attendance: 'Có',
     grade: 'A+',
@@ -97,7 +97,7 @@ const initialProfReviews = [
     comment: 'Thầy rất tâm huyết với môn học và nhiệt tình hỗ trợ sinh viên!!',
     created_at: '2026-08-11',
     helpful: 12,
-    notHelpful: 1
+    not_helpful: 1
   }
 ];
 
@@ -133,7 +133,7 @@ export default function App() {
   const [reviewTeaching, setReviewTeaching] = useState(5);
   const [reviewDifficulty, setReviewDifficulty] = useState(3);
   const [reviewWouldTakeAgain, setReviewWouldTakeAgain] = useState(true);
-  const [reviewForCredit, setReviewForCredit] = useState('Có');
+  const [reviewfor_credit, setReviewfor_credit] = useState('Có');
   const [reviewTextbook, setReviewTextbook] = useState('Không');
   const [reviewAttendance, setReviewAttendance] = useState('Có');
   const [reviewGrade, setReviewGrade] = useState('A');
@@ -173,8 +173,8 @@ export default function App() {
 
   const [feedbackMsg, setFeedbackMsg] = useState({ type: '', text: '' });
 
-  const calculateInstStats = (instId: number) => {
-    const list = instReviews.filter(r => r.instId === instId);
+  const calculateInstStats = (inst_id: number) => {
+    const list = instReviews.filter(r => r.inst_id === inst_id);
     if (list.length === 0) return { overall: 0, total: 0, metricsAvg: {} as Record<string, string> };
     
     const criteriaKeys = ['Uy tín trường', 'Địa điểm', 'Cơ hội việc làm', 'Cơ sở vật chất', 'Mạng Internet', 'Đồ ăn', 'Câu lạc bộ', 'Đời sống xã hội', 'Độ hài lòng', 'An toàn'];
@@ -191,8 +191,8 @@ export default function App() {
     return { overall: parseFloat(overall), total: list.length, metricsAvg };
   };
 
-  const calculateProfStats = (profId: number) => {
-    const list = profReviews.filter(r => r.prof_id === profId);
+  const calculateProfStats = (prof_id: number) => {
+    const list = profReviews.filter(r => r.prof_id === prof_id);
     if (list.length === 0) return { avg_rating: 0, avg_difficulty: 0, total_ratings: 0, would_take_again_pct: 0 };
 
     const sumRating = list.reduce((acc, r) => acc + r.teaching_rating, 0);
@@ -416,7 +416,7 @@ export default function App() {
   const renderInstitution = () => {
     if (!selectedInst) return null;
     const stats = calculateInstStats(selectedInst.id);
-    const reviews = instReviews.filter(r => r.instId === selectedInst.id);
+    const reviews = instReviews.filter(r => r.inst_id === selectedInst.id);
 
     return (
       <div className="space-y-8 animate-fadeIn">
@@ -536,7 +536,7 @@ export default function App() {
                       >
                         Hữu ích 👍 {rev.helpful || 0}
                       </button>
-                      <span>👎 {rev.notHelpful || 0}</span>
+                      <span>👎 {rev.not_helpful || 0}</span>
                     </div>
                     <button className="hover:text-red-600">🚩 Báo cáo</button>
                   </div>
@@ -760,7 +760,7 @@ export default function App() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs font-semibold text-gray-600">
-                  <span className="bg-gray-100 px-3 py-1 rounded-lg">Tính điểm: <strong className="text-gray-900">{rev.forCredit}</strong></span>
+                  <span className="bg-gray-100 px-3 py-1 rounded-lg">Tính điểm: <strong className="text-gray-900">{rev.for_credit}</strong></span>
                   <span className="bg-gray-100 px-3 py-1 rounded-lg">Học lại: <strong className="text-gray-900">{rev.would_take_again ? 'Có' : 'Không'}</strong></span>
                   <span className="bg-gray-100 px-3 py-1 rounded-lg">Điểm số: <strong className="text-gray-900">{rev.grade}</strong></span>
                   <span className="bg-gray-100 px-3 py-1 rounded-lg">Giáo trình: <strong className="text-gray-900">{rev.textbook}</strong></span>
@@ -789,7 +789,7 @@ export default function App() {
                     >
                       Hữu ích 👍 {rev.helpful || 0}
                     </button>
-                    <span>👎 {rev.notHelpful || 0}</span>
+                    <span>👎 {rev.not_helpful || 0}</span>
                   </div>
                   <button className="hover:text-red-600">🚩 Báo cáo</button>
                 </div>
@@ -819,7 +819,7 @@ export default function App() {
         teaching_rating: reviewTeaching,
         difficulty_rating: reviewDifficulty,
         would_take_again: reviewWouldTakeAgain,
-        forCredit: reviewForCredit,
+        for_credit: reviewfor_credit,
         textbook: reviewTextbook,
         attendance: reviewAttendance,
         grade: reviewGrade,
@@ -935,7 +935,7 @@ export default function App() {
               <span className="font-bold text-gray-900 text-sm">Môn học này có tính tín chỉ?</span>
               <div className="flex gap-2">
                 {['Có', 'Không'].map(opt => (
-                  <button key={opt} type="button" onClick={() => setReviewForCredit(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewForCredit === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>{opt}</button>
+                  <button key={opt} type="button" onClick={() => setReviewfor_credit(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewfor_credit === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>{opt}</button>
                 ))}
               </div>
             </div>
