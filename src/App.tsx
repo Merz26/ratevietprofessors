@@ -991,7 +991,7 @@ export default function App() {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
             <label className="block text-base font-bold text-gray-900">Viết nhận xét chi tiết *</label>
             <textarea
-              rows="4"
+              rows={4}
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value)}
               placeholder="Bạn muốn sinh viên khác biết điều gì về giảng viên này?"
