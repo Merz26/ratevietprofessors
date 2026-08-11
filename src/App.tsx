@@ -1536,7 +1536,7 @@ export default function App() {
       {/* 4. PERSISTENT FOOTER */}
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-          <p>© {new Date().getFullYear()} RateVietProfessors. Nền tảng đánh giá giảng viên.</p>
+          <p>© {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.</p>
           <div className="mt-4 md:mt-0 flex gap-6 font-medium">
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Về chúng tôi</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Quy tắc cộng đồng</a>
