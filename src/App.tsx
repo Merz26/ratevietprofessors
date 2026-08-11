@@ -1076,7 +1076,8 @@ export default function App() {
     );
   };
 
-  const handleSubmitSuggest = async (e) => {
+  const renderSuggest = () => {
+    const handleSubmitSuggest = async (e) => {
     e.preventDefault();
     if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
     if (!suggestionTargetName.trim()) {
