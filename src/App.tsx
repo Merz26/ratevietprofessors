@@ -90,7 +90,7 @@ export default function App() {
       if (session?.user) {
         setCurrentUser({
           email: session.user.email ?? '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] ?? 'User',
+          name: (session.user.user_metadata?.full_name || session.user.email?.split('@')[0]) ?? 'User',
         });
       }
       setLoadingSession(false);
@@ -101,7 +101,7 @@ export default function App() {
       if (session?.user) {
         setCurrentUser({
           email: session.user.email ?? '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] ?? 'User',
+          name: (session.user.user_metadata?.full_name || session.user.email?.split('@')[0]) ?? 'User',
         });
       } else {
         setCurrentUser(null);
@@ -221,7 +221,7 @@ export default function App() {
     if (data.user) {
       setCurrentUser({
         email: data.user.email ?? '',
-        name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] ?? 'User',
+        name: (data.user.user_metadata?.full_name || data.user.email?.split('@')[0]) ?? 'User',
       });
     }
     setFeedbackMsg({ type: 'success', text: 'Đăng nhập thành công!' });
