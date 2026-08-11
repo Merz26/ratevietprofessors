@@ -99,17 +99,10 @@ export default function App() {
   const [profReviews, setProfReviews] = useState(initialProfReviews);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
-  const [currentView, setCurrentView] = useState('home'); 
-  const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
-  const [selectedDept, setSelectedDept] = useState<string | null>(null); 
-  const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
-  
-  const [searchTerm, setSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
   const [profSort, setProfSort] = useState('newest');
   const [profTagFilter, setProfTagFilter] = useState('all');
 
-  const [suggestionType, setSuggestionType] = useState('professor');
   const [suggestionTargetName, setSuggestionTargetName] = useState('');
   const [suggestionContent, setSuggestionContent] = useState('')
   
