@@ -96,21 +96,18 @@ export default function App() {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
   
-  useEffect(() => { //actually fetching supabase tables
-    async function fetchData() {
-      let { data: instData } = await supabase.from('institutions').select('*');
-      if (instData) setInstitutions(instData);
-
-      let { data: profData } = await supabase.from('professors').select('*');
-      if (profData) setProfessors(profData);
-
-      let { data: instRevData } = await supabase.from('institution_reviews').select('*');
-      if (instRevData) setInstReviews(instRevData);
-
-      let { data: profRevData } = await supabase.from('professor_reviews').select('*');
-      if (profRevData) setProfReviews(profRevData);
+  // Fetch institutions from Supabase on application load
+  useEffect(() => {
+    async function fetchInstitutions() {
+      const { data, error } = await supabase.from('institutions').select('*');
+      if (data && !error) {
+        setInstitutions(data);
+      } else if (error) {
+        console.error('Error fetching institutions:', error.message);
+      }
     }
-    fetchData();
+
+    fetchInstitutions();
   }, []);
 
   // ==========================================
