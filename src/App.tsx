@@ -369,9 +369,9 @@ export default function App() {
     return (
       <div className="space-y-8 animate-fadeIn">
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-8 md:p-12 rounded-3xl shadow-xl text-center space-y-4">
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight">Tìm kiếm Trường học hoặc Giảng viên</h1>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight">Tìm kiếm trường Đại học hoặc Cao dẳng</h1>
           <p className="text-blue-100 max-w-2xl mx-auto text-sm md:text-base">
-            Đánh giá và chia sẻ trải nghiệm học tập chân thực tại các trường Đại học & Cao đẳng tại Việt Nam.
+            made with 💖 from HCMC.
           </p>
           <div className="max-w-xl mx-auto relative pt-2">
             <input 
