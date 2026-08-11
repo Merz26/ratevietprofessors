@@ -4,7 +4,7 @@ import { supabase } from './supabaseClient';
 interface Institution {
   id: number;
   name: string;
-  shortName: string;
+  short_name: string;
   location: string;
   departments: string[];
 }
@@ -21,28 +21,28 @@ const initialInstitutions = [
   {
     id: 1,
     name: 'Đại học Bách Khoa TP.HCM',
-    shortName: 'HCMUT',
+    short_name: 'HCMUT',
     location: 'Hồ Chí Minh',
     departments: ['Khoa học Máy tính', 'Điện - Điện tử', 'Kỹ thuật Xây dựng']
   },
   {
     id: 2,
     name: 'Đại học Khoa học Tự nhiên',
-    shortName: 'HCMUS',
+    short_name: 'HCMUS',
     location: 'Hồ Chí Minh',
     departments: ['Công nghệ Thông tin', 'Toán - Tin học', 'Hóa học']
   },
   {
     id: 3,
     name: 'Đại học Kinh tế Quốc dân',
-    shortName: 'NEU',
+    short_name: 'NEU',
     location: 'Hà Nội',
     departments: ['Kế toán', 'Tài chính - Ngân hàng', 'Quản trị Kinh doanh']
   },
   {
     id: 4,
     name: 'Đại học Ngoại thương',
-    shortName: 'FTU',
+    short_name: 'FTU',
     location: 'Hà Nội',
     departments: ['Kinh tế Quốc tế', 'Quản trị Kinh doanh Quốc tế', 'Tài chính Quốc tế']
   }
@@ -328,7 +328,7 @@ export default function App() {
   const renderHome = () => {
     const filteredInstitutions = institutions.filter(inst => 
       inst.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inst.shortName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inst.short_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inst.location.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -385,7 +385,7 @@ export default function App() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
                       <span className="inline-block bg-blue-100 text-blue-800 font-black px-2 py-0.5 rounded-lg text-xs tracking-wide">
-                        {inst.shortName}
+                        {inst.short_name}
                       </span>
                       <span className="text-xs text-gray-400 font-medium">{stats.total} đánh giá</span>
                     </div>
@@ -431,7 +431,7 @@ export default function App() {
 
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-8 rounded-3xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <span className="inline-block bg-blue-600 text-blue-100 font-bold px-3 py-1 rounded-xl text-xs mb-2">{selectedInst.shortName}</span>
+            <span className="inline-block bg-blue-600 text-blue-100 font-bold px-3 py-1 rounded-xl text-xs mb-2">{selectedInst.short_name}</span>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">{selectedInst.name}</h2>
             <p className="text-blue-200 text-sm">{stats.total} Đánh giá tổng quan cơ sở đào tạo • {selectedInst.departments.length} Khoa / Viện</p>
           </div>
