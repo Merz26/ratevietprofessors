@@ -93,10 +93,6 @@ export default function App() {
   // ==========================================
   // DATA COLLECTIONS (Placeholder data cleared)
   // ==========================================
-  const [institutions, setInstitutions] = useState(initialInstitutions);
-  const [professors, setProfessors] = useState(initialProfessors);
-  const [instReviews, setInstReviews] = useState(initialInstitutionReviews);
-  const [profReviews, setProfReviews] = useState(initialProfReviews);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
