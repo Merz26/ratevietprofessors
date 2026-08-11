@@ -1496,12 +1496,11 @@ export default function App() {
       {/* 2. HEADER */}
       <header className="bg-brand dark:bg-gray-800 text-white shadow-md sticky top-0 z-50 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="text-xl font-black cursor-pointer flex items-center gap-2" onClick={navigateToHome}>
+          <div className="text-xl font-black cursor-pointer tracking-tight flex items-center gap-2" onClick={() => setCurrentView('home')}>
             🎓 RateVietProfessors
           </div>
-          
           <div className="flex items-center gap-4">
-            {/* DARK MODE TOGGLE BUTTON */}
+            {/* DARK MODE TOGGLE */}
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)} 
               className="text-xl p-2 rounded-full hover:bg-white/20 transition"
@@ -1511,19 +1510,27 @@ export default function App() {
             </button>
 
             {currentUser ? (
-               // ... your existing logged-in buttons ...
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold bg-blue-800 px-3 py-1.5 rounded-xl hidden sm:inline-block">👤 {currentUser.name}</span>
+                <button onClick={async () => { await supabase.auth.signOut(); setCurrentView('home'); }} className="px-3 py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold transition-all">Đăng xuất</button>
+              </div>
             ) : (
-               // ... your existing login button ...
+              <button onClick={() => { setCurrentView('auth'); setAuthView('login'); }} className="px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Đăng nhập</button>
             )}
           </div>
         </div>
       </header>
 
-      {/* 3. MAIN CONTENT (Notice flex-grow and w-full) */}
+      {/* 3. MAIN CONTENT */}
       <main className="flex-grow w-full max-w-6xl mx-auto px-6 py-8">
         {currentView === 'home' && renderHome()}
+        {currentView === 'institution' && renderInstitution()}
+        {currentView === 'department' && renderDepartment()}
+        {currentView === 'professor' && renderProfessor()}
+        {currentView === 'add-prof-review' && renderAddProfReview()}
+        {currentView === 'add-inst-review' && renderAddInstReview()}
+        {currentView === 'suggest' && renderSuggest()}
         {currentView === 'auth' && renderAuthModal()}
-        {/* ... other views ... */}
       </main>
 
       {/* 4. PERSISTENT FOOTER */}
