@@ -86,7 +86,7 @@ const initialProfReviews = [
 ];
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null); // { email, name, role }
+  const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
   const [authView, setAuthView] = useState('login'); // 'login', 'signup'
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
