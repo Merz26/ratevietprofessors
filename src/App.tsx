@@ -1080,7 +1080,7 @@ export default function App() {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
             <label className="block text-base font-bold text-gray-900">Nhận xét chi tiết *</label>
             <textarea
-              rows="4"
+              rows={4}
               value={instReviewComment}
               onChange={(e) => setInstReviewComment(e.target.value)}
               placeholder="Chia sẻ trải nghiệm thực tế của bạn tại trường này..."
@@ -1165,7 +1165,7 @@ export default function App() {
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Thông tin chi tiết / Lý do bổ sung</label>
               <textarea 
-                rows="4"
+                rows={4}
                 value={suggestionContent}
                 onChange={(e) => setSuggestionContent(e.target.value)}
                 placeholder="Cung cấp thêm thông tin xác thực..."
