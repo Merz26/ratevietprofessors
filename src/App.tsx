@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-
+interface Institution {
+  id: number;
+  name: string;
+  shortName: string;
+  location: string;
+  departments: string[];
+}
 const initialInstitutions = [
   {
     id: 1,
@@ -99,7 +105,7 @@ export default function App() {
   const [suggestions, setSuggestions] = useState([]);
 
   const [currentView, setCurrentView] = useState('home'); // 'home', 'institution', 'department', 'professor', 'add-prof-review', 'add-inst-review', 'suggest', 'auth'
-  const [selectedInst, setSelectedInst] = useState(null);
+  const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
   const [selectedDept, setSelectedDept] = useState(null);
   const [selectedProf, setSelectedProf] = useState(null);
 
