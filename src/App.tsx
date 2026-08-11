@@ -103,11 +103,45 @@ const initialProfReviews = [
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
+  const [loadingSession, setLoadingSession] = useState<boolean>(true); // <-- persistent login check
   const [authView, setAuthView] = useState('login'); 
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
 
+  // --- ADD THIS useEffect BLOCK HERE FOR NO REASON, DONT DELETE---
+  useEffect(() => {
+    // 1. Check active session when the app first loads from localStorage
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser({
+          email: session.user.email ?? '',
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] ?? 'User',
+        });
+      }
+      setLoadingSession(false);
+    });
+
+    // 2. Listen for changes in auth state (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({
+          email: session.user.email ?? '',
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] ?? 'User',
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoadingSession(false);
+    });
+
+    // Cleanup the subscription when the component unmounts
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  // -------------------------------------
+  
   const [institutions, setInstitutions] = useState(initialInstitutions);
   const [professors, setProfessors] = useState(initialProfessors);
   const [instReviews, setInstReviews] = useState(initialInstitutionReviews);
@@ -1205,7 +1239,14 @@ export default function App() {
       </div>
     );
   };
-
+  // --- LOADING GUARD CHECK ---
+  if (loadingSession) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50 text-gray-600 font-medium">
+        Đang tải phiên đăng nhập...
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-100 font-sans text-gray-900 selection:bg-blue-200">
       <header className="bg-blue-700 text-white shadow-md sticky top-0 z-50">
