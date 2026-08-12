@@ -437,102 +437,58 @@ export default function App() {
   const renderHome = () => {
     const filteredInstitutions = institutions.filter(inst => 
       inst.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      inst.short_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inst.location.toLowerCase().includes(searchTerm.toLowerCase())
+      inst.short_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const sortedInstitutions = [...filteredInstitutions].sort((a, b) => {
-      const statsA = calculateInstStats(a.id);
-      const statsB = calculateInstStats(b.id);
-      
-      if (sortOption === 'rating') return statsB.overall - statsA.overall;
-      if (sortOption === 'reviews') return statsB.total - statsA.total;
-      return 0;
-    });
-
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentInstitutions = sortedInstitutions.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(sortedInstitutions.length / itemsPerPage);
-
     return (
-      <div className="space-y-8 animate-fadeIn">
+      <div className="space-y-8">
+        
+        {/* HERO / SEARCH SECTION */}
         <div className="text-center space-y-4 py-10">
-          <h1 className="text-4xl font-black text-gray-900">Tìm kiếm Trường Đại học của bạn</h1>
+          {/* Fixed the title so it turns white in Dark Mode! */}
+          <h1 className="text-4xl font-black text-gray-900 dark:text-white transition-colors duration-200">
+            Tìm kiếm Trường Đại học của bạn
+          </h1>
           <input 
             type="text" 
             placeholder="Nhập tên trường hoặc từ khóa (VD: HCMUT, Ngoại thương)..." 
             value={searchTerm} 
-            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
-            className="w-full max-w-2xl px-6 py-4 rounded-2xl border border-gray-300 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 text-lg mx-auto" 
+            onChange={e => setSearchTerm(e.target.value)} 
+            className="w-full max-w-2xl px-6 py-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-brand text-lg mx-auto transition-colors duration-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" 
           />
         </div>
         
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <h2 className="text-2xl font-black text-gray-900">Các trường Đại học ({sortedInstitutions.length})</h2>
-            
-            <div className="flex items-center gap-3 w-full md:w-auto justify-between">
-              <select 
-                value={sortOption} 
-                onChange={(e) => { setSortOption(e.target.value as any); setCurrentPage(1); }}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {/* INSTITUTION CARDS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {filteredInstitutions.map(inst => {
+            const stats = calculateInstStats(inst.id);
+            return (
+              <div 
+                key={inst.id} 
+                onClick={() => navigateToInstitution(inst)} 
+                className="p-6 rounded-2xl shadow-sm transition-all cursor-pointer flex flex-col justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand dark:hover:border-brand-light hover:shadow-md group"
               >
-                <option value="default">Mặc định</option>
-                <option value="rating">Xếp hạng cao nhất (Xếp hạng)</option>
-                <option value="reviews">Nổi bật (Nhiều đánh giá nhất)</option>
-              </select>
-
-              <button 
-                onClick={() => {
-                  if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-                  setSuggestionType('institution');
-                  setCurrentView('suggest');
-                }}
-                className="text-sm font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-xl transition-all whitespace-nowrap"
-              >
-                + Đề xuất thêm trường
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {currentInstitutions.map(inst => {
-              const stats = calculateInstStats(inst.id);
-              return (
-                <div key={inst.id} onClick={() => navigateToInstitution(inst)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <span className="inline-block bg-blue-100 text-blue-800 font-black px-2 py-0.5 rounded-lg text-xs">{inst.short_name}</span>
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight">{inst.name}</h3>
-                    <p className="text-sm text-gray-500">📍 {inst.location}</p>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-sm font-medium text-gray-700">
-                    <span>⭐ {stats.overall > 0 ? stats.overall : 'Chưa có'}</span>
-                    <span>{stats.total} đánh giá</span>
-                  </div>
+                <div className="space-y-2">
+                  <span className="inline-block bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 font-black px-2 py-0.5 rounded-lg text-xs transition-colors">
+                    {inst.short_name}
+                  </span>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight group-hover:text-brand dark:group-hover:text-brand-light transition-colors">
+                    {inst.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                    📍 {inst.location}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              {Array.from({ length: totalPages }, (_, index) => (
-                <button
-                  key={index + 1}
-                  onClick={() => setCurrentPage(index + 1)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                    currentPage === index + 1
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-            </div>
-          )}
+                
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">
+                  <span>⭐ {stats.overall}</span>
+                  <span>{stats.total} đánh giá</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
       </div>
     );
   };
