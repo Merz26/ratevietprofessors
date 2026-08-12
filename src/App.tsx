@@ -107,29 +107,29 @@ function SearchableSelect({
 
   return (
     <div className="relative">
-      {label && <label className="block text-sm font-bold text-gray-700 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
       <div 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white cursor-pointer flex justify-between items-center text-sm font-medium focus:ring-2 focus:ring-blue-500"
+        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer flex justify-between items-center text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-colors"
       >
-        <span className={selectedOption ? 'text-gray-900' : 'text-gray-400'}>
+        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-400'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <span className="text-gray-400 text-xs">▼</span>
+        <span className="text-gray-400 dark:text-gray-500 text-xs">▼</span>
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto p-2">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-gray-900/50 max-h-60 overflow-y-auto p-2">
           <input
             type="text"
             placeholder="Gõ để tìm kiếm..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full p-2 mb-2 text-xs border border-gray-200 rounded-lg outline-none focus:border-blue-500"
+            className="w-full p-2 mb-2 text-xs border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg outline-none focus:border-blue-500 transition-colors"
             autoFocus
           />
           {filtered.length === 0 ? (
-            <div className="p-2 text-xs text-gray-400 text-center">Không tìm thấy kết quả</div>
+            <div className="p-2 text-xs text-gray-400 dark:text-gray-500 text-center">Không tìm thấy kết quả</div>
           ) : (
             filtered.map(opt => (
               <div
@@ -139,7 +139,7 @@ function SearchableSelect({
                   setIsOpen(false);
                   setSearch('');
                 }}
-                className={`p-2.5 text-xs rounded-lg cursor-pointer hover:bg-blue-50 transition-colors ${opt.value === value ? 'bg-blue-100 font-bold text-blue-800' : 'text-gray-700'}`}
+                className={`p-2.5 text-xs rounded-lg cursor-pointer transition-colors ${opt.value === value ? 'bg-blue-100 dark:bg-blue-900/50 font-bold text-blue-800 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700'}`}
               >
                 {opt.label}
               </div>
@@ -580,19 +580,19 @@ export default function App() {
 
     return (
       <div className="space-y-8 animate-fadeIn">
-        <div className="flex items-center text-sm text-gray-500 gap-2">
-          <button onClick={navigateToHome} className="hover:text-blue-600 flex items-center gap-1">
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 gap-2">
+          <button onClick={navigateToHome} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1">
             Trang chủ
           </button>
           <span>/</span>
-          <span className="font-semibold text-gray-900">{selectedInst.name}</span>
+          <span className="font-semibold text-gray-900 dark:text-white">{selectedInst.name}</span>
         </div>
 
-        <div className="bg-white border border-gray-200 p-8 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-8 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-colors">
           <div>
-            <span className="inline-block bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-xl text-xs mb-2">{selectedInst.short_name}</span>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-gray-900">{selectedInst.name}</h2>
-            <p className="text-gray-500 text-sm">{stats.total} Đánh giá tổng quan cơ sở đào tạo • {selectedInst.departments?.length || 0} Khoa / Viện</p>
+            <span className="inline-block bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 font-bold px-3 py-1 rounded-xl text-xs mb-2">{selectedInst.short_name}</span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-gray-900 dark:text-white">{selectedInst.name}</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{stats.total} Đánh giá tổng quan cơ sở đào tạo • {selectedInst.departments?.length || 0} Khoa / Viện</p>
           </div>
           <div className="flex gap-3 flex-wrap">
             <button 
@@ -611,7 +611,7 @@ export default function App() {
                 setSuggSelectedUniv(selectedInst.name);
                 setCurrentView('suggest');
               }}
-              className="px-5 py-3 bg-white text-blue-600 hover:bg-blue-50 font-bold rounded-2xl transition-all text-sm whitespace-nowrap border border-blue-500"
+              className="px-5 py-3 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 font-bold rounded-2xl transition-all text-sm whitespace-nowrap border border-blue-500"
             >
               Đề xuất Khoa
             </button>
@@ -619,20 +619,20 @@ export default function App() {
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-2xl font-black text-gray-900">Các Khoa / Viện trực thuộc</h3>
+          <h3 className="text-2xl font-black text-gray-900 dark:text-white">Các Khoa / Viện trực thuộc</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {selectedInst.departments?.map((dept, idx) => {
               const deptProfs = professors.filter(p => p.university === selectedInst.name && p.department === dept);
               return (
                 <div 
                   key={idx}
-                  className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between"
+                  className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between"
                 >
                   <div onClick={() => navigateToDepartment(selectedInst, dept)} className="cursor-pointer">
-                    <h4 className="text-xl font-bold text-gray-900 mb-2">{dept}</h4>
-                    <p className="text-xs text-gray-500">{deptProfs.length} Giảng viên có sẵn</p>
+                    <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{dept}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{deptProfs.length} Giảng viên có sẵn</p>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center text-sm font-bold text-blue-600">
+                  <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-sm font-bold text-blue-600 dark:text-blue-400">
                     <button onClick={() => navigateToDepartment(selectedInst, dept)} className="hover:underline">Xem danh sách giảng viên →</button>
                   </div>
                 </div>
@@ -641,62 +641,62 @@ export default function App() {
           </div>
         </div>
 
-        <div className="space-y-6 pt-6 border-t border-gray-200">
+        <div className="space-y-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-black text-gray-900">Đánh giá cơ sở vật chất & môi trường</h3>
-            <span className="text-sm font-medium text-gray-500">{stats.total} đánh giá</span>
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white">Đánh giá cơ sở vật chất & môi trường</h3>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{stats.total} đánh giá</span>
           </div>
 
           {reviews.length === 0 ? (
-            <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-300 text-center text-gray-500">
+            <div className="bg-white dark:bg-gray-800 p-12 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
               Chưa có đánh giá nào cho trường này. Hãy là người đầu tiên đánh giá!
             </div>
           ) : (
             <div className="space-y-4">
               {reviews.map(rev => (
-                <div key={rev.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+                <div key={rev.id} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-4">
-                      <div className="bg-green-100 text-green-800 font-black text-2xl px-4 py-2 rounded-xl text-center min-w-[70px]">
+                      <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 font-black text-2xl px-4 py-2 rounded-xl text-center min-w-[70px]">
                         {stats.overall}
                       </div>
                       <div>
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tổng quan</p>
-                        <p className="text-xs text-gray-500">Bởi: {rev.user_email || 'Sinh viên ẩn danh'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Bởi: {rev.user_email || 'Sinh viên ẩn danh'}</p>
                       </div>
                     </div>
                     <span className="text-sm text-gray-400">{new Date(rev.created_at).toLocaleDateString()}</span>
                   </div>
 
-                  <p className="text-gray-800 text-base font-medium">{rev.comment}</p>
+                  <p className="text-gray-800 dark:text-gray-200 text-base font-medium">{rev.comment}</p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 pt-2">
                     {Object.entries(rev.metrics || {}).map(([key, val]) => (
-                      <div key={key} className="flex justify-between items-center py-1 border-b border-gray-50">
-                        <span className="text-sm text-gray-700 font-medium">{key}</span>
+                      <div key={key} className="flex justify-between items-center py-1 border-b border-gray-50 dark:border-gray-700/50">
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{key}</span>
                         <div className="flex gap-1 w-32">
                           {[1, 2, 3, 4, 5].map(s => (
-                            <div key={s} className={`h-2 flex-1 rounded-full ${s <= Number(val) ? 'bg-green-300' : 'bg-gray-200'}`} />
+                            <div key={s} className={`h-2 flex-1 rounded-full ${s <= Number(val) ? 'bg-green-300 dark:bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
                           ))}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 text-sm text-gray-500">
+                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => {
                           if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
                           setInstReviews(instReviews.map(r => r.id === rev.id ? { ...r, helpful: r.helpful + 1 } : r));
                         }}
-                        className="hover:text-blue-600 font-medium flex items-center gap-1"
+                        className="hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center gap-1"
                       >
                         Hữu ích 👍 {rev.helpful || 0}
                       </button>
                       <span>👎 {rev.not_helpful || 0}</span>
                     </div>
-                    <button className="hover:text-red-600">🚩 Báo cáo</button>
+                    <button className="hover:text-red-600 dark:hover:text-red-400">🚩 Báo cáo</button>
                   </div>
                 </div>
               ))}
@@ -714,23 +714,23 @@ export default function App() {
 
     return (
       <div className="space-y-8 animate-fadeIn">
-        <div className="flex items-center text-sm text-gray-500 gap-2">
-          <button onClick={navigateToHome} className="hover:text-blue-600 flex items-center gap-1">
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 gap-2">
+          <button onClick={navigateToHome} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1">
             Trang chủ
           </button>
           <span>/</span>
-          <button onClick={() => navigateToInstitution(selectedInst)} className="hover:text-blue-600">
+          <button onClick={() => navigateToInstitution(selectedInst)} className="hover:text-blue-600 dark:hover:text-blue-400">
             {selectedInst.name}
           </button>
           <span>/</span>
-          <span className="font-semibold text-gray-900">{selectedDept}</span>
+          <span className="font-semibold text-gray-900 dark:text-white">{selectedDept}</span>
         </div>
 
-        <div className="bg-white border border-gray-200 p-8 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-8 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
           <div>
-            <p className="text-gray-500 font-medium text-sm mb-1">{selectedInst.name}</p>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-gray-900">{selectedDept}</h2>
-            <p className="text-gray-500 text-sm">{deptProfs.length} Giảng viên có sẵn để đánh giá.</p>
+            <p className="text-gray-500 dark:text-gray-400 font-medium text-sm mb-1">{selectedInst.name}</p>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-gray-900 dark:text-white">{selectedDept}</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{deptProfs.length} Giảng viên có sẵn để đánh giá.</p>
           </div>
           <button 
             onClick={() => {
@@ -746,21 +746,21 @@ export default function App() {
           </button>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
           <div className="relative">
             <input 
               type="text"
               value={deptSearchTerm}
               onChange={(e) => setDeptSearchTerm(e.target.value)}
               placeholder="Tìm kiếm giảng viên trong khoa..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none font-medium text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent text-gray-900 dark:text-white outline-none font-medium text-sm focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredDeptProfs.length === 0 ? (
-            <div className="col-span-2 bg-white p-8 rounded-2xl text-center text-gray-500 border border-gray-200">
+            <div className="col-span-2 bg-white dark:bg-gray-800 p-8 rounded-2xl text-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
               Không tìm thấy giảng viên phù hợp.
             </div>
           ) : (
@@ -770,26 +770,26 @@ export default function App() {
                 <div 
                   key={prof.id}
                   onClick={() => navigateToProfessor(selectedInst, selectedDept, prof)}
-                  className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                  className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{prof.name}</h3>
-                      <div className="px-3 py-1.5 rounded-xl font-black text-base bg-green-100 text-green-800 border border-green-200">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">{prof.name}</h3>
+                      <div className="px-3 py-1.5 rounded-xl font-black text-base bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800">
                         {stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : 'N/A'}
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mb-4">{stats.total_ratings} Đánh giá</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{stats.total_ratings} Đánh giá</p>
                   </div>
                   
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 text-sm">
+                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700 text-sm">
                     <div>
-                      <span className="text-xs text-gray-500 block">ĐỘ KHÓ</span>
-                      <span className="font-bold text-gray-800">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block">ĐỘ KHÓ</span>
+                      <span className="font-bold text-gray-800 dark:text-gray-200">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-xs text-gray-500 block">HỌC LẠI</span>
-                      <span className="font-bold text-gray-800">{stats.would_take_again_pct}%</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block">HỌC LẠI</span>
+                      <span className="font-bold text-gray-800 dark:text-gray-200">{stats.would_take_again_pct}%</span>
                     </div>
                   </div>
                 </div>
@@ -800,7 +800,7 @@ export default function App() {
       </div>
     );
   };
-
+  
   const renderProfessor = () => {
     if (!selectedProf || !selectedInst) return null;
     const stats = calculateProfStats(selectedProf.id);
@@ -817,26 +817,26 @@ export default function App() {
 
     return (
       <div className="space-y-8 animate-fadeIn">
-        <div className="flex items-center text-sm text-gray-500 gap-2">
-          <button onClick={navigateToHome} className="hover:text-blue-600 flex items-center gap-1">
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 gap-2">
+          <button onClick={navigateToHome} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1">
             Trang chủ
           </button>
           <span>/</span>
-          <button onClick={() => navigateToDepartment(selectedInst, selectedProf.department)} className="hover:text-blue-600">
+          <button onClick={() => navigateToDepartment(selectedInst, selectedProf.department)} className="hover:text-blue-600 dark:hover:text-blue-400">
             {selectedProf.department}
           </button>
           <span>/</span>
-          <span className="font-semibold text-gray-900">{selectedProf.name}</span>
+          <span className="font-semibold text-gray-900 dark:text-white">{selectedProf.name}</span>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-colors">
           <div className="flex items-center gap-6">
-            <div className="bg-green-100 text-green-800 font-black text-4xl p-6 rounded-2xl min-w-[100px] text-center border border-green-200">
+            <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 font-black text-4xl p-6 rounded-2xl min-w-[100px] text-center border border-green-200 dark:border-green-800">
               {stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : 'N/A'}
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-500 mb-1">Giảng viên khoa {selectedProf.department} • {selectedProf.university}</p>
-              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">{selectedProf.name}</h2>
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Giảng viên khoa {selectedProf.department} • {selectedProf.university}</p>
+              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">{selectedProf.name}</h2>
               <p className="text-xs text-gray-400 mt-1">Dựa trên {stats.total_ratings} đánh giá</p>
             </div>
           </div>
@@ -851,13 +851,13 @@ export default function App() {
           </button>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <span className="text-sm font-bold text-gray-700 whitespace-nowrap">Lọc theo thẻ:</span>
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">Lọc theo thẻ:</span>
             <select 
               value={profTagFilter} 
               onChange={(e) => setProfTagFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium outline-none bg-gray-50 focus:bg-white"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium outline-none bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="all">Tất cả thẻ</option>
               {selectedProf.tags?.map((t, idx) => (
@@ -867,11 +867,11 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <span className="text-sm font-bold text-gray-700 whitespace-nowrap">Sắp xếp:</span>
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">Sắp xếp:</span>
             <select 
               value={profSort} 
               onChange={(e) => setProfSort(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium outline-none bg-gray-50 focus:bg-white"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium outline-none bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="newest">Mới nhất</option>
               <option value="highest-quality">Chất lượng cao nhất</option>
@@ -882,66 +882,66 @@ export default function App() {
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-2xl font-black text-gray-900">Đánh giá từ sinh viên</h3>
+          <h3 className="text-2xl font-black text-gray-900 dark:text-white">Đánh giá từ sinh viên</h3>
           {reviews.length === 0 ? (
-            <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-300 text-center text-gray-500">
+            <div className="bg-white dark:bg-gray-800 p-12 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
               Không tìm thấy đánh giá phù hợp với bộ lọc.
             </div>
           ) : (
             reviews.map(rev => (
-              <div key={rev.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+              <div key={rev.id} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                   <div className="flex gap-3">
-                    <div className="bg-green-100 border border-green-200 rounded-xl p-3 text-center min-w-[70px]">
-                      <span className="block text-xs text-gray-500 uppercase font-bold mb-1">Chất lượng</span>
-                      <span className="text-xl font-black text-green-800">{rev.teaching_rating}.0</span>
+                    <div className="bg-green-100 dark:bg-green-900/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center min-w-[70px]">
+                      <span className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Chất lượng</span>
+                      <span className="text-xl font-black text-green-800 dark:text-green-300">{rev.teaching_rating}.0</span>
                     </div>
-                    <div className="bg-gray-100 border border-gray-200 rounded-xl p-3 text-center min-w-[70px]">
-                      <span className="block text-xs text-gray-500 uppercase font-bold mb-1">Độ khó</span>
-                      <span className="text-xl font-black text-gray-700">{rev.difficulty_rating}.0</span>
+                    <div className="bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-center min-w-[70px]">
+                      <span className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Độ khó</span>
+                      <span className="text-xl font-black text-gray-700 dark:text-gray-300">{rev.difficulty_rating}.0</span>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <h4 className="text-lg font-bold text-gray-900">{rev.course}</h4>
-                    <p className="text-xs text-gray-500">Bởi: {rev.user_email || 'Sinh viên'}</p>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">{rev.course}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Bởi: {rev.user_email || 'Sinh viên'}</p>
                     <span className="text-xs text-gray-400">{new Date(rev.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-xs font-semibold text-gray-600">
-                  <span className="bg-gray-100 px-3 py-1 rounded-lg">Tính điểm: <strong className="text-gray-900">{rev.for_credit}</strong></span>
-                  <span className="bg-gray-100 px-3 py-1 rounded-lg">Học lại: <strong className="text-gray-900">{rev.would_take_again ? 'Có' : 'Không'}</strong></span>
-                  <span className="bg-gray-100 px-3 py-1 rounded-lg">Điểm số: <strong className="text-gray-900">{rev.grade}</strong></span>
-                  <span className="bg-gray-100 px-3 py-1 rounded-lg">Giáo trình: <strong className="text-gray-900">{rev.textbook}</strong></span>
+                <div className="flex flex-wrap gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  <span className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">Tính điểm: <strong className="text-gray-900 dark:text-white">{rev.for_credit}</strong></span>
+                  <span className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">Học lại: <strong className="text-gray-900 dark:text-white">{rev.would_take_again ? 'Có' : 'Không'}</strong></span>
+                  <span className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">Điểm số: <strong className="text-gray-900 dark:text-white">{rev.grade}</strong></span>
+                  <span className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">Giáo trình: <strong className="text-gray-900 dark:text-white">{rev.textbook}</strong></span>
                 </div>
 
-                <p className="text-gray-800 text-base font-medium leading-relaxed">{rev.comment}</p>
+                <p className="text-gray-800 dark:text-gray-200 text-base font-medium leading-relaxed">{rev.comment}</p>
 
                 {rev.tags && rev.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     {rev.tags.map((t, idx) => (
-                      <span key={idx} className="bg-gray-100 text-gray-700 font-bold text-xs px-3 py-1.5 rounded-xl uppercase tracking-wider">
+                      <span key={idx} className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs px-3 py-1.5 rounded-xl uppercase tracking-wider">
                         {t}
                       </span>
                     ))}
                   </div>
                 )}
 
-                <div className="flex justify-between items-center pt-4 border-t border-gray-100 text-sm text-gray-500">
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => {
                         if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
                         setProfReviews(profReviews.map(r => r.id === rev.id ? { ...r, helpful: (r.helpful || 0) + 1 } : r));
                       }}
-                      className="hover:text-blue-600 font-medium flex items-center gap-1"
+                      className="hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center gap-1"
                     >
                       Hữu ích 👍 {rev.helpful || 0}
                     </button>
                     <span>👎 {rev.not_helpful || 0}</span>
                   </div>
-                  <button className="hover:text-red-600">🚩 Báo cáo</button>
+                  <button className="hover:text-red-600 dark:hover:text-red-400">🚩 Báo cáo</button>
                 </div>
               </div>
             ))
@@ -992,132 +992,132 @@ export default function App() {
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fadeIn py-6">
         <div>
-          <h2 className="text-3xl font-black text-gray-900">{selectedProf.name}</h2>
-          <p className="text-lg font-bold text-gray-700 mt-1">Viết Đánh Giá</p>
-          <p className="text-sm text-gray-500 mt-1">{selectedProf.department} • <span className="underline">{selectedProf.university}</span></p>
-          <p className="text-xs text-blue-600 font-bold mt-1">Đang đăng nhập với tư cách: {currentUser?.email}</p>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white">{selectedProf.name}</h2>
+          <p className="text-lg font-bold text-gray-700 dark:text-gray-300 mt-1">Viết Đánh Giá</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedProf.department} • <span className="underline">{selectedProf.university}</span></p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1">Đang đăng nhập với tư cách: {currentUser?.email}</p>
         </div>
 
         {feedbackMsg.text && (
-          <div className={`p-4 rounded-xl text-sm font-medium ${feedbackMsg.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`}>
+          <div className={`p-4 rounded-xl text-sm font-medium ${feedbackMsg.type === 'error' ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' : 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'}`}>
             {feedbackMsg.text}
           </div>
         )}
 
         <form onSubmit={handleSub} className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <label className="block text-base font-bold text-gray-900">Mã môn học *</label>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+            <label className="block text-base font-bold text-gray-900 dark:text-white">Mã môn học *</label>
             <input 
               type="text"
               value={reviewCourse}
               onChange={(e) => setReviewCourse(e.target.value)}
               placeholder="VD: CS101, MTH101..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             />
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer pt-2">
-              <input type="checkbox" checked={isOnlineCourse} onChange={(e) => setIsOnlineCourse(e.target.checked)} className="w-4 h-4 rounded" />
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer pt-2">
+              <input type="checkbox" checked={isOnlineCourse} onChange={(e) => setIsOnlineCourse(e.target.checked)} className="w-4 h-4 rounded dark:bg-gray-700 dark:border-gray-600" />
               💻 Đây là khóa học trực tuyến
             </label>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-center">
-            <label className="block text-base font-bold text-gray-900 text-left">Đánh giá giảng viên *</label>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 text-center transition-colors">
+            <label className="block text-base font-bold text-gray-900 dark:text-white text-left">Đánh giá giảng viên *</label>
             <div className="flex justify-center gap-3">
               {[1, 2, 3, 4, 5].map(num => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => setReviewTeaching(num)}
-                  className={`w-16 h-14 rounded-xl font-black text-lg transition-all border ${reviewTeaching === num ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                  className={`w-16 h-14 rounded-xl font-black text-lg transition-all border ${reviewTeaching === num ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
                 >
                   {num}
                 </button>
               ))}
             </div>
-            <div className="flex justify-between text-xs text-gray-400 px-2 font-medium">
+            <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 px-2 font-medium">
               <span>1 - Rất tệ</span>
               <span>5 - Tuyệt vời</span>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-center">
-            <label className="block text-base font-bold text-gray-900 text-left">Độ khó của môn học *</label>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 text-center transition-colors">
+            <label className="block text-base font-bold text-gray-900 dark:text-white text-left">Độ khó của môn học *</label>
             <div className="flex justify-center gap-3">
               {[1, 2, 3, 4, 5].map(num => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => setReviewDifficulty(num)}
-                  className={`w-16 h-14 rounded-xl font-black text-lg transition-all border ${reviewDifficulty === num ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                  className={`w-16 h-14 rounded-xl font-black text-lg transition-all border ${reviewDifficulty === num ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
                 >
                   {num}
                 </button>
               ))}
             </div>
-            <div className="flex justify-between text-xs text-gray-400 px-2 font-medium">
+            <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 px-2 font-medium">
               <span>1 - Rất dễ</span>
               <span>5 - Rất khó</span>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <label className="block text-base font-bold text-gray-900">Bạn có muốn học lại với giảng viên này không? *</label>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+            <label className="block text-base font-bold text-gray-900 dark:text-white">Bạn có muốn học lại với giảng viên này không? *</label>
             <div className="flex gap-4">
               <button 
                 type="button"
                 onClick={() => setReviewWouldTakeAgain(true)}
-                className={`flex-1 py-3 rounded-xl font-bold border transition-all ${reviewWouldTakeAgain ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}
+                className={`flex-1 py-3 rounded-xl font-bold border transition-all ${reviewWouldTakeAgain ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'}`}
               >
                 Có
               </button>
               <button 
                 type="button"
                 onClick={() => setReviewWouldTakeAgain(false)}
-                className={`flex-1 py-3 rounded-xl font-bold border transition-all ${!reviewWouldTakeAgain ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}
+                className={`flex-1 py-3 rounded-xl font-bold border transition-all ${!reviewWouldTakeAgain ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'}`}
               >
                 Không
               </button>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6 transition-colors">
             <div className="flex justify-between items-center">
-              <span className="font-bold text-gray-900 text-sm">Môn học này có tính tín chỉ?</span>
+              <span className="font-bold text-gray-900 dark:text-white text-sm">Môn học này có tính tín chỉ?</span>
               <div className="flex gap-2">
                 {['Có', 'Không'].map(opt => (
-                  <button key={opt} type="button" onClick={() => setReviewfor_credit(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewfor_credit === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>{opt}</button>
+                  <button key={opt} type="button" onClick={() => setReviewfor_credit(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewfor_credit === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'}`}>{opt}</button>
                 ))}
               </div>
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="font-bold text-gray-900 text-sm">Giảng viên có dùng giáo trình?</span>
+              <span className="font-bold text-gray-900 dark:text-white text-sm">Giảng viên có dùng giáo trình?</span>
               <div className="flex gap-2">
                 {['Có', 'Không'].map(opt => (
-                  <button key={opt} type="button" onClick={() => setReviewTextbook(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewTextbook === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>{opt}</button>
+                  <button key={opt} type="button" onClick={() => setReviewTextbook(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewTextbook === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'}`}>{opt}</button>
                 ))}
               </div>
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="font-bold text-gray-900 text-sm">Điểm danh có bắt buộc?</span>
+              <span className="font-bold text-gray-900 dark:text-white text-sm">Điểm danh có bắt buộc?</span>
               <div className="flex gap-2">
                 {['Có', 'Không'].map(opt => (
-                  <button key={opt} type="button" onClick={() => setReviewAttendance(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewAttendance === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>{opt}</button>
+                  <button key={opt} type="button" onClick={() => setReviewAttendance(opt)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${reviewAttendance === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'}`}>{opt}</button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-2">Điểm số đạt được</label>
-              <select value={reviewGrade} onChange={(e) => setReviewGrade(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none bg-gray-50 font-medium">
+              <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">Điểm số đạt được</label>
+              <select value={reviewGrade} onChange={(e) => setReviewGrade(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 outline-none bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-medium transition-colors">
                 {['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'Đạt', 'Chưa hoàn thành'].map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <label className="block text-base font-bold text-gray-900">Chọn tối đa 3 thẻ đặc điểm</label>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+            <label className="block text-base font-bold text-gray-900 dark:text-white">Chọn tối đa 3 thẻ đặc điểm</label>
             <div className="flex flex-wrap gap-2">
               {['Nghiêm khắc', 'Bài giảng tuyệt vời', 'Tiêu chí chấm rõ ràng', 'Phản hồi tốt', 'Truyền cảm hứng', 'Nhiều bài tập', 'Tận tâm', 'Được tôn trọng'].map(t => {
                 const selected = reviewSelectedTags.includes(t);
@@ -1129,7 +1129,7 @@ export default function App() {
                       if (selected) setReviewSelectedTags(reviewSelectedTags.filter(x => x !== t));
                       else if (reviewSelectedTags.length < 3) setReviewSelectedTags([...reviewSelectedTags, t]);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
                   >
                     {t}
                   </button>
@@ -1138,14 +1138,14 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <label className="block text-base font-bold text-gray-900">Viết nhận xét chi tiết *</label>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+            <label className="block text-base font-bold text-gray-900 dark:text-white">Viết nhận xét chi tiết *</label>
             <textarea
               rows={4}
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value)}
               placeholder="Bạn muốn sinh viên khác biết điều gì về giảng viên này?"
-              className="w-full p-4 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             ></textarea>
           </div>
 
@@ -1156,7 +1156,7 @@ export default function App() {
       </div>
     );
   };
-
+  
   const renderAddInstReview = () => {
     if (!selectedInst) return null;
 
@@ -1192,49 +1192,49 @@ export default function App() {
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fadeIn py-6">
         <div>
-          <p className="text-sm font-semibold text-gray-500">{selectedInst.location}</p>
-          <h2 className="text-3xl font-black text-gray-900">{selectedInst.name}</h2>
-          <p className="text-lg font-bold text-gray-700 mt-1">Viết Đánh Giá Cơ Sở Đào Tạo</p>
-          <p className="text-xs text-blue-600 font-bold mt-1">Đang đăng nhập với tư cách: {currentUser?.email}</p>
+          <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">{selectedInst.location}</p>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white">{selectedInst.name}</h2>
+          <p className="text-lg font-bold text-gray-700 dark:text-gray-300 mt-1">Viết Đánh Giá Cơ Sở Đào Tạo</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1">Đang đăng nhập với tư cách: {currentUser?.email}</p>
         </div>
 
         {feedbackMsg.text && (
-          <div className={`p-4 rounded-xl text-sm font-medium ${feedbackMsg.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`}>
+          <div className={`p-4 rounded-xl text-sm font-medium ${feedbackMsg.type === 'error' ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' : 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'}`}>
             {feedbackMsg.text}
           </div>
         )}
 
         <form onSubmit={handleInstSub} className="space-y-6">
           {criteriaList.map(criteria => (
-            <div key={criteria} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-              <label className="block text-base font-bold text-gray-900">{criteria} *</label>
+            <div key={criteria} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+              <label className="block text-base font-bold text-gray-900 dark:text-white">{criteria} *</label>
               <div className="flex gap-3">
                 {[1, 2, 3, 4, 5].map(num => (
                   <button
                     key={num}
                     type="button"
                     onClick={() => setInstMetrics({ ...instMetrics, [criteria]: num })}
-                    className={`flex-1 h-12 rounded-xl font-bold transition-all border ${instMetrics[criteria] === num ? 'bg-blue-600 text-white border-blue-600 shadow' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                    className={`flex-1 h-12 rounded-xl font-bold transition-all border ${instMetrics[criteria] === num ? 'bg-blue-600 text-white border-blue-600 shadow' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
                   >
                     {num}
                   </button>
                 ))}
               </div>
-              <div className="flex justify-between text-xs text-gray-400 font-medium">
+              <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 font-medium">
                 <span>1 - Rất tệ</span>
                 <span>5 - Tuyệt vời</span>
               </div>
             </div>
           ))}
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <label className="block text-base font-bold text-gray-900">Nhận xét chi tiết *</label>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+            <label className="block text-base font-bold text-gray-900 dark:text-white">Nhận xét chi tiết *</label>
             <textarea
               rows={4}
               value={instReviewComment}
               onChange={(e) => setInstReviewComment(e.target.value)}
               placeholder="Chia sẻ trải nghiệm thực tế của bạn tại trường này..."
-              className="w-full p-4 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             ></textarea>
           </div>
 
@@ -1332,29 +1332,29 @@ export default function App() {
 
     return (
       <div className="max-w-2xl mx-auto space-y-8 animate-fadeIn py-6">
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 space-y-6">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6 transition-colors">
           <div>
-            <h2 className="text-2xl font-black text-gray-900">Đề xuất Thêm mới / Chỉnh sửa Dữ liệu</h2>
-            <p className="text-sm text-gray-500 mt-1">Gửi đề xuất thêm trường, khoa hoặc giảng viên mới vào hệ thống.</p>
-            <p className="text-xs text-blue-600 font-bold mt-1">Đang đăng nhập với tư cách: {currentUser?.email}</p>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Đề xuất Thêm mới / Chỉnh sửa Dữ liệu</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gửi đề xuất thêm trường, khoa hoặc giảng viên mới vào hệ thống.</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1">Đang đăng nhập với tư cách: {currentUser?.email}</p>
           </div>
 
           {feedbackMsg.text && (
-            <div className={`p-4 rounded-xl text-sm font-medium ${feedbackMsg.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`}>
+            <div className={`p-4 rounded-xl text-sm font-medium ${feedbackMsg.type === 'error' ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' : 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'}`}>
               {feedbackMsg.text}
             </div>
           )}
 
           <form onSubmit={handleSubmitSuggest} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Loại đề xuất *</label>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Loại đề xuất *</label>
               <select 
                 value={suggestionType} 
                 onChange={(e) => {
                   setSuggestionType(e.target.value as any);
                   setFeedbackMsg({ type: '', text: '' });
                 }} 
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none bg-gray-50 font-medium focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-colors"
               >
                 <option value="professor">Giảng viên mới</option>
                 <option value="institution">Trường đại học mới</option>
@@ -1366,13 +1366,13 @@ export default function App() {
             {suggestionType === 'professor' && (
               <div className="space-y-4 pt-2">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên giảng viên *</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Tên giảng viên *</label>
                   <input 
                     type="text"
                     value={suggProfName}
                     onChange={(e) => setSuggProfName(e.target.value)}
                     placeholder="VD: PGS. TS Nguyễn Văn B"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
                     required
                   />
                 </div>
@@ -1401,25 +1401,25 @@ export default function App() {
             {suggestionType === 'institution' && (
               <div className="space-y-4 pt-2">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên đầy đủ trường Đại học *</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Tên đầy đủ trường Đại học *</label>
                   <input 
                     type="text"
                     value={suggInstName}
                     onChange={(e) => setSuggInstName(e.target.value)}
                     placeholder="VD: Trường Đại học Ngoại thương"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên viết tắt / Mã trường *</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Tên viết tắt / Mã trường *</label>
                   <input 
                     type="text"
                     value={suggInstShortName}
                     onChange={(e) => setSuggInstShortName(e.target.value)}
                     placeholder="VD: FTU"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
                     required
                   />
                 </div>
@@ -1433,13 +1433,13 @@ export default function App() {
                 />
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Danh sách Khoa / Viện (không bắt buộc, phân cách bằng dấu phẩy)</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Danh sách Khoa / Viện (không bắt buộc, phân cách bằng dấu phẩy)</label>
                   <input 
                     type="text"
                     value={suggInstDepartmentsText}
                     onChange={(e) => setSuggInstDepartmentsText(e.target.value)}
                     placeholder="VD: Kinh tế Quốc tế, Quản trị Kinh doanh, Tài chính - Ngân hàng"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
                   />
                 </div>
               </div>
@@ -1456,13 +1456,13 @@ export default function App() {
                 />
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Tên Khoa / Viện mới *</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Tên Khoa / Viện mới *</label>
                   <input 
                     type="text"
                     value={suggNewDeptName}
                     onChange={(e) => setSuggNewDeptName(e.target.value)}
                     placeholder="VD: Khoa Khởi nghiệp và Đổi mới Sáng tạo"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
                     required
                   />
                 </div>
@@ -1470,13 +1470,13 @@ export default function App() {
             )}
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Ghi chú thêm / Lý do đề xuất</label>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Ghi chú thêm / Lý do đề xuất</label>
               <textarea 
                 rows={3}
                 value={suggestionContent}
                 onChange={(e) => setSuggestionContent(e.target.value)}
                 placeholder="Cung cấp thêm thông tin xác thực hoặc link bài báo/website..."
-                className="w-full p-4 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
               ></textarea>
             </div>
 
@@ -1484,7 +1484,7 @@ export default function App() {
               <button type="submit" className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow transition-all">
                 Gửi đề xuất xét duyệt
               </button>
-              <button type="button" onClick={navigateToHome} className="px-6 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all">
+              <button type="button" onClick={navigateToHome} className="px-6 py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition-all">
                 Trang chủ
               </button>
             </div>
@@ -1492,22 +1492,22 @@ export default function App() {
         </div>
 
         {suggestions.length > 0 && (
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">Danh sách đề xuất của bạn ({suggestions.length})</h3>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Danh sách đề xuất của bạn ({suggestions.length})</h3>
             <div className="space-y-3">
               {suggestions.map((s, idx) => (
-                <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center">
+                <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700 flex justify-between items-center transition-colors">
                   <div>
-                    <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-lg mb-1 uppercase tracking-wider">{s.type}</span>
-                    <h4 className="font-bold text-gray-900">{s.targetName}</h4>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <span className="inline-block bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400 text-xs font-bold px-2.5 py-1 rounded-lg mb-1 uppercase tracking-wider">{s.type}</span>
+                    <h4 className="font-bold text-gray-900 dark:text-white">{s.targetName}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {s.university ? `${s.university} ` : ''} 
                       {s.department ? `• ${s.department}` : ''}
                       {s.location ? ` • ${s.location}` : ''}
                     </p>
-                    <p className="text-[10px] text-gray-400 mt-1">Gửi bởi: {s.user_email}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Gửi bởi: {s.user_email}</p>
                   </div>
-                  <span className="text-xs font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">{s.status}</span>
+                  <span className="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-3 py-1 rounded-full">{s.status}</span>
                 </div>
               ))}
             </div>
@@ -1516,7 +1516,7 @@ export default function App() {
       </div>
     );
   };
-
+  
   if (loadingSession) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50 text-gray-600 font-medium">
