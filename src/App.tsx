@@ -585,19 +585,19 @@ export default function App() {
     const reviews = instReviews.filter(r => r.inst_id === selectedInst.id);
 
     const leftCriteria = [
-      { key: 'Uy tín trường', label: 'Reputation', icon: '👨‍🎓' },
-      { key: 'Cơ hội việc làm', label: 'Opportunities', icon: '📊' },
-      { key: 'Địa điểm', label: 'Location', icon: '📍' },
-      { key: 'Câu lạc bộ', label: 'Clubs', icon: '🏆' },
-      { key: 'Cơ sở vật chất', label: 'Facilities', icon: '🏋️' }
+      { key: 'Uy tín trường', label: 'Uy tín', icon: '👨‍🎓' },
+      { key: 'Cơ hội việc làm', label: 'Cơ hội việc làm', icon: '📊' },
+      { key: 'Địa điểm', label: 'Địa điểm', icon: '📍' },
+      { key: 'Câu lạc bộ', label: 'CLB', icon: '🏆' },
+      { key: 'Cơ sở vật chất', label: 'Cơ sở vật chất', icon: '🏋️' }
     ];
 
     const rightCriteria = [
-      { key: 'Độ hài lòng', label: 'Happiness', icon: '😊' },
-      { key: 'Đời sống xã hội', label: 'Social', icon: '👥' },
+      { key: 'Độ hài lòng', label: 'Độ hài lòng', icon: '😊' },
+      { key: 'Đời sống xã hội', label: 'Cộng đồng', icon: '👥' },
       { key: 'Mạng Internet', label: 'Internet', icon: '📶' },
-      { key: 'Đồ ăn', label: 'Food', icon: '🍽️' },
-      { key: 'An toàn', label: 'Safety', icon: '🛡️' }
+      { key: 'Đồ ăn', label: 'Đồ ăn', icon: '🍽️' },
+      { key: 'An toàn', label: 'An toàn', icon: '🛡️' }
     ];
 
     const getScoreColor = (val: number) => {
@@ -636,13 +636,13 @@ export default function App() {
               }}
               className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl shadow transition-all text-sm"
             >
-              Rate
+              Đánh giá
             </button>
             <button 
               onClick={() => alert('Compare feature coming soon!')}
               className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl shadow transition-all text-sm"
             >
-              Compare
+              So sánh
             </button>
           </div>
         </div>
@@ -651,7 +651,7 @@ export default function App() {
         <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center transition-colors">
           <div className="flex flex-col items-center justify-center p-6 border-b lg:border-b-0 lg:border-r border-gray-100 dark:border-gray-700">
             <span className="text-6xl font-black text-gray-900 dark:text-white tracking-tight">{stats.overall > 0 ? stats.overall.toFixed(1) : '0.0'}</span>
-            <span className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-2">Overall Quality</span>
+            <span className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-2">trên 5</span>
           </div>
 
           <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
@@ -966,7 +966,7 @@ export default function App() {
                 <span className="text-6xl font-black text-gray-900 dark:text-white">{stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : '0.0'}</span>
                 <span className="text-gray-400 font-bold text-lg">/ 5</span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Overall Quality Based on {stats.total_ratings} ratings</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Kết quả dựa trên {stats.total_ratings} đánh giá</p>
             </div>
 
             <div>
@@ -975,19 +975,19 @@ export default function App() {
                 <button title="Bookmark" className="text-gray-400 hover:text-blue-600">🔖</button>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                Professor in the <span className="underline font-semibold">{selectedProf.department}</span> department at <span className="underline font-semibold">{selectedProf.university}</span>
+                Giảng viên khoa <span className="underline font-semibold">{selectedProf.department}</span> tại <span className="underline font-semibold">{selectedProf.university}</span>
               </p>
             </div>
 
             <div className="flex justify-between items-center py-4 border-y border-gray-100 dark:border-gray-700">
               <div>
                 <span className="text-2xl font-black text-gray-900 dark:text-white">{stats.would_take_again_pct}%</span>
-                <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">Would take again</span>
+                <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">Sẽ học tiếp</span>
               </div>
               <div className="h-10 w-[1px] bg-gray-200 dark:bg-gray-700"></div>
               <div>
                 <span className="text-2xl font-black text-gray-900 dark:text-white">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : '0.0'}</span>
-                <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">Level of Difficulty</span>
+                <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">Độ khó</span>
               </div>
             </div>
 
@@ -999,33 +999,33 @@ export default function App() {
                 }}
                 className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow transition-all text-sm flex items-center justify-center gap-2"
               >
-                Rate →
+                Đánh giá →
               </button>
               <button 
                 onClick={() => alert('Compare feature coming soon!')}
                 className="flex-1 py-3 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 border border-blue-500 hover:bg-blue-50 dark:hover:bg-gray-800 font-bold rounded-2xl transition-all text-sm flex items-center justify-center"
               >
-                Compare
+                So sánh
               </button>
             </div>
 
             <button onClick={() => alert('Faculty claim profile link')} className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline text-left">
-              I'm Professor {selectedProf.name.split(' ').pop()}
+              Tôi là {selectedProf.name.split(' ').pop()}
             </button>
           </div>
 
           {/* Right Column: Rating Distribution & Similar Professors */}
           <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6 transition-colors">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Rating Distribution</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tổng hợp đánh giá</h3>
               
               <div className="space-y-3">
                 {[
-                  { label: 'Awesome 5', count: distribution[5], val: 5 },
-                  { label: 'Great 4', count: distribution[4], val: 4 },
-                  { label: 'Good 3', count: distribution[3], val: 3 },
-                  { label: 'OK 2', count: distribution[2], val: 2 },
-                  { label: 'Awful 1', count: distribution[1], val: 1 }
+                  { label: '5 - Tuyệt vời', count: distribution[5], val: 5 },
+                  { label: '4 - Tốt', count: distribution[4], val: 4 },
+                  { label: '3 - Ổn', count: distribution[3], val: 3 },
+                  { label: '2 - OK', count: distribution[2], val: 2 },
+                  { label: '1 - Tồi', count: distribution[1], val: 1 }
                 ].map(item => (
                   <div key={item.val} className="flex items-center gap-4 text-sm">
                     <span className="w-24 font-medium text-gray-600 dark:text-gray-400 text-xs">{item.label}</span>
@@ -1043,7 +1043,7 @@ export default function App() {
 
             {/* Similar Professors Card */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Similar Professors</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Giảng viên tương tự</h3>
               {similarProfs.length === 0 ? (
                 <p className="text-xs text-gray-400">Không có giảng viên tương tự.</p>
               ) : (
