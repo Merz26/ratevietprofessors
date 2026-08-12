@@ -544,7 +544,29 @@ export default function App() {
             );
           })}
         </div>
+        {/* MOBILE-FRIENDLY PAGINATION */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-4 mt-10">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-40 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+            >
+              ← Trước
+            </button>
+            
+            <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+              Trang {currentPage} / {totalPages}
+            </span>
 
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-40 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+            >
+              Sau →
+            </button>
+          </div>
       </div>
     );
   };
