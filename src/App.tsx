@@ -566,7 +566,8 @@ export default function App() {
             >
               Sau →
             </button>
-          </div>
+        </div>
+
       </div>
     );
   };
