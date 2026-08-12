@@ -172,24 +172,25 @@ export default function App() {
   const [profReviews, setProfReviews] = useState<ProfessorReview[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
-  // -- UI State --
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  
+    
   // -- Routing / Navigation State --
   const [currentView, setCurrentView] = useState<string>('home');
   const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
 
+  // -- UI State --
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
   // -- Search, Sort & Filter State --
   const [searchTerm, setSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
   const [profSort, setProfSort] = useState('newest');
   const [profTagFilter, setProfTagFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [sortOption, setSortOption] = useState<'default' | 'rating' | 'reviews'>('default');
-  const itemsPerPage = 28;
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<'name' | 'rating' | 'reviews'>('name');
+  const entriesPerPage = 20;
+  
   // -- Form State: Dynamic Suggestions --
   const [suggestionType, setSuggestionType] = useState<'professor' | 'institution' | 'department'>('professor');
   const [suggProfName, setSuggProfName] = useState('');
@@ -235,7 +236,12 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  //login
+  // Reset pagination if search term or sort filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy]);
+  
+  //Auth Session Handler
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -281,6 +287,7 @@ export default function App() {
     fetchData();
   }, []);
 
+  // Browser History API Link Handler
   useEffect(() => {
     const handlePopState = () => {
       setCurrentView('home'); 
@@ -409,25 +416,36 @@ export default function App() {
   // ==========================================
 
   const renderAuthModal = () => (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
-      <h2 className="text-2xl font-bold mb-4">{authView === 'login' ? 'Đăng nhập' : 'Đăng ký'}</h2>
+    <div className="max-w-md mx-auto mt-10 p-6 rounded-2xl shadow-sm transition-colors duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+        {authView === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+      </h2>
       {feedbackMsg.text && (
-        <div className={`p-3 mb-4 rounded-xl text-sm font-bold ${feedbackMsg.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+        <div className={`p-3 mb-4 rounded-xl text-sm font-bold ${feedbackMsg.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'}`}>
           {feedbackMsg.text}
         </div>
       )}
       <form onSubmit={authView === 'login' ? handleLogin : handleSignup} className="space-y-4">
         {authView === 'signup' && (
-          <input type="text" placeholder="Họ và tên" value={authName} onChange={e => setAuthName(e.target.value)} className="w-full p-3 border rounded-xl outline-none focus:border-blue-500" required />
+          <input 
+            type="text" placeholder="Họ và tên" value={authName} onChange={e => setAuthName(e.target.value)} 
+            className="w-full p-3 rounded-xl outline-none focus:border-brand transition-colors bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" required 
+          />
         )}
-        <input type="email" placeholder="Email (đuôi .edu.vn)" value={authEmail} onChange={e => setAuthEmail(e.target.value)} className="w-full p-3 border rounded-xl outline-none focus:border-blue-500" required />
-        <input type="password" placeholder="Mật khẩu" value={authPassword} onChange={e => setAuthPassword(e.target.value)} className="w-full p-3 border rounded-xl outline-none focus:border-blue-500" required />
-        <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all">
+        <input 
+          type="email" placeholder="Email (đuôi .edu.vn)" value={authEmail} onChange={e => setAuthEmail(e.target.value)} 
+          className="w-full p-3 rounded-xl outline-none focus:border-brand transition-colors bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" required 
+        />
+        <input 
+          type="password" placeholder="Mật khẩu" value={authPassword} onChange={e => setAuthPassword(e.target.value)} 
+          className="w-full p-3 rounded-xl outline-none focus:border-brand transition-colors bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" required 
+        />
+        <button type="submit" className="w-full bg-brand text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all">
           {authView === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
         </button>
       </form>
       <div className="mt-4 text-center text-sm">
-        <button onClick={() => { setAuthView(authView === 'login' ? 'signup' : 'login'); setFeedbackMsg({ type: '', text: '' }); }} className="text-blue-600 font-bold hover:underline">
+        <button onClick={() => { setAuthView(authView === 'login' ? 'signup' : 'login'); setFeedbackMsg({ type: '', text: '' }); }} className="text-brand font-bold hover:underline">
           {authView === 'login' ? 'Chưa có tài khoản? Đăng ký ngay' : 'Đã có tài khoản? Đăng nhập'}
         </button>
       </div>
@@ -435,44 +453,82 @@ export default function App() {
   );
 
   const renderHome = () => {
+    // 1. Filter
     const filteredInstitutions = institutions.filter(inst => 
       inst.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       inst.short_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // 2. Sort
+    let sortedInstitutions = [...filteredInstitutions];
+    if (sortBy === 'name') {
+      sortedInstitutions.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'rating') {
+      sortedInstitutions.sort((a, b) => calculateInstStats(b.id).overall - calculateInstStats(a.id).overall);
+    } else if (sortBy === 'reviews') {
+      sortedInstitutions.sort((a, b) => calculateInstStats(b.id).total - calculateInstStats(a.id).total);
+    }
+
+    // 3. Paginate
+    const totalPages = Math.ceil(sortedInstitutions.length / entriesPerPage);
+    const paginatedInstitutions = sortedInstitutions.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+
     return (
       <div className="space-y-8">
         
         {/* HERO / SEARCH SECTION */}
-        <div className="text-center space-y-4 py-10">
+        <div className="text-center space-y-4 pt-10 pb-4">
           {/* Fixed the title so it turns white in Dark Mode! */}
           <h1 className="text-4xl font-black text-gray-900 dark:text-white transition-colors duration-200">
-            Tìm kiếm Trường Đại học của bạn
+            Tìm kiếm Trường Đại học hoặc Cao đẳng của bạn
           </h1>
           <input 
             type="text" 
-            placeholder="Nhập tên trường hoặc từ khóa (VD: HCMUT, Ngoại thương)..." 
+            placeholder="Nhập tên trường (VD: HCMUT, Ngoại thương)..." 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
             className="w-full max-w-2xl px-6 py-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-brand text-lg mx-auto transition-colors duration-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" 
           />
         </div>
+
+        
+        {/* COMPACT SORT BUTTONS */}
+        <div className="flex justify-center items-center gap-2 max-w-lg mx-auto">
+          <button 
+            onClick={() => setSortBy('name')} 
+            className={`flex-1 py-2 px-1 text-xs sm:text-sm font-semibold rounded-xl transition-all border ${sortBy === 'name' ? 'bg-brand border-brand text-white shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+          >
+            A-Z
+          </button>
+          <button 
+            onClick={() => setSortBy('rating')} 
+            className={`flex-1 py-2 px-1 text-xs sm:text-sm font-semibold rounded-xl transition-all border ${sortBy === 'rating' ? 'bg-brand border-brand text-white shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+          >
+            Đánh giá ⭐
+          </button>
+          <button 
+            onClick={() => setSortBy('reviews')} 
+            className={`flex-1 py-2 px-1 text-xs sm:text-sm font-semibold rounded-xl transition-all border ${sortBy === 'reviews' ? 'bg-brand border-brand text-white shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+          >
+            Phổ biến 💬
+          </button>
+        </div>
         
         {/* INSTITUTION CARDS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredInstitutions.map(inst => {
+          {paginatedInstitutions.map(inst => {
             const stats = calculateInstStats(inst.id);
             return (
               <div 
                 key={inst.id} 
                 onClick={() => navigateToInstitution(inst)} 
-                className="p-6 rounded-2xl shadow-sm transition-all cursor-pointer flex flex-col justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand dark:hover:border-brand-light hover:shadow-md group"
+                className="p-6 rounded-2xl shadow-sm transition-all cursor-pointer flex flex-col justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-brand dark:hover:border-blue-400 hover:shadow-md group"
               >
                 <div className="space-y-2">
                   <span className="inline-block bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 font-black px-2 py-0.5 rounded-lg text-xs transition-colors">
                     {inst.short_name}
                   </span>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight group-hover:text-brand dark:group-hover:text-brand-light transition-colors">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight group-hover:text-brand dark:group-hover:text-blue-400 transition-colors">
                     {inst.name}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
@@ -489,6 +545,30 @@ export default function App() {
           })}
         </div>
 
+        {/* MOBILE-FRIENDLY PAGINATION */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-4 mt-10">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-40 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+            >
+              ← Trước
+            </button>
+            
+            <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+              Trang {currentPage} / {totalPages}
+            </span>
+
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 disabled:opacity-40 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+            >
+              Sau →
+            </button>
+         </div>
+        )}
       </div>
     );
   };
