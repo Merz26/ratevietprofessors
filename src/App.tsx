@@ -189,7 +189,6 @@ export default function App() {
   const [profTagFilter, setProfTagFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortBy, setSortBy] = useState<'name' | 'rating' | 'reviews'>('name');
-  const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 20;
   
   // -- Form State: Dynamic Suggestions --
