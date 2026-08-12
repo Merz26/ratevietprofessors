@@ -179,8 +179,11 @@ export default function App() {
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
 
-  // -- UI State --
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // -- UI State (Persistent Dark Mode) --
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark';
+  });
 
   // -- Search, Sort & Filter State --
   const [searchTerm, setSearchTerm] = useState('');
@@ -227,12 +230,14 @@ export default function App() {
   // 3. EFFECTS (LIFECYCLES)
   // ==========================================
 
-  // Effect: Toggle Dark Mode on the HTML root
+  // Effect: Toggle Dark Mode on the HTML root and save to localStorage
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
 
@@ -1532,7 +1537,7 @@ export default function App() {
       {/* 2. HEADER */}
       <header className="bg-brand dark:bg-gray-800 text-white shadow-md sticky top-0 z-50 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="text-xl font-black cursor-pointer tracking-tight flex items-center gap-2" onClick={() => setCurrentView('home')}>
+          <div className="text-xl font-black cursor-pointer tracking-tight flex items-center gap-2" onClick={navigateToHome}>
             🎓 RateVietProfessors
           </div>
           <div className="flex items-center gap-4">
@@ -1574,6 +1579,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
           <p>© {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.</p>
           <div className="mt-4 md:mt-0 flex gap-6 font-medium">
+            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand dark:hover:text-white transition">GitHub</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Về chúng tôi</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Quy tắc cộng đồng</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Bảo mật</a>
