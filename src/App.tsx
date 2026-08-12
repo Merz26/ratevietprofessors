@@ -621,12 +621,6 @@ export default function App() {
           <div>
             <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">{selectedInst.name}</h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{selectedInst.location}</p>
-            <button 
-              onClick={() => navigateToDepartment(selectedInst, selectedInst.departments?.[0] || '')} 
-              className="text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline mt-1 inline-block"
-            >
-              View all Professors
-            </button>
           </div>
           <div className="flex gap-3">
             <button 
