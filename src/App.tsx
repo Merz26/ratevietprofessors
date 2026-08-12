@@ -972,7 +972,6 @@ export default function App() {
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">{selectedProf.name}</h2>
-                <button title="Bookmark" className="text-gray-400 hover:text-blue-600">🔖</button>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                 Giảng viên khoa <span className="underline font-semibold">{selectedProf.department}</span> tại <span className="underline font-semibold">{selectedProf.university}</span>
