@@ -544,6 +544,7 @@ export default function App() {
             );
           })}
         </div>
+
         {/* MOBILE-FRIENDLY PAGINATION */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center space-x-4 mt-10">
@@ -566,8 +567,8 @@ export default function App() {
             >
               Sau →
             </button>
-        </div>
-
+         </div>
+        )}
       </div>
     );
   };
