@@ -29,6 +29,7 @@ export interface InstitutionReview {
   metrics: Record<string, number>;
   helpful: number;
   not_helpful: number;
+  userVote?: 'helpful' | 'not_helpful' | null; // Track user vote locally
 }
 
 export interface ProfessorReview {
@@ -48,6 +49,7 @@ export interface ProfessorReview {
   created_at: string;
   helpful: number;
   not_helpful: number;
+  userVote?: 'helpful' | 'not_helpful' | null; // Track user vote locally
 }
 
 export interface Suggestion {
@@ -285,8 +287,8 @@ export default function App() {
 
       if (instRes.data) setInstitutions(instRes.data);
       if (profRes.data) setProfessors(profRes.data);
-      if (instRevRes.data) setInstReviews(instRevRes.data);
-      if (profRevRes.data) setProfReviews(profRevRes.data);
+      if (instRevRes.data) setInstReviews(instRevRes.data.map(r => ({ ...r, userVote: null })));
+      if (profRevRes.data) setProfReviews(profRevRes.data.map(r => ({ ...r, userVote: null })));
       if (suggRes.data) setSuggestions(suggRes.data);
     }
     fetchData();
@@ -688,20 +690,66 @@ export default function App() {
                     ))}
                   </div>
 
+                  {/* VOTE & REPORT FOOTER (Strict 1 vote per account, right-aligned) */}
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                    <div></div>
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => {
                           if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-                          setInstReviews(instReviews.map(r => r.id === rev.id ? { ...r, helpful: r.helpful + 1 } : r));
+                          setInstReviews(instReviews.map(r => {
+                            if (r.id === rev.id) {
+                              let newHelpful = r.helpful;
+                              let newNotHelpful = r.not_helpful;
+                              let newVote: 'helpful' | 'not_helpful' | null = 'helpful';
+
+                              if (r.userVote === 'helpful') {
+                                newHelpful -= 1;
+                                newVote = null;
+                              } else if (r.userVote === 'not_helpful') {
+                                newNotHelpful -= 1;
+                                newHelpful += 1;
+                              } else {
+                                newHelpful += 1;
+                              }
+                              return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                            }
+                            return r;
+                          }));
                         }}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center gap-1"
+                        className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'helpful' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'hover:text-blue-600 dark:hover:text-blue-400'}`}
                       >
                         Hữu ích 👍 {rev.helpful || 0}
                       </button>
-                      <span>👎 {rev.not_helpful || 0}</span>
+                      <button 
+                        onClick={() => {
+                          if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+                          setInstReviews(instReviews.map(r => {
+                            if (r.id === rev.id) {
+                              let newHelpful = r.helpful;
+                              let newNotHelpful = r.not_helpful;
+                              let newVote: 'helpful' | 'not_helpful' | null = 'not_helpful';
+
+                              if (r.userVote === 'not_helpful') {
+                                newNotHelpful -= 1;
+                                newVote = null;
+                              } else if (r.userVote === 'helpful') {
+                                newHelpful -= 1;
+                                newNotHelpful += 1;
+                              } else {
+                                newNotHelpful += 1;
+                              }
+                              return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                            }
+                            return r;
+                          }));
+                        }}
+                        className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'not_helpful' ? 'text-red-600 dark:text-red-400 font-bold' : 'hover:text-red-600 dark:hover:text-red-400'}`}
+                      >
+                        👎 {rev.not_helpful || 0}
+                      </button>
+                      <a href="https://forms.gle/dummy-google-form-link" target="_blank" rel="noopener noreferrer" className="hover:text-red-600 dark:hover:text-red-400 ml-2">🚩 Báo cáo</a>
                     </div>
-                    <button className="hover:text-red-600 dark:hover:text-red-400">🚩 Báo cáo</button>
                   </div>
                 </div>
               ))}
@@ -933,20 +981,66 @@ export default function App() {
                   </div>
                 )}
 
+                {/* VOTE & REPORT FOOTER (Strict 1 vote per account, right-aligned) */}
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                  <div></div>
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => {
                         if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-                        setProfReviews(profReviews.map(r => r.id === rev.id ? { ...r, helpful: (r.helpful || 0) + 1 } : r));
+                        setProfReviews(profReviews.map(r => {
+                          if (r.id === rev.id) {
+                            let newHelpful = r.helpful || 0;
+                            let newNotHelpful = r.not_helpful || 0;
+                            let newVote: 'helpful' | 'not_helpful' | null = 'helpful';
+
+                            if (r.userVote === 'helpful') {
+                              newHelpful -= 1;
+                              newVote = null;
+                            } else if (r.userVote === 'not_helpful') {
+                              newNotHelpful -= 1;
+                              newHelpful += 1;
+                            } else {
+                              newHelpful += 1;
+                            }
+                            return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                          }
+                          return r;
+                        }));
                       }}
-                      className="hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center gap-1"
+                      className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'helpful' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'hover:text-blue-600 dark:hover:text-blue-400'}`}
                     >
                       Hữu ích 👍 {rev.helpful || 0}
                     </button>
-                    <span>👎 {rev.not_helpful || 0}</span>
+                    <button 
+                      onClick={() => {
+                        if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+                        setProfReviews(profReviews.map(r => {
+                          if (r.id === rev.id) {
+                            let newHelpful = r.helpful || 0;
+                            let newNotHelpful = r.not_helpful || 0;
+                            let newVote: 'helpful' | 'not_helpful' | null = 'not_helpful';
+
+                            if (r.userVote === 'not_helpful') {
+                              newNotHelpful -= 1;
+                              newVote = null;
+                            } else if (r.userVote === 'helpful') {
+                              newHelpful -= 1;
+                              newNotHelpful += 1;
+                            } else {
+                              newNotHelpful += 1;
+                            }
+                            return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                          }
+                          return r;
+                        }));
+                      }}
+                      className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'not_helpful' ? 'text-red-600 dark:text-red-400 font-bold' : 'hover:text-red-600 dark:hover:text-red-400'}`}
+                    >
+                      👎 {rev.not_helpful || 0}
+                    </button>
+                    <a href="https://forms.gle/dummy-google-form-link" target="_blank" rel="noopener noreferrer" className="hover:text-red-600 dark:hover:text-red-400 ml-2">🚩 Báo cáo</a>
                   </div>
-                  <button className="hover:text-red-600 dark:hover:text-red-400">🚩 Báo cáo</button>
                 </div>
               </div>
             ))
@@ -989,7 +1083,7 @@ export default function App() {
         return;
       }
 
-      if (data) setProfReviews([data[0] as ProfessorReview, ...profReviews]);
+      if (data) setProfReviews([{ ...data[0], userVote: null } as ProfessorReview, ...profReviews]);
       setFeedbackMsg({ type: 'success', text: 'Đánh giá đã được gửi thành công!' });
       setTimeout(() => setCurrentView('professor'), 1000);
     };
@@ -1187,7 +1281,7 @@ export default function App() {
         return;
       }
 
-      if (data) setInstReviews([data[0] as InstitutionReview, ...instReviews]);
+      if (data) setInstReviews([{ ...data[0], userVote: null } as InstitutionReview, ...instReviews]);
       setFeedbackMsg({ type: 'success', text: 'Đánh giá trường đã được gửi!' });
       setTimeout(() => setCurrentView('institution'), 1000);
     };
@@ -1579,7 +1673,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
           <p>© {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.</p>
           <div className="mt-4 md:mt-0 flex gap-6 font-medium">
-            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand dark:hover:text-white transition">GitHub</a>
+            <a href="https://github.com/your-github-repo" target="_blank" rel="noopener noreferrer" className="hover:text-brand dark:hover:text-white transition">GitHub</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Về chúng tôi</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Quy tắc cộng đồng</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Bảo mật</a>
