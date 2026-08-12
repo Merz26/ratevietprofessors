@@ -29,6 +29,7 @@ export interface InstitutionReview {
   metrics: Record<string, number>;
   helpful: number;
   not_helpful: number;
+  userVote?: 'helpful' | 'not_helpful' | null; // Track user vote locally
 }
 
 export interface ProfessorReview {
@@ -48,6 +49,7 @@ export interface ProfessorReview {
   created_at: string;
   helpful: number;
   not_helpful: number;
+  userVote?: 'helpful' | 'not_helpful' | null; // Track user vote locally
 }
 
 export interface Suggestion {
@@ -285,8 +287,8 @@ export default function App() {
 
       if (instRes.data) setInstitutions(instRes.data);
       if (profRes.data) setProfessors(profRes.data);
-      if (instRevRes.data) setInstReviews(instRevRes.data);
-      if (profRevRes.data) setProfReviews(profRevRes.data);
+      if (instRevRes.data) setInstReviews(instRevRes.data.map(r => ({ ...r, userVote: null })));
+      if (profRevRes.data) setProfReviews(profRevRes.data.map(r => ({ ...r, userVote: null })));
       if (suggRes.data) setSuggestions(suggRes.data);
     }
     fetchData();
@@ -483,7 +485,6 @@ export default function App() {
         
         {/* HERO / SEARCH SECTION */}
         <div className="text-center space-y-4 pt-10 pb-4">
-          {/* Fixed the title so it turns white in Dark Mode! */}
           <h1 className="text-4xl font-black text-gray-900 dark:text-white transition-colors duration-200">
             Tìm kiếm Trường Đại học hoặc Cao đẳng của bạn
           </h1>
@@ -583,6 +584,28 @@ export default function App() {
     const stats = calculateInstStats(selectedInst.id);
     const reviews = instReviews.filter(r => r.inst_id === selectedInst.id);
 
+    const leftCriteria = [
+      { key: 'Uy tín trường', label: 'Reputation', icon: '👨‍🎓' },
+      { key: 'Cơ hội việc làm', label: 'Opportunities', icon: '📊' },
+      { key: 'Địa điểm', label: 'Location', icon: '📍' },
+      { key: 'Câu lạc bộ', label: 'Clubs', icon: '🏆' },
+      { key: 'Cơ sở vật chất', label: 'Facilities', icon: '🏋️' }
+    ];
+
+    const rightCriteria = [
+      { key: 'Độ hài lòng', label: 'Happiness', icon: '😊' },
+      { key: 'Đời sống xã hội', label: 'Social', icon: '👥' },
+      { key: 'Mạng Internet', label: 'Internet', icon: '📶' },
+      { key: 'Đồ ăn', label: 'Food', icon: '🍽️' },
+      { key: 'An toàn', label: 'Safety', icon: '🛡️' }
+    ];
+
+    const getScoreColor = (val: number) => {
+      if (val >= 4.0) return 'bg-emerald-300 text-gray-900 dark:bg-emerald-500/30 dark:text-emerald-200';
+      if (val >= 3.0) return 'bg-yellow-300 text-gray-900 dark:bg-yellow-500/30 dark:text-yellow-200';
+      return 'bg-red-300 text-gray-900 dark:bg-red-500/30 dark:text-red-200';
+    };
+
     return (
       <div className="space-y-8 animate-fadeIn">
         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 gap-2">
@@ -593,37 +616,79 @@ export default function App() {
           <span className="font-semibold text-gray-900 dark:text-white">{selectedInst.name}</span>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-8 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-colors">
+        {/* Top Header Row matching image_231c94.png */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="inline-block bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 font-bold px-3 py-1 rounded-xl text-xs mb-2">{selectedInst.short_name}</span>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-gray-900 dark:text-white">{selectedInst.name}</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">{stats.total} Đánh giá tổng quan cơ sở đào tạo • {selectedInst.departments?.length || 0} Khoa / Viện</p>
+            <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">{selectedInst.name}</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{selectedInst.location}</p>
+            <button 
+              onClick={() => navigateToDepartment(selectedInst, selectedInst.departments?.[0] || '')} 
+              className="text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline mt-1 inline-block"
+            >
+              View all Professors
+            </button>
           </div>
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3">
             <button 
               onClick={() => {
                 if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
                 setCurrentView('add-inst-review');
               }}
-              className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 font-bold rounded-2xl shadow transition-all text-sm whitespace-nowrap"
+              className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl shadow transition-all text-sm"
             >
-              + Viết đánh giá trường
+              Rate
             </button>
             <button 
-              onClick={() => {
-                if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-                setSuggestionType('department');
-                setSuggSelectedUniv(selectedInst.name);
-                setCurrentView('suggest');
-              }}
-              className="px-5 py-3 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 font-bold rounded-2xl transition-all text-sm whitespace-nowrap border border-blue-500"
+              onClick={() => alert('Compare feature coming soon!')}
+              className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl shadow transition-all text-sm"
             >
-              Đề xuất Khoa
+              Compare
             </button>
           </div>
         </div>
 
-        <div className="space-y-4">
+        {/* Main Stats Card matching image_231c94.png */}
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center transition-colors">
+          <div className="flex flex-col items-center justify-center p-6 border-b lg:border-b-0 lg:border-r border-gray-100 dark:border-gray-700">
+            <span className="text-6xl font-black text-gray-900 dark:text-white tracking-tight">{stats.overall > 0 ? stats.overall.toFixed(1) : '0.0'}</span>
+            <span className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-2">Overall Quality</span>
+          </div>
+
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
+            <div className="space-y-3">
+              {leftCriteria.map(item => {
+                const val = parseFloat(stats.metricsAvg[item.key] || '0.0');
+                return (
+                  <div key={item.key} className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <span>{item.icon}</span> {item.label}
+                    </span>
+                    <span className={`px-3 py-1 rounded-lg font-black text-sm ${getScoreColor(val)}`}>
+                      {val > 0 ? val.toFixed(1) : '0.0'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="space-y-3">
+              {rightCriteria.map(item => {
+                const val = parseFloat(stats.metricsAvg[item.key] || '0.0');
+                return (
+                  <div key={item.key} className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <span>{item.icon}</span> {item.label}
+                    </span>
+                    <span className={`px-3 py-1 rounded-lg font-black text-sm ${getScoreColor(val)}`}>
+                      {val > 0 ? val.toFixed(1) : '0.0'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 pt-6">
           <h3 className="text-2xl font-black text-gray-900 dark:text-white">Các Khoa / Viện trực thuộc</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {selectedInst.departments?.map((dept, idx) => {
@@ -688,20 +753,66 @@ export default function App() {
                     ))}
                   </div>
 
+                  {/* VOTE & REPORT FOOTER (Strict 1 vote per account, right-aligned) */}
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                    <div></div>
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => {
                           if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-                          setInstReviews(instReviews.map(r => r.id === rev.id ? { ...r, helpful: r.helpful + 1 } : r));
+                          setInstReviews(instReviews.map(r => {
+                            if (r.id === rev.id) {
+                              let newHelpful = r.helpful;
+                              let newNotHelpful = r.not_helpful;
+                              let newVote: 'helpful' | 'not_helpful' | null = 'helpful';
+
+                              if (r.userVote === 'helpful') {
+                                newHelpful -= 1;
+                                newVote = null;
+                              } else if (r.userVote === 'not_helpful') {
+                                newNotHelpful -= 1;
+                                newHelpful += 1;
+                              } else {
+                                newHelpful += 1;
+                              }
+                              return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                            }
+                            return r;
+                          }));
                         }}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center gap-1"
+                        className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'helpful' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'hover:text-blue-600 dark:hover:text-blue-400'}`}
                       >
                         Hữu ích 👍 {rev.helpful || 0}
                       </button>
-                      <span>👎 {rev.not_helpful || 0}</span>
+                      <button 
+                        onClick={() => {
+                          if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+                          setInstReviews(instReviews.map(r => {
+                            if (r.id === rev.id) {
+                              let newHelpful = r.helpful;
+                              let newNotHelpful = r.not_helpful;
+                              let newVote: 'helpful' | 'not_helpful' | null = 'not_helpful';
+
+                              if (r.userVote === 'not_helpful') {
+                                newNotHelpful -= 1;
+                                newVote = null;
+                              } else if (r.userVote === 'helpful') {
+                                newHelpful -= 1;
+                                newNotHelpful += 1;
+                              } else {
+                                newNotHelpful += 1;
+                              }
+                              return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                            }
+                            return r;
+                          }));
+                        }}
+                        className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'not_helpful' ? 'text-red-600 dark:text-red-400 font-bold' : 'hover:text-red-600 dark:hover:text-red-400'}`}
+                      >
+                        👎 {rev.not_helpful || 0}
+                      </button>
+                      <a href="https://forms.gle/dummy-google-form-link" target="_blank" rel="noopener noreferrer" className="hover:text-red-600 dark:hover:text-red-400 ml-2">🚩 Báo cáo</a>
                     </div>
-                    <button className="hover:text-red-600 dark:hover:text-red-400">🚩 Báo cáo</button>
                   </div>
                 </div>
               ))}
@@ -820,6 +931,18 @@ export default function App() {
       reviews = reviews.filter(r => r.tags && r.tags.includes(profTagFilter));
     }
 
+    // Rating distribution counts (5, 4, 3, 2, 1)
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(r => {
+      const rating = Math.round(r.teaching_rating);
+      if (rating >= 1 && rating <= 5) {
+        distribution[rating as 1 | 2 | 3 | 4 | 5]++;
+      }
+    });
+
+    const maxDistCount = Math.max(...Object.values(distribution), 1);
+    const similarProfs = professors.filter(p => p.university === selectedProf.university && p.id !== selectedProf.id).slice(0, 3);
+
     return (
       <div className="space-y-8 animate-fadeIn">
         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 gap-2">
@@ -834,26 +957,118 @@ export default function App() {
           <span className="font-semibold text-gray-900 dark:text-white">{selectedProf.name}</span>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-colors">
-          <div className="flex items-center gap-6">
-            <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 font-black text-4xl p-6 rounded-2xl min-w-[100px] text-center border border-green-200 dark:border-green-800">
-              {stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : 'N/A'}
-            </div>
+        {/* Top Split Card matching image_231c3a.png */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column: Overall Stats & Name */}
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between space-y-6 transition-colors">
             <div>
-              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Giảng viên khoa {selectedProf.department} • {selectedProf.university}</p>
-              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">{selectedProf.name}</h2>
-              <p className="text-xs text-gray-400 mt-1">Dựa trên {stats.total_ratings} đánh giá</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-black text-gray-900 dark:text-white">{stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : '0.0'}</span>
+                <span className="text-gray-400 font-bold text-lg">/ 5</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Overall Quality Based on {stats.total_ratings} ratings</p>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">{selectedProf.name}</h2>
+                <button title="Bookmark" className="text-gray-400 hover:text-blue-600">🔖</button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                Professor in the <span className="underline font-semibold">{selectedProf.department}</span> department at <span className="underline font-semibold">{selectedProf.university}</span>
+              </p>
+            </div>
+
+            <div className="flex justify-between items-center py-4 border-y border-gray-100 dark:border-gray-700">
+              <div>
+                <span className="text-2xl font-black text-gray-900 dark:text-white">{stats.would_take_again_pct}%</span>
+                <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">Would take again</span>
+              </div>
+              <div className="h-10 w-[1px] bg-gray-200 dark:bg-gray-700"></div>
+              <div>
+                <span className="text-2xl font-black text-gray-900 dark:text-white">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : '0.0'}</span>
+                <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">Level of Difficulty</span>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => {
+                  if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+                  setCurrentView('add-prof-review');
+                }}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow transition-all text-sm flex items-center justify-center gap-2"
+              >
+                Rate →
+              </button>
+              <button 
+                onClick={() => alert('Compare feature coming soon!')}
+                className="flex-1 py-3 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 border border-blue-500 hover:bg-blue-50 dark:hover:bg-gray-800 font-bold rounded-2xl transition-all text-sm flex items-center justify-center"
+              >
+                Compare
+              </button>
+            </div>
+
+            <button onClick={() => alert('Faculty claim profile link')} className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline text-left">
+              I'm Professor {selectedProf.name.split(' ').pop()}
+            </button>
+          </div>
+
+          {/* Right Column: Rating Distribution & Similar Professors */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6 transition-colors">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Rating Distribution</h3>
+              
+              <div className="space-y-3">
+                {[
+                  { label: 'Awesome 5', count: distribution[5], val: 5 },
+                  { label: 'Great 4', count: distribution[4], val: 4 },
+                  { label: 'Good 3', count: distribution[3], val: 3 },
+                  { label: 'OK 2', count: distribution[2], val: 2 },
+                  { label: 'Awful 1', count: distribution[1], val: 1 }
+                ].map(item => (
+                  <div key={item.val} className="flex items-center gap-4 text-sm">
+                    <span className="w-24 font-medium text-gray-600 dark:text-gray-400 text-xs">{item.label}</span>
+                    <div className="flex-1 bg-gray-100 dark:bg-gray-700 h-6 rounded-lg overflow-hidden relative">
+                      <div 
+                        className="bg-blue-600 h-full transition-all duration-500"
+                        style={{ width: `${(item.count / maxDistCount) * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-6 text-right font-bold text-gray-900 dark:text-white text-xs">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Similar Professors Card */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 transition-colors">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Similar Professors</h3>
+              {similarProfs.length === 0 ? (
+                <p className="text-xs text-gray-400">Không có giảng viên tương tự.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {similarProfs.map(p => {
+                    const pStats = calculateProfStats(p.id);
+                    return (
+                      <div 
+                        key={p.id}
+                        onClick={() => navigateToProfessor(selectedInst, p.department, p)}
+                        className="p-3 rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 cursor-pointer hover:border-blue-500 transition-all flex flex-col justify-between"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-blue-600 text-white text-xs font-black px-2 py-1 rounded-lg">
+                            {pStats.avg_rating > 0 ? pStats.avg_rating.toFixed(2) : 'N.A'}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{p.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
-          <button 
-            onClick={() => {
-              if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-              setCurrentView('add-prof-review');
-            }}
-            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow transition-all text-sm whitespace-nowrap"
-          >
-            Viết đánh giá giảng viên
-          </button>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
@@ -933,20 +1148,66 @@ export default function App() {
                   </div>
                 )}
 
+                {/* VOTE & REPORT FOOTER (Strict 1 vote per account, right-aligned) */}
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                  <div></div>
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => {
                         if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
-                        setProfReviews(profReviews.map(r => r.id === rev.id ? { ...r, helpful: (r.helpful || 0) + 1 } : r));
+                        setProfReviews(profReviews.map(r => {
+                          if (r.id === rev.id) {
+                            let newHelpful = r.helpful || 0;
+                            let newNotHelpful = r.not_helpful || 0;
+                            let newVote: 'helpful' | 'not_helpful' | null = 'helpful';
+
+                            if (r.userVote === 'helpful') {
+                              newHelpful -= 1;
+                              newVote = null;
+                            } else if (r.userVote === 'not_helpful') {
+                              newNotHelpful -= 1;
+                              newHelpful += 1;
+                            } else {
+                              newHelpful += 1;
+                            }
+                            return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                          }
+                          return r;
+                        }));
                       }}
-                      className="hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center gap-1"
+                      className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'helpful' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'hover:text-blue-600 dark:hover:text-blue-400'}`}
                     >
                       Hữu ích 👍 {rev.helpful || 0}
                     </button>
-                    <span>👎 {rev.not_helpful || 0}</span>
+                    <button 
+                      onClick={() => {
+                        if (!currentUser) { setCurrentView('auth'); setAuthView('login'); return; }
+                        setProfReviews(profReviews.map(r => {
+                          if (r.id === rev.id) {
+                            let newHelpful = r.helpful || 0;
+                            let newNotHelpful = r.not_helpful || 0;
+                            let newVote: 'helpful' | 'not_helpful' | null = 'not_helpful';
+
+                            if (r.userVote === 'not_helpful') {
+                              newNotHelpful -= 1;
+                              newVote = null;
+                            } else if (r.userVote === 'helpful') {
+                              newHelpful -= 1;
+                              newNotHelpful += 1;
+                            } else {
+                              newNotHelpful += 1;
+                            }
+                            return { ...r, helpful: newHelpful, not_helpful: newNotHelpful, userVote: newVote };
+                          }
+                          return r;
+                        }));
+                      }}
+                      className={`font-medium flex items-center gap-1 transition-colors ${rev.userVote === 'not_helpful' ? 'text-red-600 dark:text-red-400 font-bold' : 'hover:text-red-600 dark:hover:text-red-400'}`}
+                    >
+                      👎 {rev.not_helpful || 0}
+                    </button>
+                    <a href="https://forms.gle/dummy-google-form-link" target="_blank" rel="noopener noreferrer" className="hover:text-red-600 dark:hover:text-red-400 ml-2">🚩 Báo cáo</a>
                   </div>
-                  <button className="hover:text-red-600 dark:hover:text-red-400">🚩 Báo cáo</button>
                 </div>
               </div>
             ))
@@ -989,7 +1250,7 @@ export default function App() {
         return;
       }
 
-      if (data) setProfReviews([data[0] as ProfessorReview, ...profReviews]);
+      if (data) setProfReviews([{ ...data[0], userVote: null } as ProfessorReview, ...profReviews]);
       setFeedbackMsg({ type: 'success', text: 'Đánh giá đã được gửi thành công!' });
       setTimeout(() => setCurrentView('professor'), 1000);
     };
@@ -1187,7 +1448,7 @@ export default function App() {
         return;
       }
 
-      if (data) setInstReviews([data[0] as InstitutionReview, ...instReviews]);
+      if (data) setInstReviews([{ ...data[0], userVote: null } as InstitutionReview, ...instReviews]);
       setFeedbackMsg({ type: 'success', text: 'Đánh giá trường đã được gửi!' });
       setTimeout(() => setCurrentView('institution'), 1000);
     };
@@ -1579,7 +1840,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
           <p>© {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.</p>
           <div className="mt-4 md:mt-0 flex gap-6 font-medium">
-            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand dark:hover:text-white transition">GitHub</a>
+            <a href="https://github.com/your-github-repo" target="_blank" rel="noopener noreferrer" className="hover:text-brand dark:hover:text-white transition">GitHub</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Về chúng tôi</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Quy tắc cộng đồng</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Bảo mật</a>
