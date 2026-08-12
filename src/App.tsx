@@ -180,6 +180,12 @@ export default function App() {
   const [selectedInst, setSelectedInst] = useState<Institution | null>(null);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
+  const navigateToAllProfessors = (inst: Institution) => {
+  setSelectedInst(inst);
+  setSelectedDept('ALL');
+  setCurrentView('department');
+  window.history.pushState({}, '', `/${toSlug(inst.short_name)}/all-professors`);
+};
 
   // -- UI State (Persistent Dark Mode) --
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -622,7 +628,7 @@ export default function App() {
             <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">{selectedInst.name}</h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{selectedInst.location}</p>
             <button 
-              onClick={() => navigateToDepartment(selectedInst, selectedInst.departments?.[0] || '')} 
+              onClick={() => navigateToAllProfessors(selectedInst)} 
               className="text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline mt-1 inline-block"
             >
               View all Professors
