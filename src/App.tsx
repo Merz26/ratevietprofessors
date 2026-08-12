@@ -464,7 +464,7 @@ export default function App() {
     if (sortBy === 'name') {
       sortedInstitutions.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === 'rating') {
-      sortedInstitutions.sort((a, b) => parseFloat(calculateInstStats(b.id).overall) - parseFloat(calculateInstStats(a.id).overall));
+      sortedInstitutions.sort((a, b) => calculateInstStats(b.id).overall - calculateInstStats(a.id).overall);
     } else if (sortBy === 'reviews') {
       sortedInstitutions.sort((a, b) => calculateInstStats(b.id).total - calculateInstStats(a.id).total);
     }
