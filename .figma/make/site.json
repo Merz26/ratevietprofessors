@@ -1,0 +1,10 @@
+{
+  "description": "Aggregates ratings with a clean design, offering advanced search, easy navigation, and user account management for a seamless review experience.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
