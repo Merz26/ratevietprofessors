@@ -1833,7 +1833,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
           <p>© {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.</p>
           <div className="mt-4 md:mt-0 flex gap-6 font-medium">
-            <a href="https://github.com/your-github-repo" target="_blank" rel="noopener noreferrer" className="hover:text-brand dark:hover:text-white transition">GitHub</a>
+            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand dark:hover:text-white transition">GitHub</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Về chúng tôi</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Quy tắc cộng đồng</a>
             <a href="#" className="hover:text-brand dark:hover:text-white transition">Bảo mật</a>
