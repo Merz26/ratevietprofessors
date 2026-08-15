@@ -451,43 +451,37 @@ export default function App() {
     }
   }, [])
 
-  // Demo data for institutions
+  // Fetch info and review data
   useEffect(() => {
-    const demoInstitutions: Institution[] = [
-      { id: 1, name: 'Trường Đại học Bách khoa Hà Nội', short_name: 'HUST', location: 'Hà Nội', departments: ['Công nghệ thông tin', 'Điện - Điện tử', 'Cơ khí', 'Hóa học', 'Kinh tế'] },
-      { id: 2, name: 'Trường Đại học Bách khoa TP. HCM', short_name: 'HCMUT', location: 'TP. Hồ Chí Minh', departments: ['Khoa học máy tính', 'Điện - Điện tử', 'Kỹ thuật hóa học', 'Xây dựng'] },
-      { id: 3, name: 'Trường Đại học Quốc gia Hà Nội', short_name: 'VNU', location: 'Hà Nội', departments: ['Luật', 'Kinh tế', 'Ngoại ngữ', 'Khoa học tự nhiên'] },
-      { id: 4, name: 'Trường Đại học Ngoại thương', short_name: 'FTU', location: 'Hà Nội', departments: ['Kinh tế quốc tế', 'Quản trị kinh doanh', 'Tài chính', 'Luật kinh doanh'] },
-      { id: 5, name: 'Trường Đại học Kinh tế TP. HCM', short_name: 'UEH', location: 'TP. Hồ Chí Minh', departments: ['Quản trị kinh doanh', 'Tài chính ngân hàng', 'Kế toán', 'Kinh tế'] },
-      { id: 6, name: 'Trường Đại học Công nghệ TP. HCM', short_name: 'HUTECH', location: 'TP. Hồ Chí Minh', departments: ['Công nghệ thông tin', 'Kỹ thuật công trình', 'Kiến trúc'] },
-      { id: 7, name: 'Trường Đại học Đà Nẵng', short_name: 'UD', location: 'Đà Nẵng', departments: ['Kỹ thuật', 'Kinh tế', 'Ngoại ngữ', 'Sư phạm'] },
-      { id: 8, name: 'Trường Đại học Cần Thơ', short_name: 'CTU', location: 'Cần Thơ', departments: ['Nông nghiệp', 'Khoa học tự nhiên', 'Công nghệ', 'Kinh tế'] },
-    ]
-    const demoProfessors: Professor[] = [
-      { id: 1, name: 'GS. TS. Nguyễn Văn Anh', university: 'Trường Đại học Bách khoa Hà Nội', department: 'Công nghệ thông tin', tags: ['Tận tâm', 'Bài giảng tuyệt vời'] },
-      { id: 2, name: 'PGS. TS. Trần Thị Bình', university: 'Trường Đại học Bách khoa Hà Nội', department: 'Công nghệ thông tin', tags: ['Nghiêm khắc', 'Nhiều bài tập'] },
-      { id: 3, name: 'TS. Lê Minh Cường', university: 'Trường Đại học Bách khoa Hà Nội', department: 'Điện - Điện tử', tags: ['Truyền cảm hứng', 'Phản hồi tốt'] },
-    ]
-    const demoInstReviews: InstitutionReview[] = [
-      {
-        id: 'r1', inst_id: 1, user_email: 'sv1@hust.edu.vn', comment: 'Trường rất tốt, cơ sở vật chất hiện đại, giảng viên nhiệt tình. Môi trường học tập rất tích cực.',
-        created_at: '2026-01-15T10:00:00Z', helpful: 12, not_helpful: 2, userVote: null,
-        metrics: Object.fromEntries(CRITERIA_KEYS.map(k => [k, Math.floor(Math.random() * 2) + 4])),
-      },
-    ]
-    const demoProfReviews: ProfessorReview[] = [
-      {
-        id: 'pr1', prof_id: 1, user_email: 'sv@hust.edu.vn', course: 'INT2201', teaching_rating: 5,
-        difficulty_rating: 3, would_take_again: true, for_credit: 'Có', textbook: 'Có', attendance: 'Không',
-        grade: 'A', tags: ['Bài giảng tuyệt vời', 'Tận tâm'], comment: 'Thầy dạy rất rõ ràng, mạch lạc. Luôn sẵn sàng hỗ trợ sinh viên. Highly recommend!',
-        created_at: '2026-02-10T09:00:00Z', helpful: 8, not_helpful: 0, userVote: null,
-      },
-    ]
-    setInstitutions(demoInstitutions)
-    setProfessors(demoProfessors)
-    setInstReviews(demoInstReviews)
-    setProfReviews(demoProfReviews)
-  }, [])
+    const fetchRealData = async () => {
+      try {
+        const [
+          { data: instData, error: instErr },
+          { data: profData, error: profErr },
+          { data: instRevData, error: instRevErr },
+          { data: profRevData, error: profRevErr }
+        ] = await Promise.all([
+          supabase.from('institutions').select('*'),
+          supabase.from('professors').select('*'),
+          supabase.from('institution_reviews').select('*'),
+          supabase.from('professor_reviews').select('*')
+        ]);
+
+        if (instErr) console.error("Error fetching institutions:", instErr);
+        if (profErr) console.error("Error fetching professors:", profErr);
+
+        if (instData) setInstitutions(instData);
+        if (profData) setProfessors(profData);
+        if (instRevData) setInstReviews(instRevData);
+        if (profRevData) setProfReviews(profRevData);
+        
+      } catch (error) {
+        console.error("Failed to load database data:", error);
+      }
+    };
+
+    fetchRealData();
+  }, []);
 
   // Predictive search suggestions
   useEffect(() => {
