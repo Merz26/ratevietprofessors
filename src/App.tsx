@@ -764,13 +764,17 @@ export default function App() {
     ]
 
     const filtered = institutions.filter(inst => {
+      // Provide fallback empty strings if the database returns null
+      const safeName = inst.name || '';
+      const safeShortName = inst.short_name || '';
+
       const matchSearch = !searchTerm ||
-        inst.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inst.short_name.toLowerCase().includes(searchTerm.toLowerCase())
+        safeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        safeShortName.toLowerCase().includes(searchTerm.toLowerCase())
+      
       const matchLocation = !locationFilter || inst.location === locationFilter
       return matchSearch && matchLocation
     })
-
     let sorted = [...filtered]
     if (sortBy === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name))
     else if (sortBy === 'rating') sorted.sort((a, b) => calculateInstStats(b.id).overall - calculateInstStats(a.id).overall)
@@ -2477,7 +2481,7 @@ export default function App() {
                         ))}
                       </div>
                       <div className="flex flex-wrap gap-xs">
-                        {prof.tags.map(t => <Badge key={t} label={t} variant="secondary" />)}
+                        {(prof.tags || []).map(t => <Badge key={t} label={t} variant="secondary" />)}
                       </div>
                     </div>
                   )
