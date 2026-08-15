@@ -377,13 +377,35 @@ export default function App() {
   const [resetEmail, setResetEmail] = useState('')
 
   // Bookmarks
-  const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>(() => {
-    try {
-      const raw = localStorage.getItem('bookmarked_professors')
-      return raw ? JSON.parse(raw) : []
-    } catch { return [] }
-  })
-  const [showBookmarkPanel, setShowBookmarkPanel] = useState(false)
+  const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>([])
+
+  // Fetch session and bookmarks from Supabase database
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser({
+          email: session.user.email ?? '',
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+        })
+        setBookmarkedProfIds(session.user.user_metadata?.bookmarked_professors || [])
+      }
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({
+          email: session.user.email ?? '',
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+        })
+        setBookmarkedProfIds(session.user.user_metadata?.bookmarked_professors || [])
+      } else {
+        setCurrentUser(null)
+        setBookmarkedProfIds([])
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   // Comparison state
   const [compareModal, setCompareModal] = useState(false)
@@ -548,44 +570,106 @@ export default function App() {
     }
   }
 
-  const handleInstVote = (id: string, vote: 'helpful' | 'not_helpful') => {
+  const handleInstVote = async (id: string, vote: 'helpful' | 'not_helpful') => {
     if (!currentUser) { setAuthModal(true); return }
-    setInstReviews(prev => prev.map(r => {
-      if (r.id !== id) return r
-      let h = r.helpful, nh = r.not_helpful
-      let newVote: typeof r.userVote = vote
-      if (r.userVote === vote) { vote === 'helpful' ? h-- : nh--; newVote = null }
-      else if (r.userVote === 'helpful') { h--; nh++ }
-      else if (r.userVote === 'not_helpful') { nh--; h++ }
-      else { vote === 'helpful' ? h++ : nh++ }
-      return { ...r, helpful: h, not_helpful: nh, userVote: newVote }
-    }))
+
+    // 1. Find the target review and calculate the new totals
+    const targetReview = instReviews.find(r => r.id === id)
+    if (!targetReview) return
+
+    let h = targetReview.helpful || 0
+    let nh = targetReview.not_helpful || 0
+    let newVote: typeof targetReview.userVote = vote
+
+    if (targetReview.userVote === vote) { 
+      vote === 'helpful' ? h-- : nh--; 
+      newVote = null 
+    }
+    else if (targetReview.userVote === 'helpful') { h--; nh++ }
+    else if (targetReview.userVote === 'not_helpful') { nh--; h++ }
+    else { vote === 'helpful' ? h++ : nh++ }
+
+    // 2. Optimistic UI update
+    setInstReviews(prev => prev.map(r => 
+      r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: newVote } : r
+    ))
+
+    // 3. Push the new totals to the database
+    try {
+      const { error } = await supabase
+        .from('institution_reviews')
+        .update({ helpful: h, not_helpful: nh })
+        .eq('id', id)
+        
+      if (error) throw error
+    } catch (error) {
+      console.error("Failed to push vote:", error)
+      showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
+    }
   }
 
   const toggleBookmark = async (profId: number) => {
     if (!currentUser) { setAuthModal(true); return }
+    
     const isBookmarked = bookmarkedProfIds.includes(profId)
     const updated = isBookmarked
       ? bookmarkedProfIds.filter(id => id !== profId)
       : [...bookmarkedProfIds, profId]
+    
+    // Optimistic UI update
     setBookmarkedProfIds(updated)
-    try { localStorage.setItem('bookmarked_professors', JSON.stringify(updated)) } catch { /* ignore */ }
-    try { await (supabase.auth as any).updateUser({ data: { bookmarked_professors: updated } }) } catch { /* ignore */ }
-    showToast(isBookmarked ? 'Đã xóa khỏi danh sách lưu' : 'Đã lưu giảng viên', isBookmarked ? 'default' : 'success')
+    
+    try {
+      // Save directly to the user's metadata array in the database
+      const { error } = await supabase.auth.updateUser({ 
+        data: { bookmarked_professors: updated } 
+      })
+      if (error) throw error
+      showToast(isBookmarked ? 'Đã xóa khỏi danh sách lưu' : 'Đã lưu giảng viên', isBookmarked ? 'default' : 'success')
+    } catch (error) {
+      // Revert if the database update fails
+      setBookmarkedProfIds(bookmarkedProfIds)
+      showToast('Lỗi khi lưu. Vui lòng thử lại.', 'error')
+    }
   }
 
-  const handleProfVote = (id: string, vote: 'helpful' | 'not_helpful') => {
+  const handleProfVote = async (id: string, vote: 'helpful' | 'not_helpful') => {
     if (!currentUser) { setAuthModal(true); return }
-    setProfReviews(prev => prev.map(r => {
-      if (r.id !== id) return r
-      let h = r.helpful || 0, nh = r.not_helpful || 0
-      let newVote: typeof r.userVote = vote
-      if (r.userVote === vote) { vote === 'helpful' ? h-- : nh--; newVote = null }
-      else if (r.userVote === 'helpful') { h--; nh++ }
-      else if (r.userVote === 'not_helpful') { nh--; h++ }
-      else { vote === 'helpful' ? h++ : nh++ }
-      return { ...r, helpful: h, not_helpful: nh, userVote: newVote }
-    }))
+    
+    // 1. Find the target review and calculate the new totals
+    const targetReview = profReviews.find(r => r.id === id)
+    if (!targetReview) return
+
+    let h = targetReview.helpful || 0
+    let nh = targetReview.not_helpful || 0
+    let newVote: typeof targetReview.userVote = vote
+
+    if (targetReview.userVote === vote) { 
+      vote === 'helpful' ? h-- : nh--; 
+      newVote = null 
+    }
+    else if (targetReview.userVote === 'helpful') { h--; nh++ }
+    else if (targetReview.userVote === 'not_helpful') { nh--; h++ }
+    else { vote === 'helpful' ? h++ : nh++ }
+
+    // 2. Optimistic UI update (feels instant to the user)
+    setProfReviews(prev => prev.map(r => 
+      r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: newVote } : r
+    ))
+
+    // 3. Push the new totals to the database
+    try {
+      const { error } = await supabase
+        .from('professor_reviews')
+        .update({ helpful: h, not_helpful: nh })
+        .eq('id', id)
+        
+      if (error) throw error
+    } catch (error) {
+      console.error("Failed to push vote:", error)
+      showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
+      // Optional: You could revert the state here if the DB call fails
+    }
   }
 
   // ==========================================
@@ -1062,43 +1146,46 @@ export default function App() {
               return (
                 <div
                   key={prof.id}
-                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col gap-lg transition-all animate-fadeIn relative"
+                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col gap-lg transition-all animate-fadeIn"
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   <button
                     type="button"
-                    onClick={e => { e.stopPropagation(); toggleBookmark(prof.id) }}
-                    className={`absolute top-xl right-xl transition-colors ${isBookmarked ? 'text-brand-primary' : 'text-text-tertiary hover:text-brand-primary'}`}
-                    title={isBookmarked ? 'Xóa bookmark' : 'Lưu giảng viên'}
-                  >
-                    {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => navigate('professor', selectedInst, selectedDept, prof)}
-                    className="flex flex-col gap-lg text-left"
+                    className="flex flex-col gap-lg text-left w-full"
                   >
-                  <div className="flex items-start justify-between gap-lg pr-6">
-                    <div className="flex items-center gap-lg">
-                      <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="medium" shape="circle" />
-                      <div>
-                        <h3 className="text-label text-text-primary">{prof.name}</h3>
-                        <p className="text-video-title text-text-secondary">{stats.total_ratings} đánh giá</p>
+                    <div className="flex items-start justify-between gap-lg w-full">
+                      <div className="flex items-center gap-lg">
+                        <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="medium" shape="circle" />
+                        <div>
+                          <h3 className="text-label text-text-primary">{prof.name}</h3>
+                          <p className="text-video-title text-text-secondary">{stats.total_ratings} đánh giá</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-sm z-10">
+                        <ScoreBadge value={stats.avg_rating} />
+                        <div
+                          role="button"
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleBookmark(prof.id) }}
+                          className={`p-1 cursor-pointer transition-colors ${isBookmarked ? 'text-brand-primary' : 'text-text-tertiary hover:text-brand-primary'}`}
+                          title={isBookmarked ? 'Xóa bookmark' : 'Lưu giảng viên'}
+                        >
+                          {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                        </div>
                       </div>
                     </div>
-                    <ScoreBadge value={stats.avg_rating} />
-                  </div>
 
-                  <div className="flex gap-xl pt-lg border-t border-border-secondary">
-                    <div>
-                      <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
-                      <p className="text-label-sm text-text-primary">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
+                    <div className="flex gap-xl pt-lg border-t border-border-secondary w-full">
+                      <div>
+                        <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
+                        <p className="text-label-sm text-text-primary">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
+                        <p className="text-label-sm text-text-primary">{stats.would_take_again_pct}%</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
-                      <p className="text-label-sm text-text-primary">{stats.would_take_again_pct}%</p>
-                    </div>
-                  </div>
                   </button>
                 </div>
               )
