@@ -333,6 +333,18 @@ export default function App() {
   useTheme()
   const { theme, setTheme } = useContext(ThemeContext)
 
+  // 1. ADD THIS NEW USE-EFFECT BLOCK:
+  useEffect(() => {
+    const root = window.document.documentElement;
+    
+    // Remove the old theme class
+    root.classList.remove('light', 'dark');
+    
+    // Add the new theme class and AstraUI's data attribute
+    root.classList.add(theme);
+    root.setAttribute('data-theme', theme);
+  }, [theme]);
+
   // Auth — localStorage is synchronous so session is available on first render
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
     try {
