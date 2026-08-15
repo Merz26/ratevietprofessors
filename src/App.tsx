@@ -39,7 +39,7 @@ import {
   BookmarkCheck,
   Settings,
 } from 'lucide-react'
-import { supabase, isRealSupabase } from './supabaseClient'
+import { supabase } from './supabaseClient'
 import { ThemeContext } from './main'
 
 // ==========================================
@@ -1905,9 +1905,7 @@ export default function App() {
               <div>
                 <h2 className="text-label text-text-primary font-semibold">Đặt lại mật khẩu</h2>
                 <p className="text-label-sm text-text-secondary mt-xs">
-                  {isRealSupabase
-                    ? 'Gửi email với link đặt lại mật khẩu tới địa chỉ email của bạn.'
-                    : 'Chế độ demo: link đặt lại sẽ được ghi vào console. Kết nối Supabase để nhận email thật.'}
+                  Gửi email với link đặt lại mật khẩu tới địa chỉ email của bạn.
                 </p>
               </div>
               <div className="flex flex-col gap-sm">
