@@ -378,6 +378,7 @@ export default function App() {
 
   // Bookmarks
   const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>([])
+  const [showBookmarkPanel, setShowBookmarkPanel] = useState<boolean>(false)
 
   // Fetch session and bookmarks from Supabase database
   useEffect(() => {
@@ -439,10 +440,6 @@ export default function App() {
   const [profTagFilter, setProfTagFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const entriesPerPage = 16
-
-  // Bookmarks state
-  const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>([])
-  const [showBookmarkPanel, setShowBookmarkPanel] = useState<boolean>(false)
   
   // Prof review form
   const [reviewCourse, setReviewCourse] = useState('')
