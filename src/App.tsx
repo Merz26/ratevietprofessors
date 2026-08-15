@@ -440,6 +440,10 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1)
   const entriesPerPage = 16
 
+  // Bookmarks state
+  const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>([])
+  const [showBookmarkPanel, setShowBookmarkPanel] = useState<boolean>(false)
+  
   // Prof review form
   const [reviewCourse, setReviewCourse] = useState('')
   const [reviewTeaching, setReviewTeaching] = useState(5)
