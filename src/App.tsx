@@ -323,7 +323,7 @@ export default function App() {
   const { theme, setTheme } = useContext(ThemeContext)
   const isInitialized = useRef(false)
 
-  // Local storage theme persistence (Runs exactly once to prevent React dependency loops)
+  // Local storage theme persistence
   useEffect(() => {
     if (!isInitialized.current) {
       isInitialized.current = true
@@ -337,8 +337,6 @@ export default function App() {
   // Unified theme effect to write changes to DOM
   useEffect(() => {
     const root = window.document.documentElement;
-    
-    // Break the loop: If the DOM is already correct, stop executing.
     if (root.classList.contains(theme) && root.getAttribute('data-theme') === theme) return;
 
     root.classList.remove('light', 'dark');
@@ -358,7 +356,10 @@ export default function App() {
       return []
     }
   })
+  
+  // Toggles for Panels and Menus
   const [showBookmarkPanel, setShowBookmarkPanel] = useState<boolean>(false)
+  const [showAboutMenu, setShowAboutMenu] = useState<boolean>(false)
 
   // Comparison state
   const [compareModal, setCompareModal] = useState(false)
@@ -758,23 +759,24 @@ export default function App() {
                   key={inst.id}
                   type="button"
                   onClick={() => navigate('institution', inst)}
-                  className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg text-left border border-border-primary hover:border-brand-primary hover:shadow-sm transition-all group animate-scaleIn"
+                  className="bg-surface-bg rounded-corner-lg p-xl flex flex-col text-left border border-border-primary hover:border-brand-primary hover:shadow-sm transition-all group animate-scaleIn h-full"
                 >
-                  <div className="flex items-start justify-between gap-sm">
-                    <div className="flex flex-col gap-xs flex-1 min-w-0">
-                      <Badge label={inst.short_name} variant="brand" />
-                      <h3 className="text-label text-text-primary leading-snug group-hover:text-brand-primary transition-colors line-clamp-2">
-                        {inst.name}
-                      </h3>
-                    </div>
+                  <div className="flex flex-col gap-xs mb-lg">
+                    <Badge label={inst.short_name} variant="brand" className="w-fit" />
+                    <h3 className="text-label text-text-primary leading-snug group-hover:text-brand-primary transition-colors line-clamp-2 mt-xs">
+                      {inst.name}
+                    </h3>
                   </div>
-                  <p className="text-video-title text-text-secondary flex items-center gap-xs">
-                    <MapPin size={11} />
-                    {inst.location}
-                  </p>
-                  <div className="flex items-center justify-between pt-lg border-t border-border-secondary">
-                    <ScoreBadge value={stats.overall} />
-                    <span className="text-video-title text-text-secondary">{stats.total} đánh giá</span>
+                  
+                  <div className="mt-auto w-full flex flex-col gap-lg">
+                    <p className="text-video-title text-text-secondary flex items-center gap-xs">
+                      <MapPin size={11} />
+                      {inst.location}
+                    </p>
+                    <div className="flex items-center justify-between pt-lg border-t border-border-secondary">
+                      <ScoreBadge value={stats.overall} />
+                      <span className="text-video-title text-text-secondary">{stats.total} đánh giá</span>
+                    </div>
                   </div>
                 </button>
               )
@@ -898,15 +900,15 @@ export default function App() {
                   key={idx}
                   type="button"
                   onClick={() => navigate('department', selectedInst, dept)}
-                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col gap-lg transition-all group animate-slideInLeft"
+                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col transition-all group animate-slideInLeft h-full"
                   style={{ animationDelay: `${idx * 40}ms` }}
                 >
-                  <div className="flex flex-col gap-xs">
+                  <div className="flex flex-col gap-xs mb-lg">
                     <h3 className="text-label text-text-primary group-hover:text-brand-primary transition-colors">{dept}</h3>
-                    <p className="text-video-title text-text-secondary">{deptProfs.length} giảng viên</p>
                   </div>
-                  <div className="flex items-center justify-end text-brand-primary">
-                    <ChevronRight size={16} />
+                  <div className="mt-auto w-full flex items-center justify-between pt-lg border-t border-border-secondary">
+                    <p className="text-video-title text-text-secondary">{deptProfs.length} giảng viên</p>
+                    <ChevronRight size={16} className="text-brand-primary" />
                   </div>
                 </button>
               )
@@ -1017,15 +1019,15 @@ export default function App() {
               return (
                 <div
                   key={prof.id}
-                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col gap-lg transition-all animate-fadeIn"
+                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col transition-all animate-fadeIn h-full"
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   <button
                     type="button"
                     onClick={() => navigate('professor', selectedInst, selectedDept, prof)}
-                    className="flex flex-col gap-lg text-left w-full"
+                    className="flex flex-col text-left w-full h-full"
                   >
-                    <div className="flex items-start justify-between gap-lg w-full">
+                    <div className="flex items-start justify-between gap-lg w-full mb-lg">
                       <div className="flex items-center gap-lg">
                         <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="medium" shape="circle" />
                         <div>
@@ -1047,14 +1049,16 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex gap-xl pt-lg border-t border-border-secondary w-full">
-                      <div>
-                        <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
-                        <p className="text-label-sm text-text-primary">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
-                        <p className="text-label-sm text-text-primary">{stats.would_take_again_pct}%</p>
+                    <div className="mt-auto w-full flex flex-col">
+                      <div className="flex gap-xl pt-lg border-t border-border-secondary w-full">
+                        <div>
+                          <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
+                          <p className="text-label-sm text-text-primary">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
+                          <p className="text-label-sm text-text-primary">{stats.would_take_again_pct}%</p>
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -1704,10 +1708,91 @@ export default function App() {
 
   return (
     <>
-    <div className="flex h-screen overflow-hidden bg-brand-tertiary">
+    {/* Global custom animation styles */}
+    <style>{`
+      @keyframes spinDropIn {
+        0% { transform: scale(0.6) rotate(-20deg); opacity: 0; }
+        70% { transform: scale(1.05) rotate(5deg); opacity: 1; }
+        100% { transform: scale(1) rotate(0deg); opacity: 1; }
+      }
+    `}</style>
+
+    {/* Menu overlays to handle outside clicks */}
+    {showAboutMenu && (
+      <div 
+        className="fixed inset-0 z-40" 
+        onClick={() => setShowAboutMenu(false)} 
+      />
+    )}
+
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-brand-tertiary">
+      
+      {/* Mobile Top Header */}
+      <div className="md:hidden flex items-center justify-between p-lg bg-surface-bg border-b border-border-primary shrink-0 sticky top-0 z-40">
+        <div className="relative">
+          <button 
+            onClick={() => setShowAboutMenu(!showAboutMenu)}
+            className={`p-1 rounded-corner-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${showAboutMenu ? 'rotate-[360deg] scale-110' : 'rotate-0 scale-100'}`}
+          >
+             <img src="/favicon.svg" alt="Logo" className="w-8 h-8 object-contain" />
+          </button>
+          {showAboutMenu && (
+            <div 
+              className="absolute left-0 top-full mt-md w-64 bg-surface-bg border border-border-primary shadow-xl rounded-corner-lg p-xl z-50"
+              style={{ animation: 'spinDropIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards', transformOrigin: 'top left' }}
+            >
+              <div className="flex flex-col gap-lg text-label-sm text-text-secondary">
+                <p className="text-label text-text-primary font-bold">RateVietProfessors</p>
+                <p>© {new Date().getFullYear()} RateViet.<br/>made with 💖 from HCMC.</p>
+                <div className="flex flex-col gap-sm font-medium mt-sm">
+                  <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors flex items-center justify-between">GitHub <ChevronRight size={14}/></a>
+                  <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Về chúng tôi <ChevronRight size={14}/></a>
+                  <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Quy tắc cộng đồng <ChevronRight size={14}/></a>
+                  <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Bảo mật <ChevronRight size={14}/></a>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <h1 className="text-label font-semibold text-text-primary">RateVietProfessors</h1>
+        <div className="w-10"></div>
+      </div>
+
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <SidebarNavigation
+          header={
+            <div className="relative flex items-center justify-center py-md mb-sm z-50">
+              <button 
+                onClick={() => setShowAboutMenu(!showAboutMenu)}
+                className={`relative p-2 rounded-corner-md hover:bg-bg-hover transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${showAboutMenu ? 'rotate-[360deg] scale-110' : 'rotate-0 scale-100'}`}
+              >
+                <img 
+                  src="/favicon.svg" 
+                  alt="Logo" 
+                  className="w-8 h-8 object-contain" 
+                />
+              </button>
+              
+              {showAboutMenu && (
+                <div 
+                  className="absolute left-full top-0 ml-md w-64 bg-surface-bg border border-border-primary shadow-xl rounded-corner-lg p-xl z-50 origin-top-left"
+                  style={{ animation: 'spinDropIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
+                >
+                  <div className="flex flex-col gap-lg text-label-sm text-text-secondary text-left">
+                    <p className="text-label text-text-primary font-bold">RateVietProfessors</p>
+                    <p>© {new Date().getFullYear()} RateViet.<br/>made with 💖 from HCMC.</p>
+                    <div className="flex flex-col gap-sm font-medium mt-sm">
+                      <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors flex items-center justify-between">GitHub <ChevronRight size={14}/></a>
+                      <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Về chúng tôi <ChevronRight size={14}/></a>
+                      <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Quy tắc cộng đồng <ChevronRight size={14}/></a>
+                      <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Bảo mật <ChevronRight size={14}/></a>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          }
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1800,7 +1885,7 @@ export default function App() {
       </div>
 
       <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col">
-        <div className="max-w-5xl mx-auto p-lg md:p-2xl flex-1 w-full">
+        <div className="max-w-5xl mx-auto p-lg md:p-2xl flex-1 w-full pb-24 md:pb-2xl">
           {currentView === 'home' && renderHome()}
           {currentView === 'institution' && renderInstitution()}
           {currentView === 'department' && renderDepartment()}
@@ -1809,19 +1894,6 @@ export default function App() {
           {currentView === 'add-inst-review' && renderAddInstReview()}
           {currentView === 'suggest' && renderSuggest()}
         </div>
-        
-        {/* PERSISTENT FOOTER */}
-        <footer className="bg-surface-bg border-t border-border-primary py-2xl mt-auto shrink-0">
-          <div className="max-w-5xl mx-auto px-lg md:px-2xl flex flex-col md:flex-row justify-between items-center text-label-sm text-text-secondary">
-            <p>© {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.</p>
-            <div className="mt-lg md:mt-0 flex gap-xl font-medium">
-              <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">GitHub</a>
-              <a href="#" className="hover:text-text-primary transition-colors">Về chúng tôi</a>
-              <a href="#" className="hover:text-text-primary transition-colors">Quy tắc cộng đồng</a>
-              <a href="#" className="hover:text-text-primary transition-colors">Bảo mật</a>
-            </div>
-          </div>
-        </footer>
       </main>
 
       {/* Professor Comparison Modal */}
