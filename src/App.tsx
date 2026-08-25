@@ -171,13 +171,23 @@ function SearchableDropdown({
   )
   const selected = options.find(o => o.value === value)
 
+  // Unified, loop-breaking theme effect
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    const root = window.document.documentElement;
+    
+    // BREAK THE LOOP: If the DOM is already correct, stop executing.
+    // This stops AstraUI from fighting with your custom Context.
+    if (root.getAttribute('data-theme') === theme) return;
+
+    // Use requestAnimationFrame to ensure the DOM updates smoothly 
+    // without triggering layout thrashing
+    requestAnimationFrame(() => {
+      root.classList.remove('light', 'dark');
+      root.classList.add(theme);
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem('astra-theme', theme);
+    });
+  }, [theme]);
 
   return (
     <div className="flex flex-col gap-xs" ref={ref}>
