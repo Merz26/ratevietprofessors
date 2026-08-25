@@ -13,7 +13,6 @@ import {
   SelectField,
   SearchComponent,
   Toast,
-  useTheme,
 } from '@figma/astraui'
 import {
   Home,
@@ -154,13 +153,14 @@ const reviewAvg = (metrics: Record<string, number>): number => {
 // SEARCHABLE DROPDOWN
 // ==========================================
 function SearchableDropdown({
-  options, value, onChange, placeholder, label,
+  options, value, onChange, placeholder, label, disabled
 }: {
   options: { value: string; label: string }[]
   value: string
   onChange: (v: string) => void
   placeholder: string
   label?: string
+  disabled?: boolean
 }) {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
@@ -171,23 +171,13 @@ function SearchableDropdown({
   )
   const selected = options.find(o => o.value === value)
 
-  // Unified, loop-breaking theme effect
   useEffect(() => {
-    const root = window.document.documentElement;
-    
-    // BREAK THE LOOP: If the DOM is already correct, stop executing.
-    // This stops AstraUI from fighting with your custom Context.
-    if (root.getAttribute('data-theme') === theme) return;
-
-    // Use requestAnimationFrame to ensure the DOM updates smoothly 
-    // without triggering layout thrashing
-    requestAnimationFrame(() => {
-      root.classList.remove('light', 'dark');
-      root.classList.add(theme);
-      root.setAttribute('data-theme', theme);
-      localStorage.setItem('astra-theme', theme);
-    });
-  }, [theme]);
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   return (
     <div className="flex flex-col gap-xs" ref={ref}>
@@ -196,8 +186,9 @@ function SearchableDropdown({
       )}
       <button
         type="button"
+        disabled={disabled}
         onClick={() => setOpen(v => !v)}
-        className="flex items-center justify-between px-xl py-lg bg-input-bg border border-border-primary rounded-corner-md text-label text-text-primary hover:border-border-selected transition-colors"
+        className={`flex items-center justify-between px-xl py-lg bg-input-bg border border-border-primary rounded-corner-md text-label text-text-primary transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-border-selected'}`}
       >
         <span className={selected ? 'text-text-primary' : 'text-text-tertiary'}>
           {selected ? selected.label : placeholder}
@@ -340,8 +331,13 @@ export default function App() {
     }
   }, [setTheme])
 
+  // Unified, loop-breaking theme effect
   useEffect(() => {
     const root = window.document.documentElement;
+    
+    // Break the loop: If the DOM is already correct, stop executing.
+    if (root.classList.contains(theme) && root.getAttribute('data-theme') === theme) return;
+
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.setAttribute('data-theme', theme);
@@ -350,7 +346,7 @@ export default function App() {
 
   const [toast, setToast] = useState<{ message: string; variant: 'default' | 'success' | 'error' } | null>(null)
 
-  // Bookmarks - persisted in local storage
+  // Bookmarks
   const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem('bookmarked_profs')
@@ -714,8 +710,8 @@ export default function App() {
               <Filter size={14} />
               <span>Lọc:</span>
             </div>
-            <div className="w-48 [&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
-              <SelectField
+            <div className="w-48">
+              <SearchableDropdown
                 options={locationOptions}
                 value={locationFilter}
                 onChange={setLocationFilter}
@@ -998,12 +994,14 @@ export default function App() {
           </Button>
         </div>
 
-        <div className="relative border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
-          <SearchComponent
-            value={deptSearchTerm}
-            placeholder="Tìm kiếm giảng viên..."
-            onChange={setDeptSearchTerm}
-          />
+        <div className="bg-surface-bg rounded-corner-lg p-xl">
+          <div className="border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
+            <SearchComponent
+              value={deptSearchTerm}
+              placeholder="Tìm kiếm giảng viên..."
+              onChange={setDeptSearchTerm}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
@@ -1236,7 +1234,7 @@ export default function App() {
             </div>
             <div className="flex items-center gap-lg shrink-0">
               <span className="text-label-sm text-text-secondary whitespace-nowrap">Sắp xếp:</span>
-              <div className="w-52">
+              <div className="w-52 [&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
                 <SelectField
                   options={[
                     { value: 'newest', label: 'Mới nhất' },
@@ -1398,12 +1396,14 @@ export default function App() {
               </div>
             ))}
 
-            <SelectField
-              label="Điểm số đạt được"
-              options={GRADE_OPTIONS.map(g => ({ value: g, label: g }))}
-              value={reviewGrade}
-              onChange={setReviewGrade}
-            />
+            <div className="[&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
+              <SelectField
+                label="Điểm số đạt được"
+                options={GRADE_OPTIONS.map(g => ({ value: g, label: g }))}
+                value={reviewGrade}
+                onChange={setReviewGrade}
+              />
+            </div>
           </div>
 
           <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
@@ -1528,9 +1528,17 @@ export default function App() {
   // SUGGEST VIEW
   // ==========================================
   const renderSuggest = () => {
-    const univOptions = institutions.map(i => ({ value: i.name, label: `${i.short_name} - ${i.name}` }))
+    const univOptions = institutions
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(i => ({ value: i.name, label: `${i.short_name} - ${i.name}` }))
+    
     const selectedUnivObj = institutions.find(i => i.name === suggSelectedUniv)
-    const deptOptions = selectedUnivObj?.departments?.map(d => ({ value: d, label: d })) || []
+    const deptOptions = (selectedUnivObj?.departments || [])
+      .slice()
+      .sort((a, b) => a.localeCompare(b))
+      .map(d => ({ value: d, label: d }))
+    
     const provinceOptions = VIETNAM_PROVINCES.map(p => ({ value: p, label: p }))
 
     const handleSubmit = async (e: FormEvent) => {
@@ -1572,37 +1580,40 @@ export default function App() {
               value={suggAuthorName}
               onChange={setSuggAuthorName}
             />
-            <SelectField
-              label="Loại đề xuất *"
-              options={[
-                { value: 'professor', label: 'Giảng viên mới' },
-                { value: 'institution', label: 'Trường đại học mới' },
-                { value: 'department', label: 'Khoa / Viện mới' },
-              ]}
-              value={suggestionType}
-              onChange={v => setSuggestionType(v as any)}
-            />
+            
+            <div className="[&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
+              <SelectField
+                label="Loại đề xuất *"
+                options={[
+                  { value: 'professor', label: 'Giảng viên mới' },
+                  { value: 'institution', label: 'Trường đại học mới' },
+                  { value: 'department', label: 'Khoa / Viện mới' },
+                ]}
+                value={suggestionType}
+                onChange={v => setSuggestionType(v as any)}
+              />
+            </div>
 
             {suggestionType === 'professor' && (
-              <div className="flex flex-col gap-lg">
+              <div className="flex flex-col gap-lg z-20">
                 <InputField label="Tên giảng viên *" placeholder="VD: PGS. TS Nguyễn Văn B" value={suggProfName} onChange={setSuggProfName} />
-                <SelectField label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={v => { setSuggSelectedUniv(v); setSuggSelectedDept('') }} />
-                <SelectField label="Khoa / Viện *" placeholder={suggSelectedUniv ? '-- Chọn khoa --' : 'Chọn trường trước'} options={deptOptions} value={suggSelectedDept} onChange={setSuggSelectedDept} disabled={!suggSelectedUniv} />
+                <SearchableDropdown label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={v => { setSuggSelectedUniv(v); setSuggSelectedDept('') }} />
+                <SearchableDropdown label="Khoa / Viện *" placeholder={suggSelectedUniv ? '-- Chọn khoa --' : 'Chọn trường trước'} options={deptOptions} value={suggSelectedDept} onChange={setSuggSelectedDept} disabled={!suggSelectedUniv} />
               </div>
             )}
 
             {suggestionType === 'institution' && (
-              <div className="flex flex-col gap-lg">
+              <div className="flex flex-col gap-lg z-20">
                 <InputField label="Tên đầy đủ *" placeholder="VD: Trường Đại học Ngoại thương" value={suggInstName} onChange={setSuggInstName} />
                 <InputField label="Tên viết tắt *" placeholder="VD: FTU" value={suggInstShortName} onChange={setSuggInstShortName} />
-                <SelectField label="Tỉnh / Thành phố *" placeholder="-- Chọn tỉnh thành --" options={provinceOptions} value={suggInstLocation} onChange={setSuggInstLocation} />
+                <SearchableDropdown label="Tỉnh / Thành phố *" placeholder="-- Chọn tỉnh thành --" options={provinceOptions} value={suggInstLocation} onChange={setSuggInstLocation} />
                 <InputField label="Danh sách khoa (phân cách bằng dấu phẩy)" placeholder="Khoa A, Khoa B..." value={suggInstDepts} onChange={setSuggInstDepts} />
               </div>
             )}
 
             {suggestionType === 'department' && (
-              <div className="flex flex-col gap-lg">
-                <SelectField label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={setSuggSelectedUniv} />
+              <div className="flex flex-col gap-lg z-20">
+                <SearchableDropdown label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={setSuggSelectedUniv} />
                 <InputField label="Tên Khoa / Viện mới *" placeholder="VD: Khoa Khởi nghiệp..." value={suggNewDeptName} onChange={setSuggNewDeptName} />
               </div>
             )}
@@ -1661,7 +1672,7 @@ export default function App() {
   return (
     <>
     <div className="flex h-screen overflow-hidden bg-brand-tertiary">
-      {/* Desktop sidebar - hidden on mobile */}
+      {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <SidebarNavigation
           footer={
@@ -1694,7 +1705,7 @@ export default function App() {
         </SidebarNavigation>
       </div>
 
-      {/* Bookmark panel - desktop only, always mounted, CSS width transitions */}
+      {/* Bookmark panel - desktop only */}
       <div className={`hidden md:flex flex-col bg-surface-bg border-r border-border-primary overflow-hidden transition-all duration-200 ${showBookmarkPanel ? 'w-64' : 'w-0'}`}>
           <div className="p-xl border-b border-border-primary flex items-center justify-between shrink-0">
             <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
@@ -1820,29 +1831,39 @@ export default function App() {
           ) : (
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm giảng viên để so sánh với <strong>{selectedProf.name}</strong></p>
-              <SearchComponent
-                value={compareSearch}
-                placeholder="Tìm theo tên giảng viên..."
-                onChange={setCompareSearch}
-              />
+              
+              <div className="border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
+                <SearchComponent
+                  value={compareSearch}
+                  placeholder="Tìm theo tên giảng viên..."
+                  onChange={setCompareSearch}
+                />
+              </div>
+
               <div className="flex gap-sm flex-wrap">
                 <div className="flex-1 min-w-40">
-                  <SelectField
+                  <SearchableDropdown
                     placeholder="Lọc theo trường"
                     options={[
                       { value: '', label: 'Tất cả trường' },
-                      ...institutions.map(i => ({ value: i.name, label: i.short_name + ' - ' + i.name })),
+                      ...institutions
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(i => ({ value: i.name, label: i.short_name + ' - ' + i.name })),
                     ]}
                     value={compareUniv}
                     onChange={v => { setCompareUniv(v); setCompareDept('') }}
                   />
                 </div>
                 <div className="flex-1 min-w-40">
-                  <SelectField
+                  <SearchableDropdown
                     placeholder="Lọc theo khoa"
                     options={[
                       { value: '', label: 'Tất cả khoa' },
-                      ...(institutions.find(i => i.name === compareUniv)?.departments || []).map(d => ({ value: d, label: d })),
+                      ...(institutions.find(i => i.name === compareUniv)?.departments || [])
+                        .slice()
+                        .sort((a, b) => a.localeCompare(b))
+                        .map(d => ({ value: d, label: d })),
                     ]}
                     value={compareDept}
                     onChange={setCompareDept}
@@ -1893,7 +1914,7 @@ export default function App() {
         </Modal>
       )}
 
-      {/* Mobile bottom nav - visible only on small screens */}
+      {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-bg border-t border-border-primary flex items-stretch">
         {[
           { id: 'home', icon: Home, label: 'Trang chủ' },
@@ -1916,7 +1937,7 @@ export default function App() {
         ))}
       </nav>
 
-      {/* Toast - sits above bottom nav on mobile */}
+      {/* Toast */}
       {toast && (
         <div className="fixed bottom-20 md:bottom-2xl right-2xl z-50 animate-scaleIn">
           <Toast
@@ -1930,7 +1951,7 @@ export default function App() {
       )}
     </div>
 
-    {/* Mobile bookmark sheet - outside the overflow-hidden flex container */}
+    {/* Mobile bookmark sheet */}
     {showBookmarkPanel && (
       <div className="md:hidden fixed inset-0 z-50 flex flex-col">
         <div className="flex-1 bg-black/40" onClick={() => setShowBookmarkPanel(false)} />
