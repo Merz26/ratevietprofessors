@@ -179,7 +179,8 @@ function SearchableDropdown({
   }, [])
 
   return (
-    <div className="flex flex-col gap-xs" ref={ref}>
+    // Added 'relative' to constrain the absolute positioning of the dropdown menu
+    <div className="relative flex flex-col gap-xs" ref={ref}>
       {label && (
         <span className="text-label-sm text-text-secondary">{label}</span>
       )}
@@ -187,7 +188,7 @@ function SearchableDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen(v => !v)}
-        className={`flex items-center justify-between px-xl py-lg bg-input-bg border border-border-primary rounded-corner-md text-label text-text-primary transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-border-selected'}`}
+        className={`flex items-center justify-between px-xl py-lg bg-input-bg border border-border-primary rounded-corner-md text-label text-text-primary transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-primary'}`}
       >
         <span className={selected ? 'text-text-primary' : 'text-text-tertiary'}>
           {selected ? selected.label : placeholder}
@@ -199,15 +200,16 @@ function SearchableDropdown({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-surface-overlay border border-border-primary rounded-corner-lg shadow-xl overflow-hidden animate-scaleIn">
-          <div className="p-sm border-b border-border-primary bg-surface-overlay">
+        // Changed bg to solid bg-surface-bg to prevent transparency overlap issues
+        <div className="absolute z-50 top-full mt-1 w-full bg-surface-bg border border-border-primary rounded-corner-lg shadow-xl overflow-hidden animate-scaleIn">
+          <div className="p-sm border-b border-border-primary bg-surface-bg">
             <InputField
               value={search}
               placeholder="Tìm kiếm..."
               onChange={setSearch}
             />
           </div>
-          <div className="max-h-56 overflow-y-auto bg-surface-overlay">
+          <div className="max-h-56 overflow-y-auto bg-surface-bg">
             {filtered.length === 0 ? (
               <p className="text-label-sm text-text-tertiary text-center p-xl">Không tìm thấy kết quả</p>
             ) : (
@@ -1341,8 +1343,20 @@ export default function App() {
       if (error) { showToast(error.message, 'error'); return }
       if (data) setProfReviews(prev => [{ ...data[0], userVote: null } as ProfessorReview, ...prev])
       showToast('Đánh giá đã được gửi thành công!', 'success')
+      
+      // RESET FORM STATES
       setReviewAuthorName('')
+      setReviewCourse('')
+      setReviewTeaching(5)
+      setReviewDifficulty(3)
+      setReviewWouldTakeAgain(true)
+      setReviewForCredit('Có')
+      setReviewTextbook('Không')
+      setReviewAttendance('Có')
+      setReviewGrade('A')
+      setReviewSelectedTags([])
       setReviewComment('')
+
       setTimeout(() => navigate('professor'), 1200)
     }
 
@@ -1474,8 +1488,12 @@ export default function App() {
       if (error) { showToast(error.message, 'error'); return }
       if (data) setInstReviews(prev => [{ ...data[0], userVote: null } as InstitutionReview, ...prev])
       showToast('Đánh giá trường đã được gửi!', 'success')
+      
+      // RESET FORM STATES
       setInstAuthorName('')
+      setInstMetrics(Object.fromEntries(CRITERIA_KEYS.map(k => [k, 5])))
       setInstReviewComment('')
+
       setTimeout(() => navigate('institution'), 1200)
     }
 
@@ -1531,7 +1549,6 @@ export default function App() {
   // SUGGEST VIEW
   // ==========================================
   const renderSuggest = () => {
-    // Sort Institutions alphabetically
     const univOptions = institutions
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -1539,7 +1556,6 @@ export default function App() {
     
     const selectedUnivObj = institutions.find(i => i.name === suggSelectedUniv)
     
-    // Sort Departments alphabetically
     const deptOptions = (selectedUnivObj?.departments || [])
       .slice()
       .sort((a, b) => a.localeCompare(b))
@@ -1669,7 +1685,19 @@ export default function App() {
 
   const handleNavClick = (id: string) => {
     setActiveSideNav(id)
-    if (id === 'home') navigate('home')
+    if (id === 'home') {
+      // RESET ALL SEARCH AND FILTER STATES ON HOME CLICK
+      setSearchTerm('')
+      setLocationFilter('')
+      setSortBy('name')
+      setDeptSearchTerm('')
+      setCompareSearch('')
+      setCompareUniv('')
+      setCompareDept('')
+      setProfSort('newest')
+      setProfTagFilter('all')
+      navigate('home')
+    }
     else if (id === 'suggest') navigate('suggest')
     else if (id === 'bookmarks') setShowBookmarkPanel(v => !v)
   }
