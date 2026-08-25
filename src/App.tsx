@@ -179,7 +179,6 @@ function SearchableDropdown({
   }, [])
 
   return (
-    // Added 'relative' to constrain the absolute positioning of the dropdown menu
     <div className="relative flex flex-col gap-xs" ref={ref}>
       {label && (
         <span className="text-label-sm text-text-secondary">{label}</span>
@@ -200,7 +199,6 @@ function SearchableDropdown({
       </button>
 
       {open && (
-        // Changed bg to solid bg-surface-bg to prevent transparency overlap issues
         <div className="absolute z-50 top-full mt-1 w-full bg-surface-bg border border-border-primary rounded-corner-lg shadow-xl overflow-hidden animate-scaleIn">
           <div className="p-sm border-b border-border-primary bg-surface-bg">
             <InputField
@@ -931,18 +929,16 @@ export default function App() {
               const revScore = reviewAvg(rev.metrics || {})
               return (
                 <div key={rev.id} className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg animate-fadeIn">
-                  <div className="flex items-start justify-between gap-lg">
-                    <div className="flex items-center gap-lg">
-                      <div className="flex flex-col items-center bg-bg-faint rounded-corner-md p-md min-w-[56px]">
-                        <span className={`text-label font-semibold ${revScore >= 4 ? 'text-green-500' : revScore >= 3 ? 'text-yellow-400' : 'text-red-500'}`}>
-                          {revScore.toFixed(1)}
-                        </span>
-                        <span className="text-video-title text-text-tertiary">/ 5</span>
-                      </div>
-                      <div>
-                        <p className="text-label-sm text-text-secondary">{rev.author_name}</p>
-                        <p className="text-video-title text-text-tertiary">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
-                      </div>
+                  <div className="flex items-start justify-between gap-lg border-b border-border-secondary pb-lg">
+                    <div>
+                      <p className="text-label text-text-primary font-semibold">{rev.author_name || 'Người dùng ẩn danh'}</p>
+                      <p className="text-video-title text-text-tertiary mt-xs">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
+                    </div>
+                    <div className="flex flex-col items-center bg-bg-faint rounded-corner-md p-md min-w-[56px]">
+                      <span className={`text-label font-semibold ${revScore >= 4 ? 'text-green-500' : revScore >= 3 ? 'text-yellow-400' : 'text-red-500'}`}>
+                        {revScore.toFixed(1)}
+                      </span>
+                      <span className="text-video-title text-text-tertiary">/ 5</span>
                     </div>
                   </div>
 
@@ -1265,25 +1261,29 @@ export default function App() {
           ) : (
             reviews.map(rev => (
               <div key={rev.id} className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg animate-fadeIn">
-                <div className="flex flex-col md:flex-row justify-between gap-lg">
-                  <div className="flex gap-lg">
-                    <div className="bg-bg-faint rounded-corner-md p-md text-center min-w-[64px]">
-                      <p className="text-video-title text-text-tertiary uppercase">Chất lượng</p>
-                      <p className={`text-heading font-semibold ${rev.teaching_rating >= 4 ? 'text-green-500' : rev.teaching_rating >= 3 ? 'text-yellow-400' : 'text-red-500'}`}>
-                        {rev.teaching_rating.toFixed(1)}
-                      </p>
+                <div className="flex flex-col md:flex-row justify-between gap-lg border-b border-border-secondary pb-lg">
+                  <div className="flex flex-col gap-md">
+                    <div>
+                      <p className="text-label text-text-primary font-semibold">{rev.author_name || 'Người dùng ẩn danh'}</p>
+                      <p className="text-video-title text-text-tertiary mt-xs">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
                     </div>
-                    <div className="bg-bg-faint rounded-corner-md p-md text-center min-w-[64px]">
-                      <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
-                      <p className={`text-heading font-semibold ${rev.difficulty_rating >= 4 ? 'text-red-500' : rev.difficulty_rating >= 3 ? 'text-yellow-400' : 'text-green-500'}`}>
-                        {rev.difficulty_rating.toFixed(1)}
-                      </p>
+                    <div className="flex gap-lg">
+                      <div className="bg-bg-faint rounded-corner-md p-md text-center min-w-[64px]">
+                        <p className="text-video-title text-text-tertiary uppercase">Chất lượng</p>
+                        <p className={`text-heading font-semibold ${rev.teaching_rating >= 4 ? 'text-green-500' : rev.teaching_rating >= 3 ? 'text-yellow-400' : 'text-red-500'}`}>
+                          {rev.teaching_rating.toFixed(1)}
+                        </p>
+                      </div>
+                      <div className="bg-bg-faint rounded-corner-md p-md text-center min-w-[64px]">
+                        <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
+                        <p className={`text-heading font-semibold ${rev.difficulty_rating >= 4 ? 'text-red-500' : rev.difficulty_rating >= 3 ? 'text-yellow-400' : 'text-green-500'}`}>
+                          {rev.difficulty_rating.toFixed(1)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-label text-text-primary">{rev.course}</p>
-                    <p className="text-video-title text-text-secondary">{rev.author_name}</p>
-                    <p className="text-video-title text-text-tertiary">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
+                  <div className="text-left md:text-right">
+                    <p className="text-label text-text-primary font-medium">{rev.course}</p>
                   </div>
                 </div>
 
@@ -1799,8 +1799,8 @@ export default function App() {
           </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto bg-brand-tertiary p-lg md:p-2xl pb-24 md:pb-2xl">
-        <div className="max-w-5xl mx-auto">
+      <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col">
+        <div className="max-w-5xl mx-auto p-lg md:p-2xl flex-1 w-full">
           {currentView === 'home' && renderHome()}
           {currentView === 'institution' && renderInstitution()}
           {currentView === 'department' && renderDepartment()}
@@ -1809,6 +1809,19 @@ export default function App() {
           {currentView === 'add-inst-review' && renderAddInstReview()}
           {currentView === 'suggest' && renderSuggest()}
         </div>
+        
+        {/* PERSISTENT FOOTER */}
+        <footer className="bg-surface-bg border-t border-border-primary py-2xl mt-auto shrink-0">
+          <div className="max-w-5xl mx-auto px-lg md:px-2xl flex flex-col md:flex-row justify-between items-center text-label-sm text-text-secondary">
+            <p>© {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.</p>
+            <div className="mt-lg md:mt-0 flex gap-xl font-medium">
+              <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">GitHub</a>
+              <a href="#" className="hover:text-text-primary transition-colors">Về chúng tôi</a>
+              <a href="#" className="hover:text-text-primary transition-colors">Quy tắc cộng đồng</a>
+              <a href="#" className="hover:text-text-primary transition-colors">Bảo mật</a>
+            </div>
+          </div>
+        </footer>
       </main>
 
       {/* Professor Comparison Modal */}
