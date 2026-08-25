@@ -338,7 +338,6 @@ export default function App() {
   useEffect(() => {
     const root = window.document.documentElement;
     if (root.classList.contains(theme) && root.getAttribute('data-theme') === theme) return;
-
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.setAttribute('data-theme', theme);
@@ -346,6 +345,17 @@ export default function App() {
   }, [theme]);
 
   const [toast, setToast] = useState<{ message: string; variant: 'default' | 'success' | 'error' } | null>(null)
+
+  // Header Logo States
+  const [showInfoMenu, setShowInfoMenu] = useState(false)
+  const [isSpinning, setIsSpinning] = useState(false)
+
+  const handleLogoClick = () => {
+    setIsSpinning(true);
+    setShowInfoMenu(true);
+    // Reset spin animation class after it completes (500ms)
+    setTimeout(() => setIsSpinning(false), 500);
+  }
 
   // Bookmarks
   const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>(() => {
@@ -356,10 +366,7 @@ export default function App() {
       return []
     }
   })
-  
-  // Toggles for Panels and Menus
   const [showBookmarkPanel, setShowBookmarkPanel] = useState<boolean>(false)
-  const [showAboutMenu, setShowAboutMenu] = useState<boolean>(false)
 
   // Comparison state
   const [compareModal, setCompareModal] = useState(false)
@@ -759,11 +766,13 @@ export default function App() {
                   key={inst.id}
                   type="button"
                   onClick={() => navigate('institution', inst)}
-                  className="bg-surface-bg rounded-corner-lg p-xl flex flex-col text-left border border-border-primary hover:border-brand-primary hover:shadow-sm transition-all group animate-scaleIn h-full"
+                  className="bg-surface-bg rounded-corner-lg p-xl flex flex-col h-full text-left border border-border-primary hover:border-brand-primary hover:shadow-sm transition-all group animate-scaleIn"
                 >
-                  <div className="flex flex-col gap-xs mb-lg">
-                    <Badge label={inst.short_name} variant="brand" className="w-fit" />
-                    <h3 className="text-label text-text-primary leading-snug group-hover:text-brand-primary transition-colors line-clamp-2 mt-xs">
+                  <div className="flex flex-col gap-xs flex-1 min-w-0 mb-lg">
+                    <div className="flex items-start justify-between gap-sm">
+                      <Badge label={inst.short_name} variant="brand" />
+                    </div>
+                    <h3 className="text-label text-text-primary leading-snug group-hover:text-brand-primary transition-colors line-clamp-2 mt-sm">
                       {inst.name}
                     </h3>
                   </div>
@@ -773,7 +782,7 @@ export default function App() {
                       <MapPin size={11} />
                       {inst.location}
                     </p>
-                    <div className="flex items-center justify-between pt-lg border-t border-border-secondary">
+                    <div className="flex items-center justify-between pt-lg border-t border-border-secondary w-full shrink-0">
                       <ScoreBadge value={stats.overall} />
                       <span className="text-video-title text-text-secondary">{stats.total} đánh giá</span>
                     </div>
@@ -900,15 +909,15 @@ export default function App() {
                   key={idx}
                   type="button"
                   onClick={() => navigate('department', selectedInst, dept)}
-                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col transition-all group animate-slideInLeft h-full"
+                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col h-full transition-all group animate-slideInLeft"
                   style={{ animationDelay: `${idx * 40}ms` }}
                 >
                   <div className="flex flex-col gap-xs mb-lg">
                     <h3 className="text-label text-text-primary group-hover:text-brand-primary transition-colors">{dept}</h3>
-                  </div>
-                  <div className="mt-auto w-full flex items-center justify-between pt-lg border-t border-border-secondary">
                     <p className="text-video-title text-text-secondary">{deptProfs.length} giảng viên</p>
-                    <ChevronRight size={16} className="text-brand-primary" />
+                  </div>
+                  <div className="mt-auto flex items-center justify-end text-brand-primary">
+                    <ChevronRight size={16} />
                   </div>
                 </button>
               )
@@ -1019,13 +1028,13 @@ export default function App() {
               return (
                 <div
                   key={prof.id}
-                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col transition-all animate-fadeIn h-full"
+                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col h-full transition-all animate-fadeIn"
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   <button
                     type="button"
                     onClick={() => navigate('professor', selectedInst, selectedDept, prof)}
-                    className="flex flex-col text-left w-full h-full"
+                    className="flex flex-col h-full text-left w-full"
                   >
                     <div className="flex items-start justify-between gap-lg w-full mb-lg">
                       <div className="flex items-center gap-lg">
@@ -1049,16 +1058,14 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="mt-auto w-full flex flex-col">
-                      <div className="flex gap-xl pt-lg border-t border-border-secondary w-full">
-                        <div>
-                          <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
-                          <p className="text-label-sm text-text-primary">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
-                          <p className="text-label-sm text-text-primary">{stats.would_take_again_pct}%</p>
-                        </div>
+                    <div className="mt-auto flex gap-xl pt-lg border-t border-border-secondary w-full">
+                      <div>
+                        <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
+                        <p className="text-label-sm text-text-primary">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
+                        <p className="text-label-sm text-text-primary">{stats.would_take_again_pct}%</p>
                       </div>
                     </div>
                   </button>
@@ -1708,89 +1715,17 @@ export default function App() {
 
   return (
     <>
-    {/* Global custom animation styles */}
-    <style>{`
-      @keyframes spinDropIn {
-        0% { transform: scale(0.6) rotate(-20deg); opacity: 0; }
-        70% { transform: scale(1.05) rotate(5deg); opacity: 1; }
-        100% { transform: scale(1) rotate(0deg); opacity: 1; }
-      }
-    `}</style>
-
-    {/* Menu overlays to handle outside clicks */}
-    {showAboutMenu && (
-      <div 
-        className="fixed inset-0 z-40" 
-        onClick={() => setShowAboutMenu(false)} 
-      />
-    )}
-
-    <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-brand-tertiary">
-      
-      {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-between p-lg bg-surface-bg border-b border-border-primary shrink-0 sticky top-0 z-40">
-        <div className="relative">
-          <button 
-            onClick={() => setShowAboutMenu(!showAboutMenu)}
-            className={`p-1 rounded-corner-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${showAboutMenu ? 'rotate-[360deg] scale-110' : 'rotate-0 scale-100'}`}
-          >
-             <img src="/favicon.svg" alt="Logo" className="w-8 h-8 object-contain" />
-          </button>
-          {showAboutMenu && (
-            <div 
-              className="absolute left-0 top-full mt-md w-64 bg-surface-bg border border-border-primary shadow-xl rounded-corner-lg p-xl z-50"
-              style={{ animation: 'spinDropIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards', transformOrigin: 'top left' }}
-            >
-              <div className="flex flex-col gap-lg text-label-sm text-text-secondary">
-                <p className="text-label text-text-primary font-bold">RateVietProfessors</p>
-                <p>© {new Date().getFullYear()} RateViet.<br/>made with 💖 from HCMC.</p>
-                <div className="flex flex-col gap-sm font-medium mt-sm">
-                  <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors flex items-center justify-between">GitHub <ChevronRight size={14}/></a>
-                  <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Về chúng tôi <ChevronRight size={14}/></a>
-                  <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Quy tắc cộng đồng <ChevronRight size={14}/></a>
-                  <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Bảo mật <ChevronRight size={14}/></a>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        <h1 className="text-label font-semibold text-text-primary">RateVietProfessors</h1>
-        <div className="w-10"></div>
-      </div>
-
+    <div className="flex h-screen overflow-hidden bg-brand-tertiary">
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <SidebarNavigation
           header={
-            <div className="relative flex items-center justify-center py-md mb-sm z-50">
-              <button 
-                onClick={() => setShowAboutMenu(!showAboutMenu)}
-                className={`relative p-2 rounded-corner-md hover:bg-bg-hover transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${showAboutMenu ? 'rotate-[360deg] scale-110' : 'rotate-0 scale-100'}`}
-              >
-                <img 
-                  src="/favicon.svg" 
-                  alt="Logo" 
-                  className="w-8 h-8 object-contain" 
-                />
-              </button>
-              
-              {showAboutMenu && (
-                <div 
-                  className="absolute left-full top-0 ml-md w-64 bg-surface-bg border border-border-primary shadow-xl rounded-corner-lg p-xl z-50 origin-top-left"
-                  style={{ animation: 'spinDropIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
-                >
-                  <div className="flex flex-col gap-lg text-label-sm text-text-secondary text-left">
-                    <p className="text-label text-text-primary font-bold">RateVietProfessors</p>
-                    <p>© {new Date().getFullYear()} RateViet.<br/>made with 💖 from HCMC.</p>
-                    <div className="flex flex-col gap-sm font-medium mt-sm">
-                      <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors flex items-center justify-between">GitHub <ChevronRight size={14}/></a>
-                      <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Về chúng tôi <ChevronRight size={14}/></a>
-                      <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Quy tắc cộng đồng <ChevronRight size={14}/></a>
-                      <a href="#" className="hover:text-brand-primary transition-colors flex items-center justify-between">Bảo mật <ChevronRight size={14}/></a>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div className="flex items-center justify-center py-md mb-sm cursor-pointer" onClick={handleLogoClick}>
+              <img 
+                src="/favicon.svg" 
+                alt="Logo" 
+                className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+              />
             </div>
           }
           footer={
@@ -1885,7 +1820,7 @@ export default function App() {
       </div>
 
       <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col">
-        <div className="max-w-5xl mx-auto p-lg md:p-2xl flex-1 w-full pb-24 md:pb-2xl">
+        <div className="max-w-5xl mx-auto p-lg md:p-2xl flex-1 w-full">
           {currentView === 'home' && renderHome()}
           {currentView === 'institution' && renderInstitution()}
           {currentView === 'department' && renderDepartment()}
@@ -1895,6 +1830,32 @@ export default function App() {
           {currentView === 'suggest' && renderSuggest()}
         </div>
       </main>
+
+      {/* Info Menu Modal (Replaces persistent footer) */}
+      <Modal
+        isOpen={showInfoMenu}
+        onClose={() => setShowInfoMenu(false)}
+        title="Về RateVietProfessors"
+        size="small"
+        footer={
+          <ButtonGroup align="end">
+            <Button variant="neutral" onClick={() => setShowInfoMenu(false)}>Đóng</Button>
+          </ButtonGroup>
+        }
+      >
+        <div className="flex flex-col gap-lg text-center items-center py-lg">
+          <img src="/favicon.svg" alt="Logo" className="w-16 h-16 object-contain mb-sm" />
+          <p className="text-label-sm text-text-secondary">
+            © {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.
+          </p>
+          <div className="flex gap-lg font-medium justify-center mt-sm flex-wrap">
+            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">GitHub</a>
+            <a href="#" className="text-brand-primary hover:underline transition-colors">Về chúng tôi</a>
+            <a href="#" className="text-brand-primary hover:underline transition-colors">Quy tắc cộng đồng</a>
+            <a href="#" className="text-brand-primary hover:underline transition-colors">Bảo mật</a>
+          </div>
+        </div>
+      </Modal>
 
       {/* Professor Comparison Modal */}
       {selectedProf && (
