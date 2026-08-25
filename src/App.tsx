@@ -799,7 +799,7 @@ export default function App() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-lg mt-2xl">
+            <div className="flex items-center justify-center gap-lg mt-10">
               <Button
                 variant="neutral"
                 size="small"
@@ -1720,13 +1720,17 @@ export default function App() {
       <div className="hidden md:flex">
         <SidebarNavigation
           header={
-            <div className="flex items-center justify-center py-md mb-sm cursor-pointer" onClick={handleLogoClick}>
+            <button 
+              type="button"
+              className="flex items-center justify-center py-md mb-sm w-full bg-transparent border-none cursor-pointer" 
+              onClick={handleLogoClick}
+            >
               <img 
                 src="/favicon.svg" 
                 alt="Logo" 
-                className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+                className={`w-8 h-8 object-contain pointer-events-none transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
               />
-            </div>
+            </button>
           }
           footer={
             <>
