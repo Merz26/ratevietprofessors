@@ -1717,21 +1717,9 @@ export default function App() {
     <>
     <div className="flex h-screen overflow-hidden bg-brand-tertiary">
       {/* Desktop sidebar */}
-      <div className="hidden md:flex">
+      <div className="hidden md:flex relative"> 
         <SidebarNavigation
-          header={
-            <div 
-              className="flex items-center justify-center py-md mb-sm cursor-pointer pointer-events-auto relative z-50" 
-              onClick={handleLogoClick}
-              onPointerDown={handleLogoClick}
-            >
-              <img 
-                src="/favicon.svg" 
-                alt="Logo" 
-                className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
-              />
-            </div>
-          }
+          header={<div className="py-md mb-sm h-8 w-full" />} 
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1760,6 +1748,19 @@ export default function App() {
             />
           </Tooltip>
         </SidebarNavigation>
+
+        {/* The Escape Hatch: Absolute overlay for the logo */}
+        <button 
+          type="button"
+          onClick={handleLogoClick}
+          className="absolute top-4 left-0 right-0 mx-auto flex items-center justify-center w-12 h-12 bg-transparent border-none cursor-pointer z-50 hover:opacity-80 transition-opacity"
+        >
+          <img 
+            src="/favicon.svg" 
+            alt="Logo" 
+            className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+          />
+        </button>
       </div>
 
       {/* Bookmark panel - desktop only */}
