@@ -18,8 +18,6 @@ import {
 import {
   Home,
   Star,
-  LogOut,
-  LogIn,
   MapPin,
   ChevronRight,
   ThumbsUp,
@@ -29,7 +27,6 @@ import {
   Filter,
   ArrowUpDown,
   ChevronLeft,
-  ShieldCheck,
   GraduationCap,
   Moon,
   Sun,
@@ -37,7 +34,6 @@ import {
   X,
   Bookmark,
   BookmarkCheck,
-  Settings,
 } from 'lucide-react'
 import { supabase } from './supabaseClient'
 import { ThemeContext } from './main'
@@ -64,7 +60,7 @@ interface Professor {
 interface InstitutionReview {
   id: string
   inst_id: number
-  user_email: string
+  author_name: string
   comment: string
   created_at: string
   metrics: Record<string, number>
@@ -76,7 +72,7 @@ interface InstitutionReview {
 interface ProfessorReview {
   id: string
   prof_id: number
-  user_email: string
+  author_name: string
   course: string
   teaching_rating: number
   difficulty_rating: number
@@ -103,14 +99,9 @@ interface Suggestion {
   location?: string
   departments?: string[]
   content: string
-  user_email: string
+  author_name: string
   status: string
   created_at?: string
-}
-
-interface CurrentUser {
-  email: string
-  name: string
 }
 
 const VIETNAM_PROVINCES = [
@@ -131,8 +122,9 @@ const PROF_TAGS = ['Nghiêm khắc','Bài giảng tuyệt vời','Tiêu chí ch�
 const CRITERIA_KEYS = ['Uy tín trường','Địa điểm','Cơ hội việc làm','Cơ sở vật chất','Mạng Internet','Đồ ăn','Câu lạc bộ','Đời sống xã hội','Độ hài lòng','An toàn']
 const GRADE_OPTIONS = ['A+','A','A-','B+','B','B-','C+','C','C-','D','F','Đạt','Chưa hoàn thành']
 
-// ─── Rating color helpers ────────────────────────────────────────────────────
-// Maps a 1–5 integer to Tailwind bg+text classes for the selected state
+// ==========================================
+// RATING COLOR HELPERS
+// ==========================================
 const ratingSelectedClass = (n: number): string => {
   const map: Record<number, string> = {
     1: 'bg-red-500 border-red-500 text-white',
@@ -144,7 +136,6 @@ const ratingSelectedClass = (n: number): string => {
   return map[n] ?? 'bg-brand-primary border-brand-primary text-on-brand'
 }
 
-// Maps a numeric value (1–5) to a bar color class
 const barColorClass = (v: number): string => {
   if (v >= 4.5) return 'bg-green-500'
   if (v >= 3.5) return 'bg-lime-500'
@@ -153,7 +144,6 @@ const barColorClass = (v: number): string => {
   return 'bg-red-500'
 }
 
-// Compute a single review's own average from its metrics map
 const reviewAvg = (metrics: Record<string, number>): number => {
   const vals = Object.values(metrics)
   if (!vals.length) return 0
@@ -161,7 +151,7 @@ const reviewAvg = (metrics: Record<string, number>): number => {
 }
 
 // ==========================================
-// SEARCHABLE DROPDOWN (for complex selects)
+// SEARCHABLE DROPDOWN
 // ==========================================
 function SearchableDropdown({
   options, value, onChange, placeholder, label,
@@ -256,7 +246,7 @@ function ScoreBadge({ value }: { value: number }) {
 }
 
 // ==========================================
-// RATING SELECTOR (1-5 buttons)
+// RATING SELECTOR
 // ==========================================
 function RatingSelector({
   label, value, onChange, lowLabel, highLabel,
@@ -333,80 +323,34 @@ export default function App() {
   useTheme()
   const { theme, setTheme } = useContext(ThemeContext)
 
-  // 1. ADD THIS NEW USE-EFFECT BLOCK:
+  // Local storage theme persistence
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('astra-theme')
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      setTheme(savedTheme)
+    }
+  }, [setTheme])
+
   useEffect(() => {
     const root = window.document.documentElement;
-    
-    // Remove the old theme class
     root.classList.remove('light', 'dark');
-    
-    // Add the new theme class and AstraUI's data attribute
     root.classList.add(theme);
     root.setAttribute('data-theme', theme);
+    localStorage.setItem('astra-theme', theme);
   }, [theme]);
 
-  // Auth — localStorage is synchronous so session is available on first render
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
+  const [toast, setToast] = useState<{ message: string; variant: 'default' | 'success' | 'error' } | null>(null)
+
+  // Bookmarks - persisted in local storage
+  const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>(() => {
     try {
-      const raw = localStorage.getItem('mock_session')
-      if (!raw) return null
-      const u = JSON.parse(raw)
-      return { email: u.email, name: u.user_metadata?.full_name || u.email.split('@')[0] }
+      const saved = localStorage.getItem('bookmarked_profs')
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return null
+      return []
     }
   })
-  const [authView, setAuthView] = useState<'login' | 'signup'>('login')
-  const [authEmail, setAuthEmail] = useState('')
-  const [authPassword, setAuthPassword] = useState('')
-  const [authName, setAuthName] = useState('')
-  const [authModal, setAuthModal] = useState(false)
-  const [toast, setToast] = useState<{ message: string; variant: 'default' | 'success' | 'error' } | null>(null)
-  // Password recovery modal (triggered by ?type=recovery in URL hash)
-  const [recoveryModal, setRecoveryModal] = useState(false)
-  const [recoveryPassword, setRecoveryPassword] = useState('')
-
-  // Account page state
-  const [accountTab, setAccountTab] = useState<'profile' | 'security' | 'settings'>('profile')
-  const [editName, setEditName] = useState('')
-  const [editInstitution, setEditInstitution] = useState('')
-  const [editLanguage, setEditLanguage] = useState('vi')
-  const [productUpdates, setProductUpdates] = useState(true)
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [resetEmail, setResetEmail] = useState('')
-
-  // Bookmarks
-  const [bookmarkedProfIds, setBookmarkedProfIds] = useState<number[]>([])
   const [showBookmarkPanel, setShowBookmarkPanel] = useState<boolean>(false)
-
-  // Fetch session and bookmarks from Supabase database
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setCurrentUser({
-          email: session.user.email ?? '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
-        })
-        setBookmarkedProfIds(session.user.user_metadata?.bookmarked_professors || [])
-      }
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setCurrentUser({
-          email: session.user.email ?? '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
-        })
-        setBookmarkedProfIds(session.user.user_metadata?.bookmarked_professors || [])
-      } else {
-        setCurrentUser(null)
-        setBookmarkedProfIds([])
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
 
   // Comparison state
   const [compareModal, setCompareModal] = useState(false)
@@ -427,7 +371,7 @@ export default function App() {
   const [selectedInst, setSelectedInst] = useState<Institution | null>(null)
   const [selectedDept, setSelectedDept] = useState<string | null>(null)
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null)
-  const [activeSideNav, setActiveSideNav] = useState('home') // home|ratings|suggest|profile
+  const [activeSideNav, setActiveSideNav] = useState('home')
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('')
@@ -442,6 +386,7 @@ export default function App() {
   const entriesPerPage = 16
   
   // Prof review form
+  const [reviewAuthorName, setReviewAuthorName] = useState('')
   const [reviewCourse, setReviewCourse] = useState('')
   const [reviewTeaching, setReviewTeaching] = useState(5)
   const [reviewDifficulty, setReviewDifficulty] = useState(3)
@@ -454,12 +399,14 @@ export default function App() {
   const [reviewComment, setReviewComment] = useState('')
 
   // Inst review form
+  const [instAuthorName, setInstAuthorName] = useState('')
   const [instMetrics, setInstMetrics] = useState<Record<string, number>>(
     Object.fromEntries(CRITERIA_KEYS.map(k => [k, 5]))
   )
   const [instReviewComment, setInstReviewComment] = useState('')
 
   // Suggest form
+  const [suggAuthorName, setSuggAuthorName] = useState('')
   const [suggestionType, setSuggestionType] = useState<'professor' | 'institution' | 'department'>('professor')
   const [suggProfName, setSuggProfName] = useState('')
   const [suggSelectedUniv, setSuggSelectedUniv] = useState('')
@@ -477,14 +424,6 @@ export default function App() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, sortBy, locationFilter])
-
-  // Detect Supabase password recovery redirect (type=recovery in URL hash)
-  useEffect(() => {
-    if (window.location.hash.includes('type=recovery')) {
-      setRecoveryModal(true)
-      window.history.replaceState(null, '', window.location.pathname)
-    }
-  }, [])
 
   // Fetch info and review data
   useEffect(() => {
@@ -522,8 +461,8 @@ export default function App() {
   useEffect(() => {
     if (searchTerm.length >= 1) {
       const matches = institutions.filter(inst =>
-        inst.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inst.short_name.toLowerCase().includes(searchTerm.toLowerCase())
+        (inst.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (inst.short_name || '').toLowerCase().includes(searchTerm.toLowerCase())
       ).slice(0, 5)
       setSearchSuggestions(matches)
       setShowSearchSuggestions(true)
@@ -572,9 +511,6 @@ export default function App() {
   }
 
   const handleInstVote = async (id: string, vote: 'helpful' | 'not_helpful') => {
-    if (!currentUser) { setAuthModal(true); return }
-
-    // 1. Find the target review and calculate the new totals
     const targetReview = instReviews.find(r => r.id === id)
     if (!targetReview) return
 
@@ -590,12 +526,10 @@ export default function App() {
     else if (targetReview.userVote === 'not_helpful') { nh--; h++ }
     else { vote === 'helpful' ? h++ : nh++ }
 
-    // 2. Optimistic UI update
     setInstReviews(prev => prev.map(r => 
       r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: newVote } : r
     ))
 
-    // 3. Push the new totals to the database
     try {
       const { error } = await supabase
         .from('institution_reviews')
@@ -609,35 +543,18 @@ export default function App() {
     }
   }
 
-  const toggleBookmark = async (profId: number) => {
-    if (!currentUser) { setAuthModal(true); return }
-    
+  const toggleBookmark = (profId: number) => {
     const isBookmarked = bookmarkedProfIds.includes(profId)
     const updated = isBookmarked
       ? bookmarkedProfIds.filter(id => id !== profId)
       : [...bookmarkedProfIds, profId]
     
-    // Optimistic UI update
     setBookmarkedProfIds(updated)
-    
-    try {
-      // Save directly to the user's metadata array in the database
-      const { error } = await supabase.auth.updateUser({ 
-        data: { bookmarked_professors: updated } 
-      })
-      if (error) throw error
-      showToast(isBookmarked ? 'Đã xóa khỏi danh sách lưu' : 'Đã lưu giảng viên', isBookmarked ? 'default' : 'success')
-    } catch (error) {
-      // Revert if the database update fails
-      setBookmarkedProfIds(bookmarkedProfIds)
-      showToast('Lỗi khi lưu. Vui lòng thử lại.', 'error')
-    }
+    localStorage.setItem('bookmarked_profs', JSON.stringify(updated))
+    showToast(isBookmarked ? 'Đã xóa khỏi danh sách lưu' : 'Đã lưu giảng viên', isBookmarked ? 'default' : 'success')
   }
 
   const handleProfVote = async (id: string, vote: 'helpful' | 'not_helpful') => {
-    if (!currentUser) { setAuthModal(true); return }
-    
-    // 1. Find the target review and calculate the new totals
     const targetReview = profReviews.find(r => r.id === id)
     if (!targetReview) return
 
@@ -653,12 +570,10 @@ export default function App() {
     else if (targetReview.userVote === 'not_helpful') { nh--; h++ }
     else { vote === 'helpful' ? h++ : nh++ }
 
-    // 2. Optimistic UI update (feels instant to the user)
     setProfReviews(prev => prev.map(r => 
       r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: newVote } : r
     ))
 
-    // 3. Push the new totals to the database
     try {
       const { error } = await supabase
         .from('professor_reviews')
@@ -669,42 +584,7 @@ export default function App() {
     } catch (error) {
       console.error("Failed to push vote:", error)
       showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
-      // Optional: You could revert the state here if the DB call fails
     }
-  }
-
-  // ==========================================
-  // AUTH HANDLERS
-  // ==========================================
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault()
-    const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword })
-    if (error) { showToast(error.message, 'error'); return }
-    if (data?.user) {
-      setCurrentUser({ email: data.user.email ?? '', name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] })
-    }
-    setAuthModal(false)
-    showToast('Đăng nhập thành công!', 'success')
-    setAuthEmail(''); setAuthPassword('')
-  }
-
-  const handleSignup = async (e: FormEvent) => {
-    e.preventDefault()
-    const { data, error } = await supabase.auth.signUp({ email: authEmail, password: authPassword, options: { data: { full_name: authName } } })
-    if (error) { showToast(error.message, 'error'); return }
-    if (data?.user) {
-      setCurrentUser({ email: data.user.email ?? '', name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] })
-    }
-    setAuthModal(false)
-    showToast('Tài khoản đã được tạo thành công!', 'success')
-    setAuthEmail(''); setAuthPassword(''); setAuthName('')
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setCurrentUser(null)
-    setCurrentView('home')
-    showToast('Đã đăng xuất', 'default')
   }
 
   // ==========================================
@@ -716,16 +596,6 @@ export default function App() {
     if (dept !== undefined) setSelectedDept(dept)
     if (prof !== undefined) setSelectedProf(prof)
     if (view === 'home') { setSelectedInst(null); setSelectedDept(null); setSelectedProf(null) }
-  }
-
-  // ==========================================
-  // SECONDARY NAV ITEMS
-  // ==========================================
-  const secondaryNavTitle = () => {
-    if (activeSideNav === 'ratings') return 'Đánh giá'
-    if (activeSideNav === 'suggest') return 'Đề xuất'
-    if (activeSideNav === 'profile') return 'Tài khoản'
-    return 'Trường Đại học'
   }
 
   // ==========================================
@@ -765,7 +635,6 @@ export default function App() {
     ]
 
     const filtered = institutions.filter(inst => {
-      // Provide fallback empty strings if the database returns null
       const safeName = inst.name || '';
       const safeShortName = inst.short_name || '';
 
@@ -786,14 +655,12 @@ export default function App() {
 
     return (
       <div className="flex flex-col gap-2xl animate-fadeIn">
-        {/* Hero search */}
         <div className="bg-surface-bg rounded-corner-lg p-2xl flex flex-col gap-xl">
           <div className="flex flex-col gap-xs">
             <h1 className="text-title text-text-primary">Tìm kiếm Trường Đại học</h1>
             <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
           </div>
 
-          {/* Search with predictive suggestions */}
           <div className="relative">
             <SearchComponent
               value={searchTerm}
@@ -833,7 +700,6 @@ export default function App() {
             )}
           </div>
 
-          {/* Filters */}
           <div className="flex items-center gap-lg flex-wrap">
             <div className="flex items-center gap-sm text-label-sm text-text-secondary">
               <Filter size={14} />
@@ -866,7 +732,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Institution grid */}
         <div>
           <div className="flex items-center justify-between mb-lg">
             <p className="text-label-sm text-text-secondary">
@@ -957,7 +822,6 @@ export default function App() {
       <div className="flex flex-col gap-2xl animate-fadeIn">
         {renderBreadcrumb()}
 
-        {/* Header */}
         <div className="bg-surface-bg rounded-corner-lg p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
           <div className="flex flex-col gap-xs">
             <Badge label={selectedInst.short_name} variant="brand" />
@@ -970,24 +834,20 @@ export default function App() {
             <Button
               variant="neutral"
               size="small"
-              onClick={() => alert('So sánh - sắp ra mắt!')}
+              onClick={() => alert('So sánh đang được phát triển!')}
             >
               So sánh
             </Button>
             <Button
               variant="primary"
               size="small"
-              onClick={() => {
-                if (!currentUser) { setAuthModal(true); return }
-                navigate('add-inst-review')
-              }}
+              onClick={() => navigate('add-inst-review')}
             >
               Đánh giá
             </Button>
           </ButtonGroup>
         </div>
 
-        {/* Stats card */}
         <div className="bg-surface-bg rounded-corner-lg p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
           <div className="flex flex-col items-center justify-center p-xl">
             <span className="text-[56px] font-semibold text-text-primary leading-none">{stats.overall > 0 ? stats.overall.toFixed(1) : '0.0'}</span>
@@ -1020,7 +880,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Departments */}
         <div className="flex flex-col gap-lg">
           <h2 className="text-heading text-text-primary">Khoa / Viện trực thuộc</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
@@ -1047,7 +906,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Reviews */}
         <div className="flex flex-col gap-lg">
           <div className="flex items-center justify-between">
             <h2 className="text-heading text-text-primary">Đánh giá cơ sở</h2>
@@ -1072,7 +930,7 @@ export default function App() {
                         <span className="text-video-title text-text-tertiary">/ 5</span>
                       </div>
                       <div>
-                        <p className="text-label-sm text-text-secondary">{rev.user_email}</p>
+                        <p className="text-label-sm text-text-secondary">{rev.author_name}</p>
                         <p className="text-video-title text-text-tertiary">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
                       </div>
                     </div>
@@ -1125,7 +983,7 @@ export default function App() {
             variant="neutral"
             size="small"
             iconStart={<Plus size={16} />}
-            onClick={() => { if (!currentUser) { setAuthModal(true); return } navigate('suggest') }}
+            onClick={() => navigate('suggest')}
           >
             Thêm giảng viên
           </Button>
@@ -1225,7 +1083,6 @@ export default function App() {
         {renderBreadcrumb()}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-xl">
-          {/* Left: Overall stats */}
           <div className="bg-surface-bg rounded-corner-lg p-2xl flex flex-col gap-xl">
             <div className="flex flex-col gap-xs">
               <span className="text-[48px] font-semibold text-text-primary leading-none">
@@ -1272,17 +1129,13 @@ export default function App() {
               <Button
                 variant="primary"
                 iconEnd={<ChevronRight size={16} />}
-                onClick={() => {
-                  if (!currentUser) { setAuthModal(true); return }
-                  navigate('add-prof-review')
-                }}
+                onClick={() => navigate('add-prof-review')}
               >
                 Đánh giá
               </Button>
             </ButtonGroup>
           </div>
 
-          {/* Right: Distribution + tags + similar */}
           <div className="flex flex-col gap-xl">
             <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
               <h3 className="text-label text-text-primary font-semibold">Tổng hợp đánh giá</h3>
@@ -1311,7 +1164,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Similarity suggestions */}
             {(() => {
               const similarProfs = professors
                 .filter(p => p.id !== selectedProf.id && p.university === selectedProf.university)
@@ -1349,7 +1201,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tag chip search + sort toolbar */}
         <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
           <div className="flex flex-col sm:flex-row gap-lg items-start sm:items-center justify-between">
             <div className="flex flex-col gap-sm flex-1">
@@ -1392,7 +1243,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Reviews */}
         <div className="flex flex-col gap-lg">
           <h2 className="text-heading text-text-primary">Đánh giá từ sinh viên</h2>
           {reviews.length === 0 ? (
@@ -1419,7 +1269,7 @@ export default function App() {
                   </div>
                   <div className="text-right">
                     <p className="text-label text-text-primary">{rev.course}</p>
-                    <p className="text-video-title text-text-secondary">{rev.user_email}</p>
+                    <p className="text-video-title text-text-secondary">{rev.author_name}</p>
                     <p className="text-video-title text-text-tertiary">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
                   </div>
                 </div>
@@ -1463,11 +1313,13 @@ export default function App() {
 
     const handleSub = async (e: FormEvent) => {
       e.preventDefault()
-      if (!currentUser) { setAuthModal(true); return }
       if (!reviewCourse.trim() || !reviewComment.trim()) { showToast('Vui lòng nhập đầy đủ thông tin', 'error'); return }
 
+      const finalName = reviewAuthorName.trim() || 'Ẩn danh'
+
       const newRev = {
-        prof_id: selectedProf.id, user_email: currentUser.email,
+        prof_id: selectedProf.id, 
+        author_name: finalName,
         course: reviewCourse.trim(), teaching_rating: reviewTeaching, difficulty_rating: reviewDifficulty,
         would_take_again: reviewWouldTakeAgain, for_credit: reviewForCredit, textbook: reviewTextbook,
         attendance: reviewAttendance, grade: reviewGrade, tags: reviewSelectedTags, comment: reviewComment.trim(),
@@ -1478,6 +1330,8 @@ export default function App() {
       if (error) { showToast(error.message, 'error'); return }
       if (data) setProfReviews(prev => [{ ...data[0], userVote: null } as ProfessorReview, ...prev])
       showToast('Đánh giá đã được gửi thành công!', 'success')
+      setReviewAuthorName('')
+      setReviewComment('')
       setTimeout(() => navigate('professor'), 1200)
     }
 
@@ -1488,11 +1342,16 @@ export default function App() {
         <div className="flex flex-col gap-xs">
           <h1 className="text-title text-text-primary">Đánh giá {selectedProf.name}</h1>
           <p className="text-label-sm text-text-secondary">{selectedProf.department} • {selectedProf.university}</p>
-          {currentUser && <p className="text-video-title text-brand-primary">Đăng với tư cách: {currentUser.email}</p>}
         </div>
 
         <form onSubmit={handleSub} className="flex flex-col gap-xl">
           <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+            <InputField
+              label="Tên hiển thị (Tùy chọn)"
+              placeholder="VD: Sinh viên năm 3..."
+              value={reviewAuthorName}
+              onChange={setReviewAuthorName}
+            />
             <InputField
               label="Mã môn học *"
               placeholder="VD: CS101, MTH201..."
@@ -1587,14 +1446,24 @@ export default function App() {
 
     const handleSub = async (e: FormEvent) => {
       e.preventDefault()
-      if (!currentUser) { setAuthModal(true); return }
       if (!instReviewComment.trim()) { showToast('Vui lòng nhập nhận xét', 'error'); return }
 
-      const newRev = { inst_id: selectedInst.id, user_email: currentUser.email, metrics: { ...instMetrics }, comment: instReviewComment.trim(), helpful: 0, not_helpful: 0 }
+      const finalName = instAuthorName.trim() || 'Ẩn danh'
+      const newRev = { 
+        inst_id: selectedInst.id, 
+        author_name: finalName, 
+        metrics: { ...instMetrics }, 
+        comment: instReviewComment.trim(), 
+        helpful: 0, 
+        not_helpful: 0 
+      }
+
       const { data, error } = await supabase.from('institution_reviews').insert([newRev]).select() as any
       if (error) { showToast(error.message, 'error'); return }
       if (data) setInstReviews(prev => [{ ...data[0], userVote: null } as InstitutionReview, ...prev])
       showToast('Đánh giá trường đã được gửi!', 'success')
+      setInstAuthorName('')
+      setInstReviewComment('')
       setTimeout(() => navigate('institution'), 1200)
     }
 
@@ -1604,10 +1473,17 @@ export default function App() {
         <div className="flex flex-col gap-xs">
           <h1 className="text-title text-text-primary">Đánh giá {selectedInst.name}</h1>
           <p className="text-label-sm text-text-secondary">{selectedInst.location}</p>
-          {currentUser && <p className="text-video-title text-brand-primary">Đăng với tư cách: {currentUser.email}</p>}
         </div>
 
         <form onSubmit={handleSub} className="flex flex-col gap-xl">
+          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+            <InputField
+              label="Tên hiển thị (Tùy chọn)"
+              placeholder="VD: Cựu sinh viên..."
+              value={instAuthorName}
+              onChange={setInstAuthorName}
+            />
+          </div>
           {CRITERIA_KEYS.map(criteria => (
             <div key={criteria} className="bg-surface-bg rounded-corner-lg p-xl">
               <RatingSelector
@@ -1650,9 +1526,9 @@ export default function App() {
 
     const handleSubmit = async (e: FormEvent) => {
       e.preventDefault()
-      if (!currentUser) { setAuthModal(true); return }
 
-      let newSugg: Partial<Suggestion> = { type: suggestionType, user_email: currentUser.email, content: suggestionContent.trim(), status: 'Chờ xét duyệt' }
+      const finalName = suggAuthorName.trim() || 'Ẩn danh'
+      let newSugg: Partial<Suggestion> = { type: suggestionType, author_name: finalName, content: suggestionContent.trim(), status: 'Chờ xét duyệt' }
 
       if (suggestionType === 'professor') {
         if (!suggProfName.trim() || !suggSelectedUniv || !suggSelectedDept) { showToast('Vui lòng nhập đầy đủ thông tin', 'error'); return }
@@ -1669,7 +1545,7 @@ export default function App() {
       if (error) { showToast(error.message, 'error'); return }
       if (data) setSuggestions(prev => [data[0] as Suggestion, ...prev])
       showToast('Đề xuất đã được gửi thành công!', 'success')
-      setSuggProfName(''); setSuggInstName(''); setSuggInstShortName(''); setSuggInstLocation(''); setSuggInstDepts(''); setSuggNewDeptName(''); setSuggestionContent('')
+      setSuggAuthorName(''); setSuggProfName(''); setSuggInstName(''); setSuggInstShortName(''); setSuggInstLocation(''); setSuggInstDepts(''); setSuggNewDeptName(''); setSuggestionContent('')
     }
 
     return (
@@ -1677,11 +1553,16 @@ export default function App() {
         <div className="flex flex-col gap-xs">
           <h1 className="text-title text-text-primary">Đề xuất thêm dữ liệu</h1>
           <p className="text-label-sm text-text-secondary">Gửi đề xuất thêm trường, khoa hoặc giảng viên mới vào hệ thống</p>
-          {currentUser && <p className="text-video-title text-brand-primary">Đăng với tư cách: {currentUser.email}</p>}
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-xl">
           <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+            <InputField
+              label="Tên hiển thị (Tùy chọn)"
+              placeholder="VD: Nguyễn Văn A..."
+              value={suggAuthorName}
+              onChange={setSuggAuthorName}
+            />
             <SelectField
               label="Loại đề xuất *"
               options={[
@@ -1736,7 +1617,7 @@ export default function App() {
 
         {suggestions.length > 0 && (
           <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-            <h2 className="text-heading text-text-primary">Đề xuất của bạn ({suggestions.length})</h2>
+            <h2 className="text-heading text-text-primary">Đề xuất gần đây ({suggestions.length})</h2>
             {suggestions.map((s, idx) => (
               <div key={idx} className="flex items-center justify-between py-lg border-b border-border-secondary last:border-0">
                 <div className="flex flex-col gap-xs">
@@ -1754,536 +1635,24 @@ export default function App() {
   }
 
   // ==========================================
-  // AUTH MODAL
-  // ==========================================
-  const renderAuthModal = () => (
-    <Modal
-      isOpen={authModal}
-      onClose={() => { setAuthModal(false); setAuthEmail(''); setAuthPassword(''); setAuthName('') }}
-      title={authView === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-      size="small"
-      footer={
-        <ButtonGroup align="stack">
-          <Button
-            variant="primary"
-            onClick={() => {
-              const form = document.getElementById('auth-form') as HTMLFormElement
-              form?.requestSubmit()
-            }}
-          >
-            {authView === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-          </Button>
-          <Button
-            variant="subtle"
-            onClick={() => setAuthView(v => v === 'login' ? 'signup' : 'login')}
-          >
-            {authView === 'login' ? 'Chưa có tài khoản? Đăng ký' : 'Đã có tài khoản? Đăng nhập'}
-          </Button>
-        </ButtonGroup>
-      }
-    >
-      <form id="auth-form" onSubmit={authView === 'login' ? handleLogin : handleSignup} className="flex flex-col gap-lg">
-        {authView === 'signup' && (
-          <InputField label="Họ và tên" placeholder="Nguyễn Văn A" value={authName} onChange={setAuthName} />
-        )}
-        <InputField label="Email" placeholder="email@edu.vn" value={authEmail} onChange={setAuthEmail} type="email" />
-        <InputField label="Mật khẩu" placeholder="••••••••" value={authPassword} onChange={setAuthPassword} type="password" />
-      </form>
-    </Modal>
-  )
-
-  // ==========================================
-  // ACCOUNT PAGE
-  // ==========================================
-  const renderAccountPage = () => {
-    const initials = currentUser?.name?.charAt(0)?.toUpperCase() || 'U'
-    const myProfReviews = profReviews.filter(r => r.user_email === currentUser?.email)
-    const myInstReviews = instReviews.filter(r => r.user_email === currentUser?.email)
-
-    const handleSaveProfile = () => {
-      if (!editName.trim()) { showToast('Tên hiển thị không được để trống', 'error'); return }
-      if (currentUser) {
-        const updated = { ...currentUser, name: editName.trim() }
-        setCurrentUser(updated)
-        try {
-          const raw = localStorage.getItem('mock_session')
-          if (raw) {
-            const u = JSON.parse(raw)
-            u.user_metadata = { ...u.user_metadata, full_name: editName.trim() }
-            localStorage.setItem('mock_session', JSON.stringify(u))
-          }
-        } catch { /* ignore */ }
-      }
-      showToast('Đã lưu thông tin hồ sơ', 'success')
-    }
-
-    const handleChangePassword = () => {
-      if (!currentPassword || !newPassword) { showToast('Vui lòng nhập đầy đủ thông tin', 'error'); return }
-      if (newPassword.length < 6) { showToast('Mật khẩu mới phải ít nhất 6 ký tự', 'error'); return }
-      try {
-        const users = JSON.parse(localStorage.getItem('mock_users') || '[]')
-        const idx = users.findIndex((u: any) => u.email === currentUser?.email)
-        if (idx === -1 || users[idx].password !== currentPassword) {
-          showToast('Mật khẩu hiện tại không đúng', 'error'); return
-        }
-        users[idx].password = newPassword
-        localStorage.setItem('mock_users', JSON.stringify(users))
-      } catch { /* ignore */ }
-      setCurrentPassword(''); setNewPassword('')
-      showToast('Đã đổi mật khẩu thành công', 'success')
-    }
-
-    const handleDeleteAccount = () => {
-      if (!confirm('Bạn có chắc muốn xóa tài khoản? Thao tác này không thể hoàn tác.')) return
-      try {
-        const users = JSON.parse(localStorage.getItem('mock_users') || '[]')
-        localStorage.setItem('mock_users', JSON.stringify(users.filter((u: any) => u.email !== currentUser?.email)))
-      } catch { /* ignore */ }
-      supabase.auth.signOut()
-      setCurrentUser(null)
-      navigate('home')
-      showToast('Tài khoản đã bị xóa', 'default')
-    }
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-xl">
-          <Avatar type="initial" initials={initials} size="large" shape="circle" />
-          <div>
-            <h1 className="text-title text-text-primary">{currentUser?.name}</h1>
-            <div className="flex items-center gap-sm mt-xs flex-wrap">
-              <p className="text-label-sm text-text-secondary">{currentUser?.email}</p>
-              <Badge label="Email chưa xác minh" variant="warning" />
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex items-center gap-sm border-b border-border-primary">
-          {(['profile', 'security', 'settings'] as const).map(tab => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setAccountTab(tab)}
-              className={`flex items-center gap-sm px-lg pb-lg text-label-sm font-medium transition-colors border-b-2 -mb-px ${
-                accountTab === tab
-                  ? 'border-brand-primary text-brand-primary'
-                  : 'border-transparent text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {tab === 'profile' ? 'Hồ sơ' : tab === 'security' ? 'Bảo mật' : 'Cài đặt'}
-            </button>
-          ))}
-        </div>
-
-        {accountTab === 'profile' && (
-          <div className="flex flex-col gap-xl">
-            {/* Profile picture */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-              <div>
-                <h2 className="text-label text-text-primary font-semibold">Ảnh đại diện</h2>
-                <p className="text-label-sm text-text-secondary mt-xs">Hiển thị cùng tên bạn. PNG hoặc JPEG, tối đa 5 MB.</p>
-              </div>
-              <div className="flex items-center gap-xl">
-                <Avatar type="initial" initials={initials} size="large" shape="circle" />
-                <Button variant="neutral" size="small" onClick={() => showToast('Tính năng đang phát triển', 'default')}>
-                  Tải ảnh lên
-                </Button>
-              </div>
-            </div>
-
-            {/* Basic info */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-              <h2 className="text-label text-text-primary font-semibold">Thông tin cơ bản</h2>
-              <InputField
-                label="Tên hiển thị"
-                value={editName}
-                onChange={setEditName}
-                placeholder="Nhập tên hiển thị..."
-              />
-              <InputField
-                label="Trường / Cơ sở (tùy chọn)"
-                value={editInstitution}
-                onChange={setEditInstitution}
-                placeholder="VD: Trường Đại học Ngoại thương"
-              />
-              <div className="flex flex-col gap-xs">
-                <InputField
-                  label="Email"
-                  value={currentUser?.email || ''}
-                  onChange={() => {}}
-                  type="email"
-                />
-                <p className="text-video-title text-text-tertiary">Email không thể thay đổi lúc này.</p>
-              </div>
-              <SelectField
-                label="Ngôn ngữ giao diện"
-                options={[
-                  { value: 'vi', label: 'Tiếng Việt' },
-                  { value: 'en', label: 'English' },
-                ]}
-                value={editLanguage}
-                onChange={setEditLanguage}
-              />
-              <div className="flex justify-end">
-                <Button variant="primary" size="small" onClick={handleSaveProfile}>Lưu</Button>
-              </div>
-            </div>
-
-            {/* Product updates toggle */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex items-center justify-between gap-xl">
-              <div>
-                <h2 className="text-label text-text-primary font-semibold">Cập nhật sản phẩm</h2>
-                <p className="text-label-sm text-text-secondary mt-xs">Email thỉnh thoảng về tính năng mới và khảo sát phản hồi. Có thể hủy bất cứ lúc nào.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setProductUpdates(v => !v)}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${productUpdates ? 'bg-brand-primary' : 'bg-bg-subtle border border-border-primary'}`}
-                aria-label="Toggle product updates"
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${productUpdates ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
-            </div>
-
-            {/* My reviews */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-              <h2 className="text-label text-text-primary font-semibold">Đánh giá của tôi</h2>
-              <div className="flex gap-2xl">
-                <div>
-                  <p className="text-heading text-text-primary font-semibold">{myProfReviews.length}</p>
-                  <p className="text-label-sm text-text-secondary">Giảng viên</p>
-                </div>
-                <div>
-                  <p className="text-heading text-text-primary font-semibold">{myInstReviews.length}</p>
-                  <p className="text-label-sm text-text-secondary">Trường đại học</p>
-                </div>
-              </div>
-              {myProfReviews.length === 0 && myInstReviews.length === 0 && (
-                <p className="text-label-sm text-text-tertiary">Bạn chưa gửi đánh giá nào.</p>
-              )}
-            </div>
-
-            {/* Logout */}
-            <div className="flex justify-end">
-              <Button
-                variant="subtle"
-                iconStart={<LogOut size={16} />}
-                onClick={handleLogout}
-              >
-                Đăng xuất
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {accountTab === 'security' && (
-          <div className="flex flex-col gap-xl">
-            {/* Email verification */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-              <div>
-                <h2 className="text-label text-text-primary font-semibold">Xác minh email</h2>
-                <p className="text-label-sm text-text-secondary mt-xs">Xác minh email để mở khóa toàn bộ tính năng.</p>
-              </div>
-              <div>
-                <Button variant="neutral" size="small" onClick={async () => {
-                  await supabase.auth.resetPasswordForEmail(currentUser?.email || '', {
-                    redirectTo: window.location.origin + '/?type=recovery',
-                  })
-                  showToast('Đã gửi link xác minh tới email của bạn', 'success')
-                }}>
-                  Gửi lại link xác minh
-                </Button>
-              </div>
-            </div>
-
-            {/* Reset password via email */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-              <div>
-                <h2 className="text-label text-text-primary font-semibold">Đặt lại mật khẩu</h2>
-                <p className="text-label-sm text-text-secondary mt-xs">
-                  Gửi email với link đặt lại mật khẩu tới địa chỉ email của bạn.
-                </p>
-              </div>
-              <div className="flex flex-col gap-sm">
-                <InputField
-                  label="Email"
-                  type="email"
-                  value={resetEmail || currentUser?.email || ''}
-                  onChange={setResetEmail}
-                  placeholder="email@edu.vn"
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button variant="neutral" size="small" onClick={async () => {
-                  const email = resetEmail || currentUser?.email || ''
-                  if (!email) { showToast('Vui lòng nhập email', 'error'); return }
-                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.origin + '/?type=recovery',
-                  })
-                  if (error) { showToast((error as any).message || 'Lỗi gửi email', 'error'); return }
-                  showToast('Đã gửi email đặt lại mật khẩu!', 'success')
-                  setResetEmail('')
-                }}>
-                  Gửi email đặt lại
-                </Button>
-              </div>
-            </div>
-
-            {/* Change password (for mock mode / logged-in session) */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-              <h2 className="text-label text-text-primary font-semibold">Đổi mật khẩu trực tiếp</h2>
-              <InputField
-                label="Mật khẩu hiện tại"
-                type="password"
-                value={currentPassword}
-                onChange={setCurrentPassword}
-                placeholder="••••••••"
-              />
-              <div className="flex flex-col gap-xs">
-                <InputField
-                  label="Mật khẩu mới"
-                  type="password"
-                  value={newPassword}
-                  onChange={setNewPassword}
-                  placeholder="••••••••"
-                />
-                <p className="text-video-title text-text-tertiary">Ít nhất 6 ký tự.</p>
-              </div>
-              <div className="flex justify-end">
-                <Button variant="primary" size="small" onClick={handleChangePassword}>Đổi mật khẩu</Button>
-              </div>
-            </div>
-
-            {/* Danger zone */}
-            <div className="rounded-corner-lg p-xl flex flex-col gap-lg" style={{ border: '1.5px solid var(--color-danger, #ef4444)' }}>
-              <div>
-                <h2 className="text-label font-semibold" style={{ color: 'var(--color-danger, #ef4444)' }}>Vùng nguy hiểm</h2>
-                <p className="text-label-sm mt-xs" style={{ color: 'var(--color-danger, #ef4444)' }}>Xóa vĩnh viễn tài khoản và toàn bộ dữ liệu.</p>
-              </div>
-              <p className="text-label-sm text-text-secondary">Thao tác này sẽ xóa tất cả đánh giá và đề xuất bạn đã gửi. Không thể hoàn tác.</p>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleDeleteAccount}
-                  className="flex items-center gap-sm px-lg py-sm rounded-corner-md text-label-sm font-medium transition-colors border"
-                  style={{ color: 'var(--color-danger, #ef4444)', borderColor: 'var(--color-danger, #ef4444)', background: 'transparent' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-                >
-                  Xóa tài khoản
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {accountTab === 'settings' && (
-          <div className="flex flex-col gap-xl">
-            {/* Appearance */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-xl">
-              <h2 className="text-label text-text-primary font-semibold">Giao diện</h2>
-
-              <div className="flex items-center justify-between gap-xl">
-                <div>
-                  <p className="text-label-sm text-text-primary font-medium">Chế độ màu</p>
-                  <p className="text-video-title text-text-secondary mt-xs">Lưu trữ trên thiết bị này.</p>
-                </div>
-                <div className="flex gap-sm">
-                  <button
-                    type="button"
-                    onClick={() => setTheme('light')}
-                    className={`flex items-center gap-sm px-lg py-sm rounded-corner-md text-label-sm border transition-all ${
-                      theme === 'light'
-                        ? 'bg-brand-primary text-on-brand border-brand-primary'
-                        : 'bg-bg-faint border-border-primary text-text-primary hover:bg-bg-hover'
-                    }`}
-                  >
-                    <Sun size={14} />
-                    Sáng
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTheme('dark')}
-                    className={`flex items-center gap-sm px-lg py-sm rounded-corner-md text-label-sm border transition-all ${
-                      theme === 'dark'
-                        ? 'bg-brand-primary text-on-brand border-brand-primary'
-                        : 'bg-bg-faint border-border-primary text-text-primary hover:bg-bg-hover'
-                    }`}
-                  >
-                    <Moon size={14} />
-                    Tối
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Language */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-              <h2 className="text-label text-text-primary font-semibold">Ngôn ngữ</h2>
-              <SelectField
-                label="Ngôn ngữ giao diện"
-                options={[
-                  { value: 'vi', label: 'Tiếng Việt' },
-                  { value: 'en', label: 'English' },
-                ]}
-                value={editLanguage}
-                onChange={setEditLanguage}
-              />
-              <p className="text-video-title text-text-tertiary">Dùng cho giao diện ứng dụng và email thông báo.</p>
-            </div>
-
-            {/* Notification preferences */}
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex items-center justify-between gap-xl">
-              <div>
-                <p className="text-label-sm text-text-primary font-medium">Cập nhật sản phẩm</p>
-                <p className="text-video-title text-text-secondary mt-xs">Email về tính năng mới và khảo sát. Hủy bất kỳ lúc nào.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setProductUpdates(v => !v)}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${productUpdates ? 'bg-brand-primary' : 'bg-bg-subtle border border-border-primary'}`}
-                aria-label="Toggle product updates"
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${productUpdates ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // ==========================================
-  // ADMIN CHECK
-  // Admin is determined solely by email credentials.
-  // Add admin emails to the list below.
-  // ==========================================
-  const ADMIN_EMAILS = ['admin@rateviet.vn', 'admin@edu.vn']
-  const isAdmin = currentUser != null && (
-    ADMIN_EMAILS.includes(currentUser.email) ||
-    currentUser.email.split('@')[0].toLowerCase() === 'admin'
-  )
-
-  // ==========================================
-  // ADMIN PANEL VIEW
-  // ==========================================
-  const renderAdminPanel = () => (
-    <div className="flex flex-col gap-2xl animate-fadeIn">
-      <div className="flex items-center gap-lg">
-        <ShieldCheck size={20} className="text-brand-primary" />
-        <h1 className="text-title text-text-primary">Bảng điều khiển Admin</h1>
-      </div>
-
-      <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-        <h2 className="text-heading text-text-primary">Đề xuất chờ duyệt</h2>
-        {suggestions.length === 0 ? (
-          <div className="p-2xl text-center border border-border-secondary rounded-corner-md" style={{ borderStyle: 'dashed' }}>
-            <p className="text-label-sm text-text-secondary">Không có đề xuất nào đang chờ duyệt</p>
-          </div>
-        ) : (
-          suggestions.map((s, idx) => (
-            <div key={idx} className="flex items-start justify-between gap-xl py-lg border-b border-border-secondary last:border-0 animate-fadeIn">
-              <div className="flex flex-col gap-xs flex-1">
-                <div className="flex items-center gap-sm">
-                  <Badge label={s.type} variant="brand" />
-                  <Badge label={s.status} variant="warning" />
-                </div>
-                <p className="text-label text-text-primary">{s.targetName}</p>
-                {s.university && <p className="text-label-sm text-text-secondary">{s.university}{s.department ? ` • ${s.department}` : ''}</p>}
-                {s.location && <p className="text-label-sm text-text-secondary">{s.location}</p>}
-                {s.content && <p className="text-video-title text-text-tertiary">{s.content}</p>}
-                <p className="text-video-title text-text-tertiary">Gửi bởi: {s.user_email}</p>
-              </div>
-              <div className="flex gap-sm shrink-0">
-                <Button
-                  variant="primary"
-                  size="small"
-                  onClick={() => {
-                    setSuggestions(prev => prev.map((item, i) => i === idx ? { ...item, status: 'Đã duyệt' } : item))
-                    showToast('Đã duyệt đề xuất', 'success')
-                  }}
-                >
-                  Duyệt
-                </Button>
-                <Button
-                  variant="neutral"
-                  size="small"
-                  onClick={() => {
-                    setSuggestions(prev => prev.map((item, i) => i === idx ? { ...item, status: 'Từ chối' } : item))
-                    showToast('Đã từ chối đề xuất', 'default')
-                  }}
-                >
-                  Từ chối
-                </Button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-        <h2 className="text-heading text-text-primary">Thống kê hệ thống</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-lg">
-          {[
-            { label: 'Trường', value: institutions.length },
-            { label: 'Giảng viên', value: professors.length },
-            { label: 'Đánh giá GV', value: profReviews.length },
-            { label: 'Đề xuất chờ', value: suggestions.filter(s => s.status === 'Chờ xét duyệt').length },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-bg-faint rounded-corner-md p-xl text-center">
-              <p className="text-title text-brand-primary font-semibold">{value}</p>
-              <p className="text-video-title text-text-secondary mt-xs">{label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-
-  // ==========================================
   // MAIN LAYOUT
   // ==========================================
   const regularNavItems = [
     { id: 'home', icon: Home, label: 'Trang chủ' },
-    { id: 'ratings', icon: Star, label: 'Đánh giá' },
-  ]
-
-  const allNavItems = [
-    { id: 'home', icon: Home, label: 'Trang chủ' },
-    { id: 'ratings', icon: Star, label: 'Đánh giá' },
-    ...(currentUser ? [{ id: 'bookmarks', icon: Bookmark, label: 'Đã lưu' }] : []),
-    ...(isAdmin ? [{ id: 'admin', icon: ShieldCheck, label: 'Duyệt' }] : []),
-    { id: 'account', icon: currentUser ? Settings : LogIn, label: currentUser ? 'Tài khoản' : 'Đăng nhập' },
+    { id: 'suggest', icon: Plus, label: 'Đề xuất' },
   ]
 
   const handleNavClick = (id: string) => {
     setActiveSideNav(id)
     if (id === 'home') navigate('home')
-    else if (id === 'ratings') {
-      if (!currentUser) { setAuthView('login'); setAuthModal(true) }
-      else navigate('suggest')
-    }
-    else if (id === 'bookmarks') {
-      if (!currentUser) { setAuthView('login'); setAuthModal(true) }
-      else setShowBookmarkPanel(v => !v)
-    }
-    else if (id === 'admin') navigate('admin')
-    else if (id === 'account') {
-      if (!currentUser) { setAuthView('login'); setAuthModal(true) }
-      else {
-        setEditName(currentUser.name)
-        setAccountTab('settings')
-        navigate('account')
-      }
-    }
+    else if (id === 'suggest') navigate('suggest')
+    else if (id === 'bookmarks') setShowBookmarkPanel(v => !v)
   }
 
   return (
     <>
     <div className="flex h-screen overflow-hidden bg-brand-tertiary">
-      {/* Desktop sidebar — hidden on mobile */}
+      {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:flex">
         <SidebarNavigation
           footer={
@@ -2293,36 +1662,6 @@ export default function App() {
                   icon={theme === 'dark' ? <Sun className="size-full" strokeWidth={1.5} /> : <Moon className="size-full" strokeWidth={1.5} />}
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 />
-              </Tooltip>
-              <Tooltip content="Cài đặt" position="right">
-                <SidebarButton
-                  icon={<Settings className="size-full" strokeWidth={1.5} />}
-                  onClick={() => {
-                    if (!currentUser) { setAuthView('login'); setAuthModal(true); return }
-                    setEditName(currentUser.name); setAccountTab('settings'); navigate('account'); setActiveSideNav('account')
-                  }}
-                />
-              </Tooltip>
-              <Tooltip content={currentUser ? currentUser.name : 'Đăng nhập'} position="right">
-                {currentUser ? (
-                  <button
-                    type="button"
-                    onClick={() => { setEditName(currentUser.name); setAccountTab('profile'); navigate('account'); setActiveSideNav('account') }}
-                    className="flex items-center justify-center w-10 h-10"
-                  >
-                    <Avatar
-                      type="initial"
-                      initials={currentUser.name.charAt(0).toUpperCase()}
-                      size="medium"
-                      shape="circle"
-                    />
-                  </button>
-                ) : (
-                  <SidebarButton
-                    icon={<LogIn className="size-full" strokeWidth={1.5} />}
-                    onClick={() => { setAuthView('login'); setAuthModal(true) }}
-                  />
-                )}
               </Tooltip>
             </>
           }
@@ -2336,29 +1675,18 @@ export default function App() {
               />
             </Tooltip>
           ))}
-          {currentUser ? (
-            <Tooltip key="bookmarks" content="Giảng viên đã lưu" position="right">
-              <SidebarButton
-                icon={<Bookmark className="size-full" strokeWidth={1.5} />}
-                active={showBookmarkPanel}
-                onClick={() => setShowBookmarkPanel(v => !v)}
-              />
-            </Tooltip>
-          ) : <span key="bookmarks-placeholder" />}
-          {isAdmin ? (
-            <Tooltip key="admin" content="Duyệt (Admin)" position="right">
-              <SidebarButton
-                icon={<ShieldCheck className="size-full" strokeWidth={1.5} />}
-                active={activeSideNav === 'admin'}
-                onClick={() => handleNavClick('admin')}
-              />
-            </Tooltip>
-          ) : <span key="admin-placeholder" />}
+          <Tooltip key="bookmarks" content="Giảng viên đã lưu" position="right">
+            <SidebarButton
+              icon={<Bookmark className="size-full" strokeWidth={1.5} />}
+              active={showBookmarkPanel}
+              onClick={() => setShowBookmarkPanel(v => !v)}
+            />
+          </Tooltip>
         </SidebarNavigation>
       </div>
 
-      {/* Bookmark panel — desktop only, always mounted, CSS width transitions */}
-      <div className={`hidden md:flex flex-col bg-surface-bg border-r border-border-primary overflow-hidden transition-all duration-200 ${showBookmarkPanel && currentUser ? 'w-64' : 'w-0'}`}>
+      {/* Bookmark panel - desktop only, always mounted, CSS width transitions */}
+      <div className={`hidden md:flex flex-col bg-surface-bg border-r border-border-primary overflow-hidden transition-all duration-200 ${showBookmarkPanel ? 'w-64' : 'w-0'}`}>
           <div className="p-xl border-b border-border-primary flex items-center justify-between shrink-0">
             <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
               <BookmarkCheck size={14} className="text-brand-primary" />
@@ -2418,7 +1746,6 @@ export default function App() {
           </div>
       </div>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto bg-brand-tertiary p-lg md:p-2xl pb-24 md:pb-2xl">
         <div className="max-w-5xl mx-auto">
           {currentView === 'home' && renderHome()}
@@ -2428,18 +1755,8 @@ export default function App() {
           {currentView === 'add-prof-review' && renderAddProfReview()}
           {currentView === 'add-inst-review' && renderAddInstReview()}
           {currentView === 'suggest' && renderSuggest()}
-          {currentView === 'account' && currentUser && renderAccountPage()}
-          {currentView === 'admin' && isAdmin && renderAdminPanel()}
-          {currentView === 'admin' && !isAdmin && (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-label text-text-secondary">Không có quyền truy cập</p>
-            </div>
-          )}
         </div>
       </main>
-
-      {/* Auth Modal */}
-      {renderAuthModal()}
 
       {/* Professor Comparison Modal */}
       {selectedProf && (
@@ -2455,7 +1772,6 @@ export default function App() {
           }
         >
           {compareProf ? (
-            /* Side-by-side comparison */
             <div className="flex flex-col gap-xl">
               <div className="grid grid-cols-2 gap-xl">
                 {[{ prof: selectedProf, label: 'Hiện tại' }, { prof: compareProf, label: 'So sánh' }].map(({ prof, label }) => {
@@ -2493,7 +1809,6 @@ export default function App() {
               </Button>
             </div>
           ) : (
-            /* Professor search */
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm giảng viên để so sánh với <strong>{selectedProf.name}</strong></p>
               <SearchComponent
@@ -2507,7 +1822,7 @@ export default function App() {
                     placeholder="Lọc theo trường"
                     options={[
                       { value: '', label: 'Tất cả trường' },
-                      ...institutions.map(i => ({ value: i.name, label: i.short_name + ' — ' + i.name })),
+                      ...institutions.map(i => ({ value: i.name, label: i.short_name + ' - ' + i.name })),
                     ]}
                     value={compareUniv}
                     onChange={v => { setCompareUniv(v); setCompareDept('') }}
@@ -2569,42 +1884,13 @@ export default function App() {
         </Modal>
       )}
 
-      {/* Password Recovery Modal (triggered by Supabase redirect) */}
-      <Modal
-        isOpen={recoveryModal}
-        onClose={() => setRecoveryModal(false)}
-        title="Đặt mật khẩu mới"
-        size="small"
-        footer={
-          <ButtonGroup align="stack">
-            <Button variant="primary" onClick={async () => {
-              if (recoveryPassword.length < 6) { showToast('Mật khẩu phải ít nhất 6 ký tự', 'error'); return }
-              const { error } = await supabase.auth.updateUser({ password: recoveryPassword })
-              if (error) { showToast((error as any).message || 'Lỗi đặt mật khẩu', 'error'); return }
-              setRecoveryModal(false)
-              setRecoveryPassword('')
-              showToast('Mật khẩu đã được cập nhật!', 'success')
-            }}>Xác nhận</Button>
-            <Button variant="subtle" onClick={() => { setRecoveryModal(false); setRecoveryPassword('') }}>Hủy</Button>
-          </ButtonGroup>
-        }
-      >
-        <div className="flex flex-col gap-lg">
-          <p className="text-label-sm text-text-secondary">Nhập mật khẩu mới cho tài khoản của bạn.</p>
-          <InputField
-            label="Mật khẩu mới"
-            type="password"
-            value={recoveryPassword}
-            onChange={setRecoveryPassword}
-            placeholder="••••••••"
-          />
-          <p className="text-video-title text-text-tertiary">Ít nhất 6 ký tự.</p>
-        </div>
-      </Modal>
-
-      {/* Mobile bottom nav — visible only on small screens */}
+      {/* Mobile bottom nav - visible only on small screens */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-bg border-t border-border-primary flex items-stretch">
-        {allNavItems.map(item => (
+        {[
+          { id: 'home', icon: Home, label: 'Trang chủ' },
+          { id: 'suggest', icon: Plus, label: 'Đề xuất' },
+          { id: 'bookmarks', icon: Bookmark, label: 'Đã lưu' }
+        ].map(item => (
           <button
             key={item.id}
             type="button"
@@ -2621,7 +1907,7 @@ export default function App() {
         ))}
       </nav>
 
-      {/* Toast — sits above bottom nav on mobile */}
+      {/* Toast - sits above bottom nav on mobile */}
       {toast && (
         <div className="fixed bottom-20 md:bottom-2xl right-2xl z-50 animate-scaleIn">
           <Toast
@@ -2635,8 +1921,8 @@ export default function App() {
       )}
     </div>
 
-    {/* Mobile bookmark sheet — outside the overflow-hidden flex container */}
-    {showBookmarkPanel && currentUser && (
+    {/* Mobile bookmark sheet - outside the overflow-hidden flex container */}
+    {showBookmarkPanel && (
       <div className="md:hidden fixed inset-0 z-50 flex flex-col">
         <div className="flex-1 bg-black/40" onClick={() => setShowBookmarkPanel(false)} />
         <div className="bg-surface-bg rounded-t-2xl max-h-[70vh] flex flex-col animate-slideInLeft">
