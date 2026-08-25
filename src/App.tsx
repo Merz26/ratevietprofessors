@@ -320,7 +320,6 @@ function VoteFooter({
 // MAIN APP
 // ==========================================
 export default function App() {
-  useTheme()
   const { theme, setTheme } = useContext(ThemeContext)
 
   // Local storage theme persistence
@@ -661,7 +660,7 @@ export default function App() {
             <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
           </div>
 
-          <div className="relative">
+          <div className="relative border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
             <SearchComponent
               value={searchTerm}
               placeholder="Tìm kiếm theo tên trường hoặc mã trường..."
@@ -705,7 +704,7 @@ export default function App() {
               <Filter size={14} />
               <span>Lọc:</span>
             </div>
-            <div className="w-48">
+            <div className="w-48 [&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
               <SelectField
                 options={locationOptions}
                 value={locationFilter}
@@ -989,7 +988,7 @@ export default function App() {
           </Button>
         </div>
 
-        <div className="bg-surface-bg rounded-corner-lg p-xl">
+        <div className="relative border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
           <SearchComponent
             value={deptSearchTerm}
             placeholder="Tìm kiếm giảng viên..."
