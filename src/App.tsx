@@ -10,7 +10,6 @@ import {
   Modal,
   InputField,
   TextareaField,
-  SelectField,
   SearchComponent,
   Toast,
 } from '@figma/astraui'
@@ -322,16 +321,20 @@ function VoteFooter({
 // ==========================================
 export default function App() {
   const { theme, setTheme } = useContext(ThemeContext)
+  const isInitialized = useRef(false)
 
-  // Local storage theme persistence
+  // Local storage theme persistence (Runs exactly once to prevent React dependency loops)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('astra-theme')
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      setTheme(savedTheme)
+    if (!isInitialized.current) {
+      isInitialized.current = true
+      const savedTheme = localStorage.getItem('astra-theme')
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        setTheme(savedTheme)
+      }
     }
   }, [setTheme])
 
-  // Unified, loop-breaking theme effect
+  // Unified theme effect to write changes to DOM
   useEffect(() => {
     const root = window.document.documentElement;
     
@@ -666,7 +669,7 @@ export default function App() {
             <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
           </div>
 
-          <div className="relative border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
+          <div className="relative border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors bg-input-bg overflow-hidden">
             <SearchComponent
               value={searchTerm}
               placeholder="Tìm kiếm theo tên trường hoặc mã trường..."
@@ -1234,8 +1237,8 @@ export default function App() {
             </div>
             <div className="flex items-center gap-lg shrink-0">
               <span className="text-label-sm text-text-secondary whitespace-nowrap">Sắp xếp:</span>
-              <div className="w-52 [&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
-                <SelectField
+              <div className="w-52">
+                <SearchableDropdown
                   options={[
                     { value: 'newest', label: 'Mới nhất' },
                     { value: 'highest-quality', label: 'Chất lượng cao nhất' },
@@ -1244,6 +1247,7 @@ export default function App() {
                   ]}
                   value={profSort}
                   onChange={setProfSort}
+                  placeholder="Sắp xếp"
                 />
               </div>
             </div>
@@ -1396,14 +1400,13 @@ export default function App() {
               </div>
             ))}
 
-            <div className="[&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
-              <SelectField
-                label="Điểm số đạt được"
-                options={GRADE_OPTIONS.map(g => ({ value: g, label: g }))}
-                value={reviewGrade}
-                onChange={setReviewGrade}
-              />
-            </div>
+            <SearchableDropdown
+              label="Điểm số đạt được"
+              options={GRADE_OPTIONS.map(g => ({ value: g, label: g }))}
+              value={reviewGrade}
+              onChange={setReviewGrade}
+              placeholder="-- Chọn điểm --"
+            />
           </div>
 
           <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
@@ -1528,12 +1531,15 @@ export default function App() {
   // SUGGEST VIEW
   // ==========================================
   const renderSuggest = () => {
+    // Sort Institutions alphabetically
     const univOptions = institutions
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(i => ({ value: i.name, label: `${i.short_name} - ${i.name}` }))
     
     const selectedUnivObj = institutions.find(i => i.name === suggSelectedUniv)
+    
+    // Sort Departments alphabetically
     const deptOptions = (selectedUnivObj?.departments || [])
       .slice()
       .sort((a, b) => a.localeCompare(b))
@@ -1581,18 +1587,17 @@ export default function App() {
               onChange={setSuggAuthorName}
             />
             
-            <div className="[&_select]:bg-surface-bg [&_select]:text-text-primary [&_option]:bg-surface-bg [&_option]:text-white">
-              <SelectField
-                label="Loại đề xuất *"
-                options={[
-                  { value: 'professor', label: 'Giảng viên mới' },
-                  { value: 'institution', label: 'Trường đại học mới' },
-                  { value: 'department', label: 'Khoa / Viện mới' },
-                ]}
-                value={suggestionType}
-                onChange={v => setSuggestionType(v as any)}
-              />
-            </div>
+            <SearchableDropdown
+              label="Loại đề xuất *"
+              options={[
+                { value: 'professor', label: 'Giảng viên mới' },
+                { value: 'institution', label: 'Trường đại học mới' },
+                { value: 'department', label: 'Khoa / Viện mới' },
+              ]}
+              value={suggestionType}
+              onChange={v => setSuggestionType(v as any)}
+              placeholder="-- Chọn loại đề xuất --"
+            />
 
             {suggestionType === 'professor' && (
               <div className="flex flex-col gap-lg z-20">
@@ -1832,7 +1837,7 @@ export default function App() {
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm giảng viên để so sánh với <strong>{selectedProf.name}</strong></p>
               
-              <div className="border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
+              <div className="border border-border-primary rounded-corner-md focus-within:border-brand-primary transition-colors bg-input-bg overflow-hidden">
                 <SearchComponent
                   value={compareSearch}
                   placeholder="Tìm theo tên giảng viên..."
