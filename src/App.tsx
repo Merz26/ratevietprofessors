@@ -1719,6 +1719,7 @@ export default function App() {
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
+          logo={<></>} /* This tells Astra UI to hide its default purple logo */
           header={<div className="py-md mb-sm h-8 w-full" />} 
           footer={
             <>
@@ -1749,15 +1750,16 @@ export default function App() {
           </Tooltip>
         </SidebarNavigation>
 
-        {/* The Escape Hatch: Absolute overlay for the logo */}
+        {/* The Escape Hatch */}
         <button 
           type="button"
           onClick={handleLogoClick}
           className="absolute top-4 left-0 right-0 mx-auto flex items-center justify-center w-12 h-12 bg-transparent border-none cursor-pointer z-50 hover:opacity-80 transition-opacity"
         >
+          {/* Update the src here as well */}
           <img 
-            src="/favicon.svg" 
-            alt="Logo" 
+            src="/logo.jpg" 
+            alt="RateVietProfessors Logo" 
             className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
           />
         </button>
@@ -1849,7 +1851,7 @@ export default function App() {
         }
       >
         <div className="flex flex-col gap-lg text-center items-center py-lg">
-          <img src="/favicon.svg" alt="Logo" className="w-16 h-16 object-contain mb-sm" />
+          <img src="/logo.jpg" alt="Logo" className="w-16 h-16 object-contain mb-sm" />
           <p className="text-label-sm text-text-secondary">
             © {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.
           </p>
