@@ -1720,8 +1720,9 @@ export default function App() {
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
-          logo={<div className="hidden" />} /* Forces the purple logo to disappear */
-          header={<div className="h-12 w-full" />} /* Acts as an invisible spacer */
+          /* The transparent pixel trick! */
+          logo="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" 
+          header={<div className="h-12 w-full" />} 
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
