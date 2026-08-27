@@ -1755,6 +1755,24 @@ export default function App() {
             </>
           }
         >
+          {regularNavItems.map(item => (
+            <Tooltip key={item.id} content={item.label} position="right">
+              <SidebarButton
+                icon={<item.icon className="size-full" strokeWidth={1.5} />}
+                active={activeSideNav === item.id}
+                onClick={() => handleNavClick(item.id)}
+              />
+            </Tooltip>
+          ))}
+          <Tooltip key="bookmarks" content="Giảng viên đã lưu" position="right">
+            <SidebarButton
+              icon={<Bookmark className="size-full" strokeWidth={1.5} />}
+              active={showBookmarkPanel}
+              onClick={() => setShowBookmarkPanel(v => !v)}
+            />
+          </Tooltip>
+        </SidebarNavigation>
+      </div>
 
         {/* The Escape Hatch: Absolute overlay for the logo */}
         <button 
