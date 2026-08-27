@@ -1720,8 +1720,8 @@ export default function App() {
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
-          logo={null} 
-          header={<div className="py-md mb-sm h-8 w-full" />} 
+          logo={<div className="hidden" />} /* Forces the purple logo to disappear */
+          header={<div className="h-12 w-full" />} /* Acts as an invisible spacer */
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1755,18 +1755,16 @@ export default function App() {
         <button 
           type="button"
           onClick={handleLogoClick}
-          /* Using left-1/2 and -translate-x-1/2 perfectly centers it horizontally */
-          /* bg-brand-tertiary acts as a solid patch to cover the purple logo underneath */
-          className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center justify-center w-12 h-12 bg-brand-tertiary border-none cursor-pointer z-50 hover:opacity-80 transition-opacity rounded-xl"
+          className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center justify-center w-10 h-10 bg-transparent border-none cursor-pointer z-50 hover:opacity-80 transition-opacity"
         >
           <img 
             src={logoImg} 
             alt="Logo" 
-            /* object-cover ensures the image fills the space cleanly */
-            /* rounded-xl creates the squircle shape */
-            className={`w-10 h-10 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+            /* Added rounded-xl for the squircle look and object-cover to prevent distortion */
+            className={`w-8 h-8 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
           />
         </button>
+      </div>
 
       {/* Bookmark panel - desktop only */}
       <div className={`hidden md:flex flex-col bg-surface-bg border-r border-border-primary overflow-hidden transition-all duration-200 ${showBookmarkPanel ? 'w-64' : 'w-0'}`}>
