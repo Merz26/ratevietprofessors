@@ -1718,10 +1718,32 @@ export default function App() {
     <>
     <div className="flex h-screen overflow-hidden bg-brand-tertiary">
       {/* Desktop sidebar */}
-      <div className="hidden md:flex relative"> 
+      <div 
+        className="hidden md:flex"
+        onClickCapture={(e) => {
+          // Forcefully intercept the click before Astra UI can block it
+          if ((e.target as Element).closest('#sidebar-logo-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLogoClick();
+          }
+        }}
+      > 
         <SidebarNavigation
-          logo={null} 
-          header={<div className="py-md mb-sm h-8 w-full" />} 
+          header={
+            <button 
+              id="sidebar-logo-btn"
+              type="button"
+              className="flex items-center justify-center py-md mb-sm w-full bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity outline-none"
+            >
+              {/* w-10 h-10 and rounded-xl creates the perfect squircle */}
+              <img 
+                src={logoImg} 
+                alt="Logo" 
+                className={`w-10 h-10 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+              />
+            </button>
+          }
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1733,23 +1755,6 @@ export default function App() {
             </>
           }
         >
-          {regularNavItems.map(item => (
-            <Tooltip key={item.id} content={item.label} position="right">
-              <SidebarButton
-                icon={<item.icon className="size-full" strokeWidth={1.5} />}
-                active={activeSideNav === item.id}
-                onClick={() => handleNavClick(item.id)}
-              />
-            </Tooltip>
-          ))}
-          <Tooltip key="bookmarks" content="Giảng viên đã lưu" position="right">
-            <SidebarButton
-              icon={<Bookmark className="size-full" strokeWidth={1.5} />}
-              active={showBookmarkPanel}
-              onClick={() => setShowBookmarkPanel(v => !v)}
-            />
-          </Tooltip>
-        </SidebarNavigation>
 
         {/* The Escape Hatch: Absolute overlay for the logo */}
         <button 
