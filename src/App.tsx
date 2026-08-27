@@ -1718,32 +1718,10 @@ export default function App() {
     <>
     <div className="flex h-screen overflow-hidden bg-brand-tertiary">
       {/* Desktop sidebar */}
-      <div 
-        className="hidden md:flex"
-        onClickCapture={(e) => {
-          // Forcefully intercept the click before Astra UI can block it
-          if ((e.target as Element).closest('#sidebar-logo-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
-            handleLogoClick();
-          }
-        }}
-      > 
+      <div className="hidden md:flex relative"> 
         <SidebarNavigation
-          header={
-            <button 
-              id="sidebar-logo-btn"
-              type="button"
-              className="flex items-center justify-center py-md mb-sm w-full bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity outline-none"
-            >
-              {/* w-10 h-10 and rounded-xl creates the perfect squircle */}
-              <img 
-                src={logoImg} 
-                alt="Logo" 
-                className={`w-10 h-10 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
-              />
-            </button>
-          }
+          logo={null} 
+          header={<div className="py-md mb-sm h-8 w-full" />} 
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1772,21 +1750,23 @@ export default function App() {
             />
           </Tooltip>
         </SidebarNavigation>
-      </div>
 
         {/* The Escape Hatch: Absolute overlay for the logo */}
         <button 
           type="button"
           onClick={handleLogoClick}
-          className="absolute top-4 left-0 right-0 mx-auto flex items-center justify-center w-12 h-12 bg-transparent border-none cursor-pointer z-50 hover:opacity-80 transition-opacity"
+          /* Using left-1/2 and -translate-x-1/2 perfectly centers it horizontally */
+          /* bg-brand-tertiary acts as a solid patch to cover the purple logo underneath */
+          className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center justify-center w-12 h-12 bg-brand-tertiary border-none cursor-pointer z-50 hover:opacity-80 transition-opacity rounded-xl"
         >
           <img 
             src={logoImg} 
             alt="Logo" 
-            className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+            /* object-cover ensures the image fills the space cleanly */
+            /* rounded-xl creates the squircle shape */
+            className={`w-10 h-10 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
           />
         </button>
-      </div>
 
       {/* Bookmark panel - desktop only */}
       <div className={`hidden md:flex flex-col bg-surface-bg border-r border-border-primary overflow-hidden transition-all duration-200 ${showBookmarkPanel ? 'w-64' : 'w-0'}`}>
