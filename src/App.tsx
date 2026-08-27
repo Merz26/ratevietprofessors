@@ -682,6 +682,7 @@ export default function App() {
             <SearchComponent
               value={searchTerm}
               placeholder="Tìm kiếm theo tên trường hoặc mã trường..."
+              suggestions={['Bách Khoa', 'Kinh Tế Quốc Dân', 'FPT', 'RMIT', 'FTU', 'Y Dược']}
               onChange={val => setSearchTerm(val)}
               onSearch={() => setShowSearchSuggestions(false)}
             />
@@ -2049,10 +2050,10 @@ export default function App() {
         <button
           type="button"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="flex-1 flex flex-col items-center justify-center gap-sm py-lg text-text-tertiary transition-colors"
+          className="flex-1 flex flex-col items-center justify-center gap-sm py-lg text-text-tertiary transition-colors hover:text-brand-primary"
         >
-          {theme === 'dark' ? <Sun size={24} strokeWidth={1.5} /> : <Moon size={24} strokeWidth={1.5} />}
-          <span className="text-video-title">{theme === 'dark' ? 'Sáng' : 'Tối'}</span>
+          {theme === 'dark' ? <Moon size={24} strokeWidth={1.5} /> : <Sun size={24} strokeWidth={1.5} />}
+          <span className="text-video-title">{theme === 'dark' ? 'Tối' : 'Sáng'}</span>
         </button>
         
       </nav>
