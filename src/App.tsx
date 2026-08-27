@@ -32,6 +32,7 @@ import {
   X,
   Bookmark,
   BookmarkCheck,
+  Search,
 } from 'lucide-react'
 import { supabase } from './supabaseClient'
 import { ThemeContext } from './main'
@@ -678,13 +679,17 @@ export default function App() {
             <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
           </div>
 
-          <div className="relative border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors bg-input-bg overflow-hidden">
-            <SearchComponent
+          <div className="relative flex items-center bg-input-bg border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
+            <Search size={18} className="text-text-secondary mr-sm shrink-0" />
+            <input
+              type="text"
               value={searchTerm}
               placeholder="Tìm kiếm theo tên trường hoặc mã trường..."
-              suggestions={['Bách Khoa', 'Kinh Tế Quốc Dân', 'FPT', 'RMIT', 'FTU', 'Y Dược']}
-              onChange={val => setSearchTerm(val)}
-              onSearch={() => setShowSearchSuggestions(false)}
+              onChange={e => {
+                setSearchTerm(e.target.value)
+                setShowSearchSuggestions(true)
+              }}
+              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
             />
 
             {showSearchSuggestions && searchSuggestions.length > 0 && (
@@ -1727,7 +1732,8 @@ export default function App() {
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
                 <SidebarButton
-                  icon={theme === 'dark' ? <Sun className="size-full" strokeWidth={1.5} /> : <Moon className="size-full" strokeWidth={1.5} />}
+                  /* Swapped Sun and Moon here to reflect CURRENT state */
+                  icon={theme === 'dark' ? <Moon className="size-full" strokeWidth={1.5} /> : <Sun className="size-full" strokeWidth={1.5} />}
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 />
               </Tooltip>
