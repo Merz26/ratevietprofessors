@@ -1721,7 +1721,7 @@ export default function App() {
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
           logo={null} 
-          header={<div className="h-16 w-full" />} 
+          header={<div className="h-14 w-full mb-2" />} /* Adjusted spacer to push the Home button down safely */
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1751,8 +1751,8 @@ export default function App() {
           </Tooltip>
         </SidebarNavigation>
 
-        {/* The Escape Hatch: Updated background color and icon size */}
-        <div className="absolute top-0 left-0 right-0 h-16 pt-2 flex items-center justify-center bg-surface-bg z-50">
+        {/* The Escape Hatch: Reduced height (h-14) to prevent clipping, added border-r to restore the line */}
+        <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center bg-surface-bg z-50 border-r border-border-primary">
           <button 
             type="button"
             onClick={handleLogoClick}
@@ -1761,7 +1761,6 @@ export default function App() {
             <img 
               src={logoImg} 
               alt="Logo" 
-              /* Scaled to w-6 h-6 to match standard icons, changed to rounded-md */
               className={`w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
             />
           </button>
@@ -2009,7 +2008,23 @@ export default function App() {
       )}
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-bg border-t border-border-primary flex items-stretch">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-bg border-t border-border-primary flex items-stretch px-xs pb-safe">
+        
+        {/* Logo / Info Modal Trigger */}
+        <button
+          type="button"
+          onClick={handleLogoClick}
+          className="flex-1 flex flex-col items-center justify-center gap-sm py-lg text-text-tertiary transition-colors"
+        >
+          <img 
+            src={logoImg} 
+            alt="Logo" 
+            className={`w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+          />
+          <span className="text-video-title">Thông tin</span>
+        </button>
+
+        {/* Standard Nav Items */}
         {[
           { id: 'home', icon: Home, label: 'Trang chủ' },
           { id: 'suggest', icon: Plus, label: 'Đề xuất' },
@@ -2019,16 +2034,27 @@ export default function App() {
             key={item.id}
             type="button"
             onClick={() => handleNavClick(item.id)}
-            className={`flex-1 flex flex-col items-center justify-center gap-xs py-md transition-colors ${
+            className={`flex-1 flex flex-col items-center justify-center gap-sm py-lg transition-colors ${
               activeSideNav === item.id || (item.id === 'bookmarks' && showBookmarkPanel)
                 ? 'text-brand-primary'
-                : 'text-text-tertiary'
+                : 'text-text-tertiary hover:text-brand-primary'
             }`}
           >
-            <item.icon size={20} strokeWidth={1.5} />
+            <item.icon size={24} strokeWidth={1.5} />
             <span className="text-video-title">{item.label}</span>
           </button>
         ))}
+
+        {/* Theme Toggle */}
+        <button
+          type="button"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="flex-1 flex flex-col items-center justify-center gap-sm py-lg text-text-tertiary transition-colors"
+        >
+          {theme === 'dark' ? <Sun size={24} strokeWidth={1.5} /> : <Moon size={24} strokeWidth={1.5} />}
+          <span className="text-video-title">{theme === 'dark' ? 'Sáng' : 'Tối'}</span>
+        </button>
+        
       </nav>
 
       {/* Toast */}
