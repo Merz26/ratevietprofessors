@@ -805,14 +805,18 @@ export default function App() {
             </div>
           )}
 
+          {/* Pagination - Works for both Mobile and Desktop */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-lg mt-10">
+            <div className="flex items-center justify-center gap-lg my-10">
               <Button
                 variant="neutral"
                 size="small"
                 iconStart={<ChevronLeft size={16} />}
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => {
+                  setCurrentPage(p => Math.max(1, p - 1))
+                  window.scrollTo({ top: 0, behavior: 'smooth' }) // Smoothly scrolls back to top on page change
+                }}
               >
                 Trước
               </Button>
@@ -822,7 +826,10 @@ export default function App() {
                 size="small"
                 iconEnd={<ChevronRight size={16} />}
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => {
+                  setCurrentPage(p => Math.min(totalPages, p + 1))
+                  window.scrollTo({ top: 0, behavior: 'smooth' }) // Smoothly scrolls back to top on page change
+                }}
               >
                 Sau
               </Button>
