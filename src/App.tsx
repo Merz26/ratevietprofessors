@@ -1721,7 +1721,7 @@ export default function App() {
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
           logo={null} 
-          header={<div className="h-16 w-full" />} /* Reserves space for our custom patch */
+          header={<div className="h-16 w-full" />} 
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1751,8 +1751,8 @@ export default function App() {
           </Tooltip>
         </SidebarNavigation>
 
-        {/* The Escape Hatch: A full-width solid patch to cover the purple logo completely */}
-        <div className="absolute top-0 left-0 right-0 h-16 pt-2 flex items-center justify-center bg-brand-tertiary z-50">
+        {/* The Escape Hatch: Updated background color and icon size */}
+        <div className="absolute top-0 left-0 right-0 h-16 pt-2 flex items-center justify-center bg-surface-bg z-50">
           <button 
             type="button"
             onClick={handleLogoClick}
@@ -1761,8 +1761,8 @@ export default function App() {
             <img 
               src={logoImg} 
               alt="Logo" 
-              /* Increased to w-10 h-10 for better proportions, kept rounded-xl for the squircle */
-              className={`w-10 h-10 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+              /* Scaled to w-6 h-6 to match standard icons, changed to rounded-md */
+              className={`w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
             />
           </button>
         </div>
