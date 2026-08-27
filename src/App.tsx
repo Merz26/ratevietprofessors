@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import { supabase } from './supabaseClient'
 import { ThemeContext } from './main'
+import logoImg from './logo.jpg'
 
 // ==========================================
 // TYPES
@@ -1719,8 +1720,20 @@ export default function App() {
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
-          logo={<></>} /* This tells Astra UI to hide its default purple logo */
-          header={<div className="py-md mb-sm h-8 w-full" />} 
+          logo={null} /* hides the astral purple spark */
+          header={
+            <button 
+              type="button"
+              onClick={handleLogoClick}
+              className="flex items-center justify-center py-md mb-sm w-full bg-transparent border-none cursor-pointer relative z-50 hover:opacity-80 transition-opacity"
+            >
+              <img 
+                src={logoImg} /* Using the imported variable here! */
+                alt="Logo" 
+                className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+              />
+            </button>
+          }
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1851,7 +1864,7 @@ export default function App() {
         }
       >
         <div className="flex flex-col gap-lg text-center items-center py-lg">
-          <img src="/logo.jpg" alt="Logo" className="w-16 h-16 object-contain mb-sm" />
+          <img src={logoImg} alt="RateVietProfessors Logo" className="w-16 h-16 object-contain mb-sm rounded-corner-md" />
           <p className="text-label-sm text-text-secondary">
             © {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.
           </p>
