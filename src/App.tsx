@@ -1720,20 +1720,8 @@ export default function App() {
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
-          logo={null} /* hides the astral purple spark */
-          header={
-            <button 
-              type="button"
-              onClick={handleLogoClick}
-              className="flex items-center justify-center py-md mb-sm w-full bg-transparent border-none cursor-pointer relative z-50 hover:opacity-80 transition-opacity"
-            >
-              <img 
-                src={logoImg} /* Using the imported variable here! */
-                alt="Logo" 
-                className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
-              />
-            </button>
-          }
+          logo={null} 
+          header={<div className="py-md mb-sm h-8 w-full" />} 
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1763,16 +1751,15 @@ export default function App() {
           </Tooltip>
         </SidebarNavigation>
 
-        {/* The Escape Hatch */}
+        {/* The Escape Hatch: Absolute overlay for the logo */}
         <button 
           type="button"
           onClick={handleLogoClick}
           className="absolute top-4 left-0 right-0 mx-auto flex items-center justify-center w-12 h-12 bg-transparent border-none cursor-pointer z-50 hover:opacity-80 transition-opacity"
         >
-          {/* Update the src here as well */}
           <img 
-            src="/logo.jpg" 
-            alt="RateVietProfessors Logo" 
+            src={logoImg} 
+            alt="Logo" 
             className={`w-8 h-8 object-contain transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
           />
         </button>
@@ -1866,13 +1853,18 @@ export default function App() {
         <div className="flex flex-col gap-lg text-center items-center py-lg">
           <img src={logoImg} alt="RateVietProfessors Logo" className="w-16 h-16 object-contain mb-sm rounded-corner-md" />
           <p className="text-label-sm text-text-secondary">
-            © {new Date().getFullYear()} RateVietProfessors. made with 💖 from HCMC.
+            © {new Date().getFullYear()} RateVietProfessors.<br />
+            made with 💖 from HCMC
           </p>
-          <div className="flex gap-lg font-medium justify-center mt-sm flex-wrap">
-            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">GitHub</a>
-            <a href="#" className="text-brand-primary hover:underline transition-colors">Về chúng tôi</a>
-            <a href="#" className="text-brand-primary hover:underline transition-colors">Quy tắc cộng đồng</a>
-            <a href="#" className="text-brand-primary hover:underline transition-colors">Bảo mật</a>
+          <div className="flex flex-col gap-md mt-sm w-full items-center">
+            <div className="flex gap-xl font-medium justify-center">
+              <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">GitHub</a>
+              <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">Về chúng tôi</a>
+            </div>
+            <div className="flex gap-xl font-medium justify-center">
+              <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">Quy tắc cộng đồng</a>
+              <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">Bảo mật</a>
+            </div>
           </div>
         </div>
       </Modal>
