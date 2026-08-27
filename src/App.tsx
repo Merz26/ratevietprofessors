@@ -805,7 +805,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Pagination - Works for both Mobile and Desktop */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-lg my-10">
               <Button
@@ -815,7 +815,8 @@ export default function App() {
                 disabled={currentPage === 1}
                 onClick={() => {
                   setCurrentPage(p => Math.max(1, p - 1))
-                  window.scrollTo({ top: 0, behavior: 'smooth' }) // Smoothly scrolls back to top on page change
+                  const mainContainer = document.querySelector('main')
+                  if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
               >
                 Trước
@@ -828,7 +829,8 @@ export default function App() {
                 disabled={currentPage === totalPages}
                 onClick={() => {
                   setCurrentPage(p => Math.min(totalPages, p + 1))
-                  window.scrollTo({ top: 0, behavior: 'smooth' }) // Smoothly scrolls back to top on page change
+                  const mainContainer = document.querySelector('main')
+                  if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
               >
                 Sau
@@ -1845,7 +1847,7 @@ export default function App() {
           </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col">
+      <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col pb-24 md:pb-lg">
         <div className="max-w-5xl mx-auto p-lg md:p-2xl flex-1 w-full">
           {currentView === 'home' && renderHome()}
           {currentView === 'institution' && renderInstitution()}
