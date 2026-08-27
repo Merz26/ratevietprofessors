@@ -679,8 +679,8 @@ export default function App() {
             <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
           </div>
 
-          <div className="relative flex items-center bg-input-bg border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
-            <Search size={18} className="text-text-secondary mr-sm shrink-0" />
+          <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
+            <Search size={18} className="text-text-secondary shrink-0" />
             <input
               type="text"
               value={searchTerm}
@@ -1014,11 +1014,14 @@ export default function App() {
         </div>
 
         <div className="bg-surface-bg rounded-corner-lg p-xl">
-          <div className="border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors overflow-hidden">
-            <SearchComponent
+          <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
+            <Search size={18} className="text-text-secondary shrink-0" />
+            <input
+              type="text"
               value={deptSearchTerm}
               placeholder="Tìm kiếm giảng viên..."
-              onChange={setDeptSearchTerm}
+              onChange={e => setDeptSearchTerm(e.target.value)}
+              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
             />
           </div>
         </div>
@@ -1932,11 +1935,14 @@ export default function App() {
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm giảng viên để so sánh với <strong>{selectedProf.name}</strong></p>
               
-              <div className="border border-border-primary rounded-corner-md focus-within:border-brand-primary transition-colors bg-input-bg overflow-hidden">
-                <SearchComponent
+              <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
+                <Search size={18} className="text-text-secondary shrink-0" />
+                <input
+                  type="text"
                   value={compareSearch}
                   placeholder="Tìm theo tên giảng viên..."
-                  onChange={setCompareSearch}
+                  onChange={e => setCompareSearch(e.target.value)}
+                  className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
                 />
               </div>
 
