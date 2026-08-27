@@ -1720,9 +1720,8 @@ export default function App() {
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
-          /* The transparent pixel trick! */
-          logo="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" 
-          header={<div className="h-12 w-full" />} 
+          logo={null} 
+          header={<div className="h-16 w-full" />} /* Reserves space for our custom patch */
           footer={
             <>
               <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
@@ -1752,19 +1751,21 @@ export default function App() {
           </Tooltip>
         </SidebarNavigation>
 
-        {/* The Escape Hatch: Absolute overlay for the logo */}
-        <button 
-          type="button"
-          onClick={handleLogoClick}
-          className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center justify-center w-10 h-10 bg-transparent border-none cursor-pointer z-50 hover:opacity-80 transition-opacity"
-        >
-          <img 
-            src={logoImg} 
-            alt="Logo" 
-            /* Added rounded-xl for the squircle look and object-cover to prevent distortion */
-            className={`w-8 h-8 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
-          />
-        </button>
+        {/* The Escape Hatch: A full-width solid patch to cover the purple logo completely */}
+        <div className="absolute top-0 left-0 right-0 h-16 pt-2 flex items-center justify-center bg-brand-tertiary z-50">
+          <button 
+            type="button"
+            onClick={handleLogoClick}
+            className="flex items-center justify-center bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <img 
+              src={logoImg} 
+              alt="Logo" 
+              /* Increased to w-10 h-10 for better proportions, kept rounded-xl for the squircle */
+              className={`w-10 h-10 object-cover rounded-xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+            />
+          </button>
+        </div>
       </div>
 
       {/* Bookmark panel - desktop only */}
@@ -1855,7 +1856,7 @@ export default function App() {
         <div className="flex flex-col gap-lg text-center items-center py-lg">
           <img src={logoImg} alt="RateVietProfessors Logo" className="w-16 h-16 object-contain mb-sm rounded-corner-md" />
           <p className="text-label-sm text-text-secondary">
-            © {new Date().getFullYear()} RateVietProfessors.<br />
+            © {new Date().getFullYear()} RateVietProfessors<br />
             made with 💖 from HCMC
           </p>
           <div className="flex flex-col gap-md mt-sm w-full items-center">
