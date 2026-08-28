@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { ThemeProvider } from '@figma/astraui'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import '@figma/astraui/styles.css'
 import './index.css'
 
 type AppTheme = 'light' | 'dark'
@@ -39,7 +41,9 @@ function Root() {
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
       <ThemeProvider>
-        <App />
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
       </ThemeProvider>
     </ThemeContext.Provider>
   )

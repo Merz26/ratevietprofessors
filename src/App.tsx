@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, useContext, type FormEvent } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import confetti from 'canvas-confetti'
+import easterEggImg from './easter-egg-logo.jpg'
 import {
   SidebarNavigation,
   SidebarButton,
@@ -238,11 +241,7 @@ function ScoreBadge({ value }: { value: number }) {
   if (value === 0) return <Badge label="N/A" variant="default" />
   const label = value.toFixed(1)
   if (value >= 4.5) return <Badge label={label} variant="success" />
-  if (value >= 3.5) return (
-    <span className="inline-flex items-center px-sm py-xs rounded-corner-sm text-label-sm font-medium bg-lime-500/15 text-lime-600 border border-lime-500/30">
-      {label}
-    </span>
-  )
+  if (value >= 3.5) return <Badge label={label} variant="success" />
   if (value >= 2.5) return <Badge label={label} variant="warning" />
   return <Badge label={label} variant="danger" />
 }
@@ -350,13 +349,31 @@ export default function App() {
 
   // Header Logo States
   const [showInfoMenu, setShowInfoMenu] = useState(false)
-  const [isSpinning, setIsSpinning] = useState(false)
+  const [sidebarRotation, setSidebarRotation] = useState(0)
+  const [flyoutRotation, setFlyoutRotation] = useState(0)
+  const [isFlyoutSpinning, setIsFlyoutSpinning] = useState(false)
+  const [spinCount, setSpinCount] = useState(0)
+  const confettiCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const handleLogoClick = () => {
-    setIsSpinning(true);
+    setSidebarRotation(prev => prev + 360);
     setShowInfoMenu(true);
-    // Reset spin animation class after it completes (500ms)
-    setTimeout(() => setIsSpinning(false), 500);
+  }
+
+  const handleFlyoutLogoClick = () => {
+    if (isFlyoutSpinning) return;
+    setIsFlyoutSpinning(true);
+    setFlyoutRotation(prev => prev + 360);
+    
+    const nextSpinCount = spinCount + 1;
+    setSpinCount(nextSpinCount);
+    
+    if (nextSpinCount === 100 && confettiCanvasRef.current) {
+      const myConfetti = confetti.create(confettiCanvasRef.current, { resize: true, useWorker: true });
+      myConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    }
+    
+    setTimeout(() => setIsFlyoutSpinning(false), 500);
   }
 
   // Bookmarks
@@ -377,6 +394,10 @@ export default function App() {
   const [compareDept, setCompareDept] = useState('')
   const [compareProf, setCompareProf] = useState<Professor | null>(null)
 
+  const [compareInstModal, setCompareInstModal] = useState(false)
+  const [compareInstSearch, setCompareInstSearch] = useState('')
+  const [compareInstSelected, setCompareInstSelected] = useState<Institution | null>(null)
+
   // Data
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [professors, setProfessors] = useState<Professor[]>([])
@@ -385,11 +406,82 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
 
   // Navigation
+  const routerNavigate = useNavigate()
+  const location = useLocation()
+  
   const [currentView, setCurrentView] = useState('home')
   const [selectedInst, setSelectedInst] = useState<Institution | null>(null)
   const [selectedDept, setSelectedDept] = useState<string | null>(null)
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null)
   const [activeSideNav, setActiveSideNav] = useState('home')
+
+  useEffect(() => {
+    if (institutions.length === 0 || professors.length === 0) return;
+    
+    const parts = location.pathname.split('/').filter(Boolean)
+    if (parts.length === 0) {
+      setCurrentView('home')
+      setSelectedInst(null)
+      setSelectedDept(null)
+      setSelectedProf(null)
+    } else if (parts[0] === 'suggest') {
+      setCurrentView('suggest')
+    } else if (parts[0] === 'add-inst-review' && parts[1]) {
+      const inst = institutions.find(i => i.short_name.toLowerCase() === decodeURIComponent(parts[1]).toLowerCase())
+      if (inst) {
+         setSelectedInst(inst)
+         setCurrentView('add-inst-review')
+      }
+    } else if (parts[0] === 'add-prof-review' && parts[1]) {
+      const prof = professors.find(p => p.id === parseInt(parts[1]))
+      if (prof) {
+         setSelectedProf(prof)
+         const inst = institutions.find(i => i.name === prof.university)
+         if (inst) setSelectedInst(inst)
+         setSelectedDept(prof.department)
+         setCurrentView('add-prof-review')
+      }
+    } else {
+      const inst = institutions.find(i => i.short_name.toLowerCase() === decodeURIComponent(parts[0]).toLowerCase())
+      if (inst) {
+        setSelectedInst(inst)
+        if (parts[1]) {
+          setSelectedDept(decodeURIComponent(parts[1]))
+          if (parts[2]) {
+            const prof = professors.find(p => p.id.toString() === parts[2])
+            if (prof) {
+              setSelectedProf(prof)
+              setCurrentView('professor')
+            } else {
+              setCurrentView('department')
+            }
+          } else {
+            setCurrentView('department')
+          }
+        } else {
+          setCurrentView('institution')
+        }
+      } else {
+        if (institutions.length > 0) {
+          setCurrentView('home')
+        }
+      }
+    }
+  }, [location.pathname, institutions, professors])
+
+  const navigate = (view: string, inst?: Institution, dept?: string, prof?: Professor) => {
+    const targetInst = inst !== undefined ? inst : (selectedInst || undefined);
+    const targetDept = dept !== undefined ? dept : (selectedDept || undefined);
+    const targetProf = prof !== undefined ? prof : (selectedProf || undefined);
+    
+    if (view === 'home') routerNavigate('/')
+    else if (view === 'suggest') routerNavigate('/suggest')
+    else if (view === 'add-inst-review' && targetInst) routerNavigate(`/add-inst-review/${encodeURIComponent(targetInst.short_name)}`)
+    else if (view === 'add-prof-review' && targetProf) routerNavigate(`/add-prof-review/${targetProf.id}`)
+    else if (view === 'institution' && targetInst) routerNavigate(`/${encodeURIComponent(targetInst.short_name)}`)
+    else if (view === 'department' && targetInst && targetDept) routerNavigate(`/${encodeURIComponent(targetInst.short_name)}/${encodeURIComponent(targetDept)}`)
+    else if (view === 'professor' && targetInst && targetDept && targetProf) routerNavigate(`/${encodeURIComponent(targetInst.short_name)}/${encodeURIComponent(targetDept)}/${targetProf.id}`)
+  }
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('')
@@ -606,17 +698,6 @@ export default function App() {
   }
 
   // ==========================================
-  // NAVIGATION
-  // ==========================================
-  const navigate = (view: string, inst?: Institution, dept?: string, prof?: Professor) => {
-    setCurrentView(view)
-    if (inst !== undefined) setSelectedInst(inst)
-    if (dept !== undefined) setSelectedDept(dept)
-    if (prof !== undefined) setSelectedProf(prof)
-    if (view === 'home') { setSelectedInst(null); setSelectedDept(null); setSelectedProf(null) }
-  }
-
-  // ==========================================
   // BREADCRUMB
   // ==========================================
   const renderBreadcrumb = () => {
@@ -807,7 +888,7 @@ export default function App() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-lg my-10">
+            <div className="flex items-center justify-center gap-lg mt-10">
               <Button
                 variant="neutral"
                 size="small"
@@ -869,7 +950,7 @@ export default function App() {
             <Button
               variant="neutral"
               size="small"
-              onClick={() => alert('So sánh đang được phát triển!')}
+              onClick={() => { setCompareInstSelected(null); setCompareInstSearch(''); setCompareInstModal(true) }}
             >
               So sánh
             </Button>
@@ -1734,7 +1815,7 @@ export default function App() {
 
   return (
     <>
-    <div className="flex h-screen overflow-hidden bg-brand-tertiary">
+    <div className="flex h-[100dvh] overflow-hidden bg-brand-tertiary">
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative"> 
         <SidebarNavigation
@@ -1780,7 +1861,8 @@ export default function App() {
             <img 
               src={logoImg} 
               alt="Logo" 
-              className={`w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+              className="w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+              style={{ transform: `rotate(${sidebarRotation}deg)` }}
             />
           </button>
         </div>
@@ -1847,8 +1929,8 @@ export default function App() {
           </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col pb-24 md:pb-lg">
-        <div className="max-w-5xl mx-auto p-lg md:p-2xl flex-1 w-full">
+      <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col pb-20 md:pb-0">
+        <div className="max-w-7xl mx-auto p-xl md:px-3xl md:pt-3xl md:pb-0 flex-1 w-full">
           {currentView === 'home' && renderHome()}
           {currentView === 'institution' && renderInstitution()}
           {currentView === 'department' && renderDepartment()}
@@ -1871,9 +1953,18 @@ export default function App() {
           </ButtonGroup>
         }
       >
-        <div className="flex flex-col gap-lg text-center items-center py-lg">
-          <img src={logoImg} alt="RateVietProfessors Logo" className="w-16 h-16 object-contain mb-sm rounded-corner-md" />
-          <p className="text-label-sm text-text-secondary">
+        <div className="flex flex-col gap-lg text-center items-center py-lg animate-scaleIn relative overflow-hidden">
+          <canvas ref={confettiCanvasRef} className="absolute inset-0 pointer-events-none z-0 w-full h-full" />
+          <img 
+            src={spinCount >= 100 ? easterEggImg : logoImg} 
+            alt="RateVietProfessors Logo" 
+            tabIndex={0}
+            onClick={handleFlyoutLogoClick}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFlyoutLogoClick() }}
+            className="w-16 h-16 object-contain mb-sm rounded-corner-md z-10 relative cursor-pointer outline-none focus-visible:ring-2 ring-brand-primary transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            style={{ transform: `rotate(${flyoutRotation}deg)` }}
+          />
+          <p className="text-label-sm text-text-secondary z-10 relative">
             © {new Date().getFullYear()} RateVietProfessors<br />
             made with 💖 from HCMC
           </p>
@@ -1889,6 +1980,108 @@ export default function App() {
           </div>
         </div>
       </Modal>
+
+      {/* Institution Comparison Modal */}
+      {selectedInst && (
+        <Modal
+          isOpen={compareInstModal}
+          onClose={() => { setCompareInstModal(false); setCompareInstSelected(null) }}
+          title="So sánh trường"
+          size="medium"
+          footer={
+            <ButtonGroup align="end">
+              <Button variant="neutral" onClick={() => { setCompareInstModal(false); setCompareInstSelected(null) }}>Đóng</Button>
+            </ButtonGroup>
+          }
+        >
+          {compareInstSelected ? (
+            <div className="flex flex-col gap-xl">
+              <div className="grid grid-cols-2 gap-xl">
+                {[{ inst: selectedInst, label: 'Hiện tại' }, { inst: compareInstSelected, label: 'So sánh' }].map(({ inst, label }) => {
+                  const stats = calculateInstStats(inst.id)
+                  return (
+                    <div key={inst.id} className="bg-bg-faint rounded-corner-lg p-xl flex flex-col gap-lg">
+                      <div>
+                        <Badge label={label} variant={label === 'Hiện tại' ? 'brand' : 'secondary'} />
+                        <p className="text-label text-text-primary font-semibold mt-sm">{inst.name}</p>
+                        <p className="text-video-title text-text-secondary">{inst.short_name}</p>
+                        <p className="text-video-title text-text-tertiary">{inst.location}</p>
+                      </div>
+                      <div className="flex flex-col gap-sm">
+                        {[
+                          { key: 'Uy tín trường', val: stats.metricsAvg['Uy tín trường'] || '0.0' },
+                          { key: 'Cơ hội việc làm', val: stats.metricsAvg['Cơ hội việc làm'] || '0.0' },
+                          { key: 'Cơ sở vật chất', val: stats.metricsAvg['Cơ sở vật chất'] || '0.0' },
+                          { key: 'Tổng quan', val: stats.overall.toFixed(1) },
+                          { key: 'Đánh giá', val: stats.total },
+                        ].map(({ key, val }) => (
+                          <div key={key} className="flex justify-between items-center">
+                            <span className="text-video-title text-text-secondary">{key}</span>
+                            <span className="text-label-sm text-text-primary font-semibold">{val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <Button variant="subtle" size="small" onClick={() => setCompareInstSelected(null)} iconStart={<X size={14} />}>
+                Chọn lại
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-lg">
+              <p className="text-label-sm text-text-secondary">Tìm trường để so sánh với <strong>{selectedInst.name}</strong></p>
+              
+              <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
+                <Search size={18} className="text-text-secondary shrink-0" />
+                <input
+                  type="text"
+                  value={compareInstSearch}
+                  placeholder="Tìm theo tên trường..."
+                  onChange={e => setCompareInstSearch(e.target.value)}
+                  className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
+                />
+              </div>
+
+              <div className="flex flex-col gap-sm max-h-64 overflow-y-auto">
+                {institutions
+                  .filter(i =>
+                    i.id !== selectedInst.id &&
+                    (!compareInstSearch || i.name.toLowerCase().includes(compareInstSearch.toLowerCase()) || i.short_name.toLowerCase().includes(compareInstSearch.toLowerCase()))
+                  )
+                  .slice(0, 8)
+                  .map(i => {
+                    const stats = calculateInstStats(i.id)
+                    return (
+                      <button
+                        key={i.id}
+                        type="button"
+                        onClick={() => setCompareInstSelected(i)}
+                        className="flex items-center justify-between gap-lg p-lg rounded-corner-md bg-bg-faint hover:bg-bg-hover transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-md">
+                          <Avatar type="initial" initials={i.short_name.charAt(0) || 'I'} size="small" shape="circle" />
+                          <div>
+                            <p className="text-label-sm text-text-primary">{i.short_name}</p>
+                            <p className="text-video-title text-text-secondary">{i.name}</p>
+                          </div>
+                        </div>
+                        <ScoreBadge value={stats.overall} />
+                      </button>
+                    )
+                  })}
+                {institutions.filter(i =>
+                  i.id !== selectedInst.id &&
+                  (!compareInstSearch || i.name.toLowerCase().includes(compareInstSearch.toLowerCase()) || i.short_name.toLowerCase().includes(compareInstSearch.toLowerCase()))
+                ).length === 0 && (
+                  <p className="text-center text-label-sm text-text-secondary py-lg">Không tìm thấy trường nào phù hợp.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
 
       {/* Professor Comparison Modal */}
       {selectedProf && (
@@ -2041,7 +2234,8 @@ export default function App() {
           <img 
             src={logoImg} 
             alt="Logo" 
-            className={`w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSpinning ? 'rotate-[360deg]' : 'rotate-0'}`} 
+            className="w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            style={{ transform: `rotate(${sidebarRotation}deg)` }}
           />
           <span className="text-video-title">Thông tin</span>
         </button>
