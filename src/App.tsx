@@ -368,7 +368,7 @@ export default function App() {
     const nextSpinCount = spinCount + 1;
     setSpinCount(nextSpinCount);
     
-    if (nextSpinCount === 100 && confettiCanvasRef.current) {
+    if (nextSpinCount === 10 && confettiCanvasRef.current) {
       const myConfetti = confetti.create(confettiCanvasRef.current, { resize: true, useWorker: true });
       myConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     }
@@ -1956,7 +1956,7 @@ export default function App() {
         <div className="flex flex-col gap-lg text-center items-center py-lg animate-scaleIn relative overflow-hidden">
           <canvas ref={confettiCanvasRef} className="absolute inset-0 pointer-events-none z-0 w-full h-full" />
           <img 
-            src={spinCount >= 100 ? easterEggImg : logoImg} 
+            src={spinCount >= 10 ? easterEggImg : logoImg} 
             alt="RateVietProfessors Logo" 
             tabIndex={0}
             onClick={handleFlyoutLogoClick}
