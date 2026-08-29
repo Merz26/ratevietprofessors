@@ -1,0 +1,6 @@
+{
+  "name": "RateVietProfs",
+  "description": "A professor and institution rating platform for Vietnamese universities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
