@@ -5,10 +5,7 @@ import easterEggImg from './easter-egg-logo.jpg'
 import {
   SidebarNavigation,
   SidebarButton,
-  Button,
-  ButtonGroup,
   Avatar,
-  Badge,
   Tooltip,
   Modal,
   InputField,
@@ -40,6 +37,15 @@ import {
 import { supabase } from './supabaseClient'
 import { ThemeContext } from './main'
 import logoImg from './logo.jpg'
+import InteractiveBackground from './components/InteractiveBackground'
+import {
+  Skeleton,
+  InstitutionCardSkeleton,
+  InstitutionListSkeleton,
+  ProfessorDetailsSkeleton,
+  InstitutionDetailsSkeleton,
+  DepartmentDetailsSkeleton,
+} from './components/Skeletons'
 
 // ==========================================
 // TYPES
@@ -154,10 +160,127 @@ const reviewAvg = (metrics: Record<string, number>): number => {
 }
 
 // ==========================================
-// SEARCHABLE DROPDOWN
+// BUTTON & BUTTON GROUP
 // ==========================================
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'neutral' | 'subtle' | 'danger'
+  size?: 'small' | 'medium' | 'large'
+  iconStart?: React.ReactNode
+  iconEnd?: React.ReactNode
+  children?: React.ReactNode
+}
+
+function Button({
+  variant = 'neutral',
+  size = 'medium',
+  iconStart,
+  iconEnd,
+  children,
+  className = '',
+  ...props
+}: ButtonProps) {
+  const baseClasses = 'inline-flex items-center justify-center font-medium select-none cursor-pointer active:scale-[0.96] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100'
+
+  const sizeClasses = {
+    small: 'h-9 px-4 text-xs gap-1.5 rounded-full',
+    medium: 'h-11 px-5 text-sm gap-2 rounded-full',
+    large: 'h-12 px-7 text-base gap-2.5 rounded-full',
+  }[size]
+
+  const variantClasses = {
+    primary: 'bg-brand-primary text-on-brand shadow-[0_2px_12px_rgba(20,90,220,0.28)] hover:shadow-[0_4px_20px_rgba(20,90,220,0.38)] hover:brightness-105 border border-brand-primary/20',
+    neutral: 'bg-white/60 dark:bg-white/[0.08] backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:bg-white/85 dark:hover:bg-white/[0.16] text-text-primary',
+    subtle: 'bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-text-secondary hover:text-text-primary border border-transparent',
+    danger: 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 shadow-sm',
+  }[variant]
+
+  return (
+    <button
+      className={`${baseClasses} ${sizeClasses} ${variantClasses} ${className}`}
+      {...props}
+    >
+      {iconStart && <span className="shrink-0 flex items-center">{iconStart}</span>}
+      {children && <span className="truncate">{children}</span>}
+      {iconEnd && <span className="shrink-0 flex items-center">{iconEnd}</span>}
+    </button>
+  )
+}
+
+function ButtonGroup({
+  children,
+  align = 'start',
+  className = '',
+}: {
+  children: React.ReactNode
+  align?: 'start' | 'end' | 'center' | 'justify'
+  className?: string
+}) {
+  const alignClass = {
+    start: 'justify-start',
+    end: 'justify-end',
+    center: 'justify-center',
+    justify: 'justify-between w-full',
+  }[align]
+
+  return (
+    <div className={`flex items-center gap-md flex-wrap ${alignClass} ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+// ==========================================
+// LIQUID MODAL
+// ==========================================
+function LiquidModal({ isOpen, onClose, title, children, size = 'small', footer }: any) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 animate-backdropFade">
+      <div 
+        className="absolute inset-0 bg-black/30 dark:bg-black/70 backdrop-blur-md transition-opacity duration-300" 
+        onClick={onClose} 
+      />
+      <div 
+        className={`relative flex flex-col bg-white/85 dark:bg-[#141416]/90 backdrop-blur-3xl border border-black/10 dark:border-white/15 shadow-[0_24px_64px_rgba(0,0,0,0.28)] rounded-[28px] animate-scaleIn ${size === 'small' ? 'max-w-md w-full' : 'max-w-2xl w-full'} max-h-[90vh] overflow-hidden`}
+        style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+      >
+        {title ? (
+          <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-white/20 dark:bg-white/[0.02]">
+             <h2 className="text-base font-semibold text-text-primary">{title}</h2>
+             <button 
+               type="button" 
+               onClick={onClose} 
+               aria-label="Đóng"
+               className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary backdrop-blur-md transition-all duration-300 border border-black/5 dark:border-white/10 shrink-0 cursor-pointer"
+             >
+               <X size={16} />
+             </button>
+          </div>
+        ) : (
+          <button 
+            type="button" 
+            onClick={onClose} 
+            aria-label="Đóng"
+            className="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary backdrop-blur-md transition-all duration-300 border border-black/5 dark:border-white/10 z-30 cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+        )}
+        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
+          {children}
+        </div>
+        {footer && (
+          <div className="px-6 py-4 border-t border-black/5 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SearchableDropdown({
-  options, value, onChange, placeholder, label, disabled
+  options, value, onChange, placeholder, label, disabled, compact = false, size = 'medium', className = ''
 }: {
   options: { value: string; label: string }[]
   value: string
@@ -165,10 +288,16 @@ function SearchableDropdown({
   placeholder: string
   label?: string
   disabled?: boolean
+  compact?: boolean
+  size?: 'small' | 'medium'
+  className?: string
 }) {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+
+  const isCompact = compact || size === 'small'
+  const showSearchInput = options.length > 6
 
   const filtered = options.filter(o =>
     o.label.toLowerCase().includes(search.toLowerCase())
@@ -184,7 +313,7 @@ function SearchableDropdown({
   }, [])
 
   return (
-    <div className="relative flex flex-col gap-xs" ref={ref}>
+    <div className={`relative flex flex-col gap-xs ${className} ${open ? 'z-50' : ''}`} ref={ref}>
       {label && (
         <span className="text-label-sm text-text-secondary">{label}</span>
       )}
@@ -192,36 +321,49 @@ function SearchableDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen(v => !v)}
-        className={`flex items-center justify-between px-xl py-lg bg-input-bg border border-border-primary rounded-corner-md text-label text-text-primary transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-primary'}`}
+        className={`flex items-center justify-between transition-all duration-200 select-none ${
+          isCompact
+            ? 'h-9 px-3.5 bg-white/50 dark:bg-white/[0.08] border border-black/[0.08] dark:border-white/[0.12] shadow-xs rounded-full text-xs font-medium text-text-primary hover:bg-white/80 dark:hover:bg-white/[0.14]'
+            : 'px-xl py-lg bg-white/50 dark:bg-black/50 border border-black/5 dark:border-white/10 shadow-sm rounded-corner-md text-label text-text-primary'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-primary cursor-pointer active:scale-[0.98]'}`}
       >
-        <span className={selected ? 'text-text-primary' : 'text-text-tertiary'}>
+        <span className={`truncate mr-2 ${selected ? 'text-text-primary' : 'text-text-tertiary'}`}>
           {selected ? selected.label : placeholder}
         </span>
         <ChevronRight
-          size={16}
-          className={`text-text-secondary transition-transform ${open ? 'rotate-90' : ''}`}
+          size={isCompact ? 14 : 16}
+          className={`text-text-secondary shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
         />
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 w-full bg-surface-bg border border-border-primary rounded-corner-lg shadow-xl overflow-hidden animate-scaleIn">
-          <div className="p-sm border-b border-border-primary bg-surface-bg">
-            <InputField
-              value={search}
-              placeholder="Tìm kiếm..."
-              onChange={setSearch}
-            />
-          </div>
-          <div className="max-h-56 overflow-y-auto bg-surface-bg">
+        <div 
+          className="absolute z-50 top-full mt-1.5 w-full min-w-[180px] bg-white/80 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-black/10 dark:border-white/15 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.18)] animate-scaleIn overflow-hidden"
+          style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+        >
+          {showSearchInput && (
+            <div className="p-2 border-b border-black/5 dark:border-white/10 bg-transparent">
+              <InputField
+                value={search}
+                placeholder="Tìm kiếm..."
+                onChange={setSearch}
+              />
+            </div>
+          )}
+          <div className="max-h-60 overflow-y-auto bg-transparent py-1.5">
             {filtered.length === 0 ? (
-              <p className="text-label-sm text-text-tertiary text-center p-xl">Không tìm thấy kết quả</p>
+              <p className="text-xs text-text-tertiary text-center p-4">Không tìm thấy kết quả</p>
             ) : (
               filtered.map(opt => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => { onChange(opt.value); setOpen(false); setSearch('') }}
-                  className={`w-full text-left px-xl py-lg text-label-sm transition-colors ${opt.value === value ? 'bg-brand-primary text-on-brand font-medium' : 'text-text-primary hover:bg-bg-hover'}`}
+                  className={`w-full text-left transition-colors cursor-pointer ${
+                    isCompact
+                      ? 'px-3.5 py-2 text-xs font-medium'
+                      : 'px-xl py-lg text-label-sm'
+                  } hover:bg-black/5 dark:hover:bg-white/10 ${opt.value === value ? 'text-brand-primary font-semibold bg-brand-primary/10' : 'text-text-primary'}`}
                 >
                   {opt.label}
                 </button>
@@ -235,15 +377,41 @@ function SearchableDropdown({
 }
 
 // ==========================================
-// SCORE BADGE
+// BADGE & SCORE BADGE
 // ==========================================
-function ScoreBadge({ value }: { value: number }) {
-  if (value === 0) return <Badge label="N/A" variant="default" />
+function Badge({
+  label,
+  variant = 'default',
+  className = '',
+}: {
+  label: React.ReactNode
+  variant?: 'default' | 'brand' | 'success' | 'warning' | 'danger' | 'secondary'
+  className?: string
+}) {
+  const variantStyles = {
+    brand: 'bg-brand-primary/15 text-brand-primary border-brand-primary/30 font-semibold shadow-xs',
+    success: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shadow-xs',
+    warning: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold shadow-xs',
+    danger: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30 font-bold shadow-xs',
+    secondary: 'bg-black/5 dark:bg-white/[0.08] text-text-secondary border-black/[0.08] dark:border-white/[0.12] font-medium',
+    default: 'bg-black/5 dark:bg-white/[0.08] text-text-primary border-black/[0.08] dark:border-white/[0.12] font-medium',
+  }[variant]
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center px-3 py-1 text-xs leading-none rounded-full border backdrop-blur-md select-none tracking-tight transition-colors ${variantStyles} ${className}`}
+    >
+      {label}
+    </span>
+  )
+}
+
+function ScoreBadge({ value, className = '' }: { value: number; className?: string }) {
+  if (value === 0) return <Badge label="N/A" variant="default" className={className} />
   const label = value.toFixed(1)
-  if (value >= 4.5) return <Badge label={label} variant="success" />
-  if (value >= 3.5) return <Badge label={label} variant="success" />
-  if (value >= 2.5) return <Badge label={label} variant="warning" />
-  return <Badge label={label} variant="danger" />
+  if (value >= 3.5) return <Badge label={label} variant="success" className={className} />
+  if (value >= 2.5) return <Badge label={label} variant="warning" className={className} />
+  return <Badge label={label} variant="danger" className={className} />
 }
 
 // ==========================================
@@ -256,17 +424,17 @@ function RatingSelector({
 }) {
   return (
     <div className="flex flex-col gap-sm">
-      <span className="text-label text-text-primary">{label}</span>
+      <span className="text-label text-text-primary font-medium">{label}</span>
       <div className="flex gap-md">
         {[1, 2, 3, 4, 5].map(n => (
           <button
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={`flex-1 h-12 rounded-corner-md text-label transition-all border font-medium ${
+            className={`flex-1 h-11 rounded-2xl text-label transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border font-semibold active:scale-95 cursor-pointer ${
               value === n
-                ? ratingSelectedClass(n)
-                : 'bg-bg-faint border-border-primary text-text-primary hover:bg-bg-hover'
+                ? `${ratingSelectedClass(n)} shadow-[0_2px_12px_rgba(0,0,0,0.15)]`
+                : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-xl border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
             }`}
           >
             {n}
@@ -274,7 +442,7 @@ function RatingSelector({
         ))}
       </div>
       {(lowLabel || highLabel) && (
-        <div className="flex justify-between text-video-title text-text-tertiary">
+        <div className="flex justify-between text-video-title text-text-tertiary px-xs">
           <span>{lowLabel}</span>
           <span>{highLabel}</span>
         </div>
@@ -293,25 +461,37 @@ function VoteFooter({
   onVote: (id: string, vote: 'helpful' | 'not_helpful') => void
 }) {
   return (
-    <div className="flex items-center justify-end gap-xl pt-lg border-t border-border-secondary">
+    <div className="flex items-center justify-end gap-2 pt-3.5 mt-1 border-t border-black/[0.08] dark:border-white/[0.1]">
       <button
         type="button"
         onClick={() => onVote(review.id, 'helpful')}
-        className={`flex items-center gap-xs text-label-sm transition-colors ${review.userVote === 'helpful' ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}
+        className={`h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
+          review.userVote === 'helpful'
+            ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
+            : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-brand-primary hover:bg-white/60 dark:hover:bg-white/[0.12]'
+        }`}
       >
-        <ThumbsUp size={14} />
+        <ThumbsUp size={13} />
         <span>{review.helpful || 0}</span>
       </button>
       <button
         type="button"
         onClick={() => onVote(review.id, 'not_helpful')}
-        className={`flex items-center gap-xs text-label-sm transition-colors ${review.userVote === 'not_helpful' ? 'text-danger' : 'text-text-secondary hover:text-danger'}`}
+        className={`h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
+          review.userVote === 'not_helpful'
+            ? 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30 shadow-xs'
+            : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/60 dark:hover:bg-white/[0.12]'
+        }`}
       >
-        <ThumbsDown size={14} />
+        <ThumbsDown size={13} />
         <span>{review.not_helpful || 0}</span>
       </button>
-      <button type="button" className="flex items-center gap-xs text-label-sm text-text-secondary hover:text-danger transition-colors">
-        <Flag size={14} />
+      <button 
+        type="button" 
+        aria-label="Báo cáo"
+        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/60 dark:hover:bg-white/[0.12] transition-all duration-300 active:scale-95 cursor-pointer"
+      >
+        <Flag size={13} />
       </button>
     </div>
   )
@@ -399,6 +579,7 @@ export default function App() {
   const [compareInstSelected, setCompareInstSelected] = useState<Institution | null>(null)
 
   // Data
+  const [isLoadingData, setIsLoadingData] = useState(true)
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [professors, setProfessors] = useState<Professor[]>([])
   const [instReviews, setInstReviews] = useState<InstitutionReview[]>([])
@@ -416,32 +597,53 @@ export default function App() {
   const [activeSideNav, setActiveSideNav] = useState('home')
 
   useEffect(() => {
-    if (institutions.length === 0 || professors.length === 0) return;
-    
     const parts = location.pathname.split('/').filter(Boolean)
     if (parts.length === 0) {
       setCurrentView('home')
       setSelectedInst(null)
       setSelectedDept(null)
       setSelectedProf(null)
-    } else if (parts[0] === 'suggest') {
+      return
+    }
+
+    if (parts[0] === 'suggest') {
       setCurrentView('suggest')
-    } else if (parts[0] === 'add-inst-review' && parts[1]) {
-      const inst = institutions.find(i => i.short_name.toLowerCase() === decodeURIComponent(parts[1]).toLowerCase())
-      if (inst) {
-         setSelectedInst(inst)
-         setCurrentView('add-inst-review')
+      return
+    }
+
+    if (parts[0] === 'add-inst-review') {
+      setCurrentView('add-inst-review')
+      if (institutions.length > 0 && parts[1]) {
+        const inst = institutions.find(i => i.short_name.toLowerCase() === decodeURIComponent(parts[1]).toLowerCase())
+        if (inst) setSelectedInst(inst)
       }
-    } else if (parts[0] === 'add-prof-review' && parts[1]) {
-      const prof = professors.find(p => p.id === parseInt(parts[1]))
-      if (prof) {
-         setSelectedProf(prof)
-         const inst = institutions.find(i => i.name === prof.university)
-         if (inst) setSelectedInst(inst)
-         setSelectedDept(prof.department)
-         setCurrentView('add-prof-review')
+      return
+    }
+
+    if (parts[0] === 'add-prof-review') {
+      setCurrentView('add-prof-review')
+      if (professors.length > 0 && parts[1]) {
+        const prof = professors.find(p => p.id === parseInt(parts[1]))
+        if (prof) {
+          setSelectedProf(prof)
+          const inst = institutions.find(i => i.name === prof.university)
+          if (inst) setSelectedInst(inst)
+          setSelectedDept(prof.department)
+        }
       }
-    } else {
+      return
+    }
+
+    // Standard hierarchical routes
+    if (parts.length >= 3) {
+      setCurrentView('professor')
+    } else if (parts.length === 2) {
+      setCurrentView('department')
+    } else if (parts.length === 1) {
+      setCurrentView('institution')
+    }
+
+    if (institutions.length > 0) {
       const inst = institutions.find(i => i.short_name.toLowerCase() === decodeURIComponent(parts[0]).toLowerCase())
       if (inst) {
         setSelectedInst(inst)
@@ -462,12 +664,12 @@ export default function App() {
           setCurrentView('institution')
         }
       } else {
-        if (institutions.length > 0) {
+        if (!isLoadingData) {
           setCurrentView('home')
         }
       }
     }
-  }, [location.pathname, institutions, professors])
+  }, [location.pathname, institutions, professors, isLoadingData])
 
   const navigate = (view: string, inst?: Institution, dept?: string, prof?: Professor) => {
     const targetInst = inst !== undefined ? inst : (selectedInst || undefined);
@@ -491,6 +693,7 @@ export default function App() {
   const [locationFilter, setLocationFilter] = useState('')
   const [deptSearchTerm, setDeptSearchTerm] = useState('')
   const [profSort, setProfSort] = useState('newest')
+  const [instSort, setInstSort] = useState('newest')
   const [profTagFilter, setProfTagFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const entriesPerPage = 16
@@ -538,6 +741,7 @@ export default function App() {
   // Fetch info and review data
   useEffect(() => {
     const fetchRealData = async () => {
+      setIsLoadingData(true)
       try {
         const [
           { data: instData, error: instErr },
@@ -561,6 +765,8 @@ export default function App() {
         
       } catch (error) {
         console.error("Failed to load database data:", error);
+      } finally {
+        setIsLoadingData(false);
       }
     };
 
@@ -707,16 +913,22 @@ export default function App() {
     if (selectedProf) crumbs.push({ label: selectedProf.name })
 
     return (
-      <div className="flex items-center gap-xs flex-wrap mb-2xl">
+      <div className="flex items-center gap-1.5 flex-wrap mb-2xl">
         {crumbs.map((c, i) => (
-          <div key={i} className="flex items-center gap-xs">
-            {i > 0 && <ChevronRight size={12} className="text-text-tertiary" />}
+          <div key={i} className="flex items-center gap-1.5">
+            {i > 0 && <ChevronRight size={13} className="text-text-tertiary" />}
             {c.onClick ? (
-              <button onClick={c.onClick} className="text-label-sm text-brand-primary hover:underline">
+              <button 
+                type="button"
+                onClick={c.onClick} 
+                className="h-8 px-3 rounded-full text-label-sm text-text-secondary hover:text-brand-primary bg-white/40 dark:bg-white/[0.05] hover:bg-white/70 dark:hover:bg-white/[0.1] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer font-medium"
+              >
                 {c.label}
               </button>
             ) : (
-              <span className="text-label-sm text-text-secondary">{c.label}</span>
+              <span className="h-8 px-3 flex items-center rounded-full text-label-sm font-semibold text-text-primary bg-white/60 dark:bg-white/[0.09] backdrop-blur-md border border-black/[0.08] dark:border-white/[0.12]">
+                {c.label}
+              </span>
             )}
           </div>
         ))}
@@ -728,6 +940,10 @@ export default function App() {
   // HOME VIEW
   // ==========================================
   const renderHome = () => {
+    if (isLoadingData && institutions.length === 0) {
+      return <InstitutionListSkeleton />
+    }
+
     const locationOptions = [
       { value: '', label: 'Tất cả tỉnh thành' },
       ...VIETNAM_PROVINCES.map(p => ({ value: p, label: p })),
@@ -754,13 +970,14 @@ export default function App() {
 
     return (
       <div className="flex flex-col gap-2xl animate-fadeIn">
-        <div className="bg-surface-bg rounded-corner-lg p-2xl flex flex-col gap-xl">
+        <div className="relative z-30 flex flex-col gap-xl p-2xl rounded-3xl shadow-lg shadow-black/5">
+          <div className="absolute inset-0 bg-white/40 dark:bg-black/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 rounded-3xl -z-10" />
           <div className="flex flex-col gap-xs">
             <h1 className="text-title text-text-primary">Tìm kiếm Trường Đại học</h1>
             <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
           </div>
 
-          <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
+          <div className="relative flex items-center gap-md bg-white/50 dark:bg-black/50 border border-black/5 dark:border-white/10 rounded-2xl focus-within:border-brand-primary transition-all duration-300 px-xl shadow-sm">
             <Search size={18} className="text-text-secondary shrink-0" />
             <input
               type="text"
@@ -770,11 +987,14 @@ export default function App() {
                 setSearchTerm(e.target.value)
                 setShowSearchSuggestions(true)
               }}
-              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
+              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full placeholder:text-text-tertiary"
             />
 
             {showSearchSuggestions && searchSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-xs bg-surface-bg border border-border-primary rounded-corner-lg shadow-lg z-40 animate-scaleIn overflow-hidden">
+              <div 
+                className="absolute top-full left-0 right-0 mt-md bg-white/60 dark:bg-black/60 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 animate-scaleIn overflow-hidden py-xs"
+                style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+              >
                 {searchSuggestions.map(inst => {
                   const stats = calculateInstStats(inst.id)
                   return (
@@ -782,14 +1002,14 @@ export default function App() {
                       key={inst.id}
                       type="button"
                       onClick={() => { navigate('institution', inst); setSearchTerm(''); setShowSearchSuggestions(false) }}
-                      className="w-full flex items-center justify-between px-xl py-lg hover:bg-bg-hover transition-colors text-left"
+                      className="w-full flex items-center justify-between px-xl py-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-left"
                     >
                       <div className="flex items-center gap-lg">
-                        <div className="w-8 h-8 bg-brand-tertiary rounded-corner-md flex items-center justify-center">
+                        <div className="w-8 h-8 bg-brand-tertiary rounded-corner-md flex items-center justify-center shrink-0">
                           <GraduationCap size={14} className="text-brand-primary" />
                         </div>
                         <div>
-                          <p className="text-label text-text-primary">{inst.name}</p>
+                          <p className="text-label-sm text-text-primary">{inst.name}</p>
                           <p className="text-video-title text-text-secondary flex items-center gap-xs">
                             <MapPin size={10} />
                             {inst.location}
@@ -854,25 +1074,25 @@ export default function App() {
                   key={inst.id}
                   type="button"
                   onClick={() => navigate('institution', inst)}
-                  className="bg-surface-bg rounded-corner-lg p-xl flex flex-col h-full text-left border border-border-primary hover:border-brand-primary hover:shadow-sm transition-all group animate-scaleIn"
+                  className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl p-6 flex flex-col h-full text-left border border-black/5 dark:border-white/10 hover:bg-white/65 dark:hover:bg-black/65 hover:shadow-xl hover:border-brand-primary/40 transition-all duration-300 group animate-scaleIn shadow-sm active:scale-[0.99] cursor-pointer"
                 >
-                  <div className="flex flex-col gap-xs flex-1 min-w-0 mb-lg">
+                  <div className="flex flex-col gap-2 flex-1 min-w-0 mb-5">
                     <div className="flex items-start justify-between gap-sm">
                       <Badge label={inst.short_name} variant="brand" />
                     </div>
-                    <h3 className="text-label text-text-primary leading-snug group-hover:text-brand-primary transition-colors line-clamp-2 mt-sm">
+                    <h3 className="text-label font-semibold text-text-primary leading-snug group-hover:text-brand-primary transition-colors line-clamp-2 mt-1">
                       {inst.name}
                     </h3>
                   </div>
                   
-                  <div className="mt-auto w-full flex flex-col gap-lg">
-                    <p className="text-video-title text-text-secondary flex items-center gap-xs">
-                      <MapPin size={11} />
-                      {inst.location}
+                  <div className="mt-auto w-full flex flex-col gap-3.5">
+                    <p className="text-video-title text-text-secondary flex items-center gap-1.5">
+                      <MapPin size={12} className="shrink-0 text-text-tertiary" />
+                      <span className="truncate">{inst.location}</span>
                     </p>
-                    <div className="flex items-center justify-between pt-lg border-t border-border-secondary w-full shrink-0">
+                    <div className="flex items-center justify-between pt-3.5 border-t border-border-secondary w-full shrink-0">
                       <ScoreBadge value={stats.overall} />
-                      <span className="text-video-title text-text-secondary">{stats.total} đánh giá</span>
+                      <span className="text-video-title text-text-secondary font-medium">{stats.total} đánh giá</span>
                     </div>
                   </div>
                 </button>
@@ -881,41 +1101,54 @@ export default function App() {
           </div>
 
           {paginated.length === 0 && (
-            <div className="bg-surface-bg rounded-corner-lg p-2xl text-center">
+            <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center">
               <p className="text-label text-text-secondary">Không tìm thấy trường phù hợp</p>
             </div>
           )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-lg mt-10">
-              <Button
-                variant="neutral"
-                size="small"
-                iconStart={<ChevronLeft size={16} />}
+            <div className="flex items-center justify-center gap-3 mt-10 pb-4xl">
+              <button
+                type="button"
                 disabled={currentPage === 1}
                 onClick={() => {
                   setCurrentPage(p => Math.max(1, p - 1))
                   const mainContainer = document.querySelector('main')
                   if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
+                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full bg-white/60 dark:bg-white/[0.08] backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:shadow-none hover:bg-white/90 dark:hover:bg-white/[0.16] hover:border-black/[0.14] dark:hover:border-white/[0.22] active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:bg-white/60 dark:disabled:hover:bg-white/[0.08] disabled:hover:border-black/[0.08] dark:disabled:hover:border-white/[0.12]"
+                style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+                aria-label="Trang trước"
               >
-                Trước
-              </Button>
-              <span className="text-label-sm text-text-secondary">{currentPage} / {totalPages}</span>
-              <Button
-                variant="neutral"
-                size="small"
-                iconEnd={<ChevronRight size={16} />}
+                <ChevronLeft size={17} strokeWidth={2.25} className="text-text-primary group-hover:-translate-x-0.5 transition-transform duration-200" />
+                <span className="text-[14px] font-medium text-text-primary tracking-tight">Trước</span>
+              </button>
+
+              <div 
+                className="h-11 px-4 flex items-center justify-center rounded-full bg-white/40 dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.08] text-[13px] font-medium text-text-secondary tracking-tight select-none"
+                style={{ backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}
+              >
+                <span>{currentPage}</span>
+                <span className="mx-1.5 opacity-40">/</span>
+                <span>{totalPages}</span>
+              </div>
+
+              <button
+                type="button"
                 disabled={currentPage === totalPages}
                 onClick={() => {
                   setCurrentPage(p => Math.min(totalPages, p + 1))
                   const mainContainer = document.querySelector('main')
                   if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
+                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full bg-white/60 dark:bg-white/[0.08] backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:shadow-none hover:bg-white/90 dark:hover:bg-white/[0.16] hover:border-black/[0.14] dark:hover:border-white/[0.22] active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:bg-white/60 dark:disabled:hover:bg-white/[0.08] disabled:hover:border-black/[0.08] dark:disabled:hover:border-white/[0.12]"
+                style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+                aria-label="Trang sau"
               >
-                Sau
-              </Button>
+                <span className="text-[14px] font-medium text-text-primary tracking-tight">Sau</span>
+                <ChevronRight size={17} strokeWidth={2.25} className="text-text-primary group-hover:translate-x-0.5 transition-transform duration-200" />
+              </button>
             </div>
           )}
         </div>
@@ -927,9 +1160,28 @@ export default function App() {
   // INSTITUTION VIEW
   // ==========================================
   const renderInstitution = () => {
-    if (!selectedInst) return null
+    if (isLoadingData || !selectedInst) {
+      return <InstitutionDetailsSkeleton />
+    }
     const stats = calculateInstStats(selectedInst.id)
-    const reviews = instReviews.filter(r => r.inst_id === selectedInst.id)
+    let reviews = instReviews.filter(r => r.inst_id === selectedInst.id)
+
+    if (instSort === 'highest-rating') {
+      reviews.sort((a, b) => reviewAvg(b.metrics || {}) - reviewAvg(a.metrics || {}))
+    } else if (instSort === 'lowest-rating') {
+      reviews.sort((a, b) => reviewAvg(a.metrics || {}) - reviewAvg(b.metrics || {}))
+    } else if (instSort === 'helpful') {
+      reviews.sort((a, b) => {
+        const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
+        const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
+        if (scoreB !== scoreA) return scoreB - scoreA
+        return (b.helpful || 0) - (a.helpful || 0)
+      })
+    } else if (instSort === 'oldest') {
+      reviews.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    } else {
+      reviews.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    }
 
     const leftCriteria = CRITERIA_KEYS.slice(0, 5)
     const rightCriteria = CRITERIA_KEYS.slice(5)
@@ -938,7 +1190,7 @@ export default function App() {
       <div className="flex flex-col gap-2xl animate-fadeIn">
         {renderBreadcrumb()}
 
-        <div className="bg-surface-bg rounded-corner-lg p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
+        <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
           <div className="flex flex-col gap-xs">
             <Badge label={selectedInst.short_name} variant="brand" />
             <h1 className="text-title text-text-primary">{selectedInst.name}</h1>
@@ -964,7 +1216,7 @@ export default function App() {
           </ButtonGroup>
         </div>
 
-        <div className="bg-surface-bg rounded-corner-lg p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
+        <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
           <div className="flex flex-col items-center justify-center p-xl">
             <span className="text-[56px] font-semibold text-text-primary leading-none">{stats.overall > 0 ? stats.overall.toFixed(1) : '0.0'}</span>
             <span className="text-label-sm text-text-secondary mt-xs">trên 5 ({stats.total} đánh giá)</span>
@@ -1006,11 +1258,11 @@ export default function App() {
                   key={idx}
                   type="button"
                   onClick={() => navigate('department', selectedInst, dept)}
-                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col h-full transition-all group animate-slideInLeft"
+                  className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl p-5 sm:p-6 border border-black/5 dark:border-white/10 shadow-sm hover:border-brand-primary text-left flex flex-col h-full transition-all group animate-slideInLeft cursor-pointer active:scale-[0.99]"
                   style={{ animationDelay: `${idx * 40}ms` }}
                 >
-                  <div className="flex flex-col gap-xs mb-lg">
-                    <h3 className="text-label text-text-primary group-hover:text-brand-primary transition-colors">{dept}</h3>
+                  <div className="flex flex-col gap-1.5 mb-5">
+                    <h3 className="text-label font-semibold text-text-primary group-hover:text-brand-primary transition-colors">{dept}</h3>
                     <p className="text-video-title text-text-secondary">{deptProfs.length} giảng viên</p>
                   </div>
                   <div className="mt-auto flex items-center justify-end text-brand-primary">
@@ -1023,42 +1275,65 @@ export default function App() {
         </div>
 
         <div className="flex flex-col gap-lg">
-          <div className="flex items-center justify-between">
-            <h2 className="text-heading text-text-primary">Đánh giá cơ sở</h2>
-            <Badge label={`${stats.total} đánh giá`} variant="default" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <h2 className="text-heading text-text-primary">Đánh giá cơ sở</h2>
+              <Badge label={`${stats.total} đánh giá`} variant="default" />
+            </div>
+
+            {instReviews.filter(r => r.inst_id === selectedInst.id).length > 0 && (
+              <div className="flex items-center gap-2.5 shrink-0">
+                <span className="text-xs font-medium text-text-secondary whitespace-nowrap">Sắp xếp:</span>
+                <div className="w-48 sm:w-52">
+                  <SearchableDropdown
+                    compact
+                    options={[
+                      { value: 'newest', label: 'Mới nhất' },
+                      { value: 'highest-rating', label: 'Đánh giá cao nhất' },
+                      { value: 'lowest-rating', label: 'Đánh giá thấp nhất' },
+                      { value: 'helpful', label: 'Hữu ích nhất' },
+                      { value: 'oldest', label: 'Cũ nhất' },
+                    ]}
+                    value={instSort}
+                    onChange={(v: any) => setInstSort(v)}
+                    placeholder="Sắp xếp"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {reviews.length === 0 ? (
-            <div className="bg-surface-bg rounded-corner-lg p-2xl text-center border border-border-secondary" style={{ borderStyle: 'dashed' }}>
+            <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center border border-border-secondary" style={{ borderStyle: 'dashed' }}>
               <p className="text-label text-text-secondary">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
             </div>
           ) : (
             reviews.map(rev => {
               const revScore = reviewAvg(rev.metrics || {})
               return (
-                <div key={rev.id} className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg animate-fadeIn">
-                  <div className="flex items-start justify-between gap-lg border-b border-border-secondary pb-lg">
-                    <div>
-                      <p className="text-label text-text-primary font-semibold">{rev.author_name || 'Người dùng ẩn danh'}</p>
-                      <p className="text-video-title text-text-tertiary mt-xs">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
+                <div key={rev.id} className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-2xl border border-black/5 dark:border-white/10 shadow-sm p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
+                  <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
+                    <div className="flex flex-col">
+                      <p className="text-sm font-semibold text-text-primary">{rev.author_name || 'Người dùng ẩn danh'}</p>
+                      <p className="text-xs text-text-tertiary mt-0.5">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
                     </div>
-                    <div className="flex flex-col items-center bg-bg-faint rounded-corner-md p-md min-w-[56px]">
-                      <span className={`text-label font-semibold ${revScore >= 4 ? 'text-green-500' : revScore >= 3 ? 'text-yellow-400' : 'text-red-500'}`}>
+                    <div className="flex items-center gap-1.5 bg-white/50 dark:bg-white/[0.08] backdrop-blur-md rounded-xl px-3 py-1 border border-black/[0.06] dark:border-white/[0.1] shadow-xs">
+                      <span className={`text-base font-bold leading-none ${revScore >= 4 ? 'text-emerald-500 dark:text-emerald-400' : revScore >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500'}`}>
                         {revScore.toFixed(1)}
                       </span>
-                      <span className="text-video-title text-text-tertiary">/ 5</span>
+                      <span className="text-[11px] text-text-tertiary font-medium">/ 5</span>
                     </div>
                   </div>
 
-                  <p className="text-label text-text-primary">{rev.comment}</p>
+                  <p className="text-sm leading-relaxed text-text-primary">{rev.comment}</p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-3 sm:p-3.5 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl border border-black/[0.04] dark:border-white/[0.06]">
                     {Object.entries(rev.metrics || {}).map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between py-xs">
-                        <span className="text-label-sm text-text-secondary">{key}</span>
-                        <div className="flex gap-xs">
+                      <div key={key} className="flex items-center justify-between py-0.5 px-0.5">
+                        <span className="text-xs font-medium text-text-secondary">{key}</span>
+                        <div className="flex gap-1 items-center">
                           {[1, 2, 3, 4, 5].map(s => (
-                            <div key={s} className={`h-1.5 w-5 rounded-full ${s <= Number(val) ? barColorClass(Number(val)) : 'bg-bg-subtle'}`} />
+                            <div key={s} className={`h-1.5 w-4 rounded-full transition-all ${s <= Number(val) ? barColorClass(Number(val)) : 'bg-black/10 dark:bg-white/10'}`} />
                           ))}
                         </div>
                       </div>
@@ -1079,7 +1354,9 @@ export default function App() {
   // DEPARTMENT VIEW
   // ==========================================
   const renderDepartment = () => {
-    if (!selectedInst || !selectedDept) return null
+    if (isLoadingData || !selectedInst || !selectedDept) {
+      return <DepartmentDetailsSkeleton />
+    }
     const deptProfs = professors.filter(p => p.university === selectedInst.name && p.department === selectedDept)
     const filtered = deptProfs.filter(p => p.name.toLowerCase().includes(deptSearchTerm.toLowerCase()))
 
@@ -1087,7 +1364,7 @@ export default function App() {
       <div className="flex flex-col gap-2xl animate-fadeIn">
         {renderBreadcrumb()}
 
-        <div className="bg-surface-bg rounded-corner-lg p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
+        <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
           <div className="flex flex-col gap-xs">
             <p className="text-label-sm text-text-secondary">{selectedInst.name}</p>
             <h1 className="text-title text-text-primary">{selectedDept}</h1>
@@ -1103,8 +1380,8 @@ export default function App() {
           </Button>
         </div>
 
-        <div className="bg-surface-bg rounded-corner-lg p-xl">
-          <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
+        <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
+          <div className="relative flex items-center gap-md bg-white/50 dark:bg-black/50 border border-black/5 dark:border-white/10 shadow-sm rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
             <Search size={18} className="text-text-secondary shrink-0" />
             <input
               type="text"
@@ -1118,7 +1395,7 @@ export default function App() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
           {filtered.length === 0 ? (
-            <div className="col-span-2 bg-surface-bg rounded-corner-lg p-2xl text-center">
+            <div className="col-span-2 bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center">
               <p className="text-label text-text-secondary">Không tìm thấy giảng viên</p>
             </div>
           ) : (
@@ -1128,7 +1405,7 @@ export default function App() {
               return (
                 <div
                   key={prof.id}
-                  className="bg-surface-bg rounded-corner-lg p-xl border border-border-primary hover:border-brand-primary text-left flex flex-col h-full transition-all animate-fadeIn"
+                  className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl border border-black/5 dark:border-white/10 hover:border-brand-primary text-left flex flex-col h-full transition-all animate-fadeIn"
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   <button
@@ -1182,13 +1459,24 @@ export default function App() {
   // PROFESSOR VIEW
   // ==========================================
   const renderProfessor = () => {
-    if (!selectedProf || !selectedInst) return null
+    if (isLoadingData || !selectedProf || !selectedInst) {
+      return <ProfessorDetailsSkeleton />
+    }
     const stats = calculateProfStats(selectedProf.id)
     let reviews = profReviews.filter(r => r.prof_id === selectedProf.id)
 
     if (profSort === 'highest-quality') reviews.sort((a, b) => b.teaching_rating - a.teaching_rating)
     else if (profSort === 'lowest-quality') reviews.sort((a, b) => a.teaching_rating - b.teaching_rating)
     else if (profSort === 'highest-difficulty') reviews.sort((a, b) => b.difficulty_rating - a.difficulty_rating)
+    else if (profSort === 'helpful') {
+      reviews.sort((a, b) => {
+        const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
+        const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
+        if (scoreB !== scoreA) return scoreB - scoreA
+        return (b.helpful || 0) - (a.helpful || 0)
+      })
+    }
+    else if (profSort === 'oldest') reviews.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     else reviews.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
     if (profTagFilter !== 'all') reviews = reviews.filter(r => r.tags?.includes(profTagFilter))
@@ -1202,7 +1490,7 @@ export default function App() {
         {renderBreadcrumb()}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-xl">
-          <div className="bg-surface-bg rounded-corner-lg p-2xl flex flex-col gap-xl">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col gap-xl">
             <div className="flex flex-col gap-xs">
               <span className="text-[48px] font-semibold text-text-primary leading-none">
                 {stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : '0.0'}
@@ -1256,12 +1544,12 @@ export default function App() {
           </div>
 
           <div className="flex flex-col gap-xl">
-            <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+            <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
               <h3 className="text-label text-text-primary font-semibold">Tổng hợp đánh giá</h3>
               {([5, 4, 3, 2, 1] as const).map(star => (
                 <div key={star} className="flex items-center gap-lg">
                   <span className="text-label-sm text-text-secondary w-20 shrink-0">{star} sao</span>
-                  <div className="flex-1 bg-bg-faint rounded-full h-2 overflow-hidden">
+                  <div className="flex-1 bg-black/5 dark:bg-white/5 backdrop-blur-sm rounded-full h-2 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${barColorClass(star)}`}
                       style={{ width: `${(distribution[star] / maxDist) * 100}%` }}
@@ -1273,7 +1561,7 @@ export default function App() {
             </div>
 
             {selectedProf.tags && selectedProf.tags.length > 0 && (
-              <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+              <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
                 <h3 className="text-label text-text-primary font-semibold">Đặc điểm nổi bật</h3>
                 <div className="flex flex-wrap gap-sm">
                   {selectedProf.tags.map(t => (
@@ -1295,14 +1583,14 @@ export default function App() {
 
               if (similarProfs.length === 0) return null
               return (
-                <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+                <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
                   <h3 className="text-label text-text-primary font-semibold">Giảng viên tương tự</h3>
                   {similarProfs.map(({ prof, s }) => (
                     <button
                       key={prof.id}
                       type="button"
                       onClick={() => navigate('professor', selectedInst!, selectedDept!, prof)}
-                      className="flex items-center justify-between gap-lg hover:bg-bg-hover p-sm rounded-corner-md transition-colors text-left"
+                      className="flex items-center justify-between gap-lg hover:bg-black/5 dark:bg-white/5 hover:backdrop-blur-xl p-sm rounded-corner-md transition-colors text-left"
                     >
                       <div className="flex items-center gap-md">
                         <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
@@ -1320,7 +1608,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+        <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
           <div className="flex flex-col sm:flex-row gap-lg items-start sm:items-center justify-between">
             <div className="flex flex-col gap-sm flex-1">
               <span className="text-label-sm text-text-secondary">Lọc theo thẻ:</span>
@@ -1328,7 +1616,11 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setProfTagFilter('all')}
-                  className={`px-lg py-xs rounded-full text-label-sm border transition-all ${profTagFilter === 'all' ? 'bg-brand-primary text-on-brand border-brand-primary' : 'bg-bg-faint border-border-primary text-text-primary hover:border-border-selected'}`}
+                  className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
+                    profTagFilter === 'all'
+                      ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
+                      : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.06] dark:border-white/[0.1] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
+                  }`}
                 >
                   Tất cả
                 </button>
@@ -1337,22 +1629,29 @@ export default function App() {
                     key={t}
                     type="button"
                     onClick={() => setProfTagFilter(t === profTagFilter ? 'all' : t)}
-                    className={`px-lg py-xs rounded-full text-label-sm border transition-all ${profTagFilter === t ? 'bg-brand-primary text-on-brand border-brand-primary' : 'bg-bg-faint border-border-primary text-text-primary hover:border-border-selected'}`}
+                    className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
+                      profTagFilter === t
+                        ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
+                        : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.06] dark:border-white/[0.1] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
+                    }`}
                   >
                     {t}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-lg shrink-0">
-              <span className="text-label-sm text-text-secondary whitespace-nowrap">Sắp xếp:</span>
-              <div className="w-52">
+            <div className="flex items-center gap-2.5 shrink-0">
+              <span className="text-xs font-medium text-text-secondary whitespace-nowrap">Sắp xếp:</span>
+              <div className="w-48 sm:w-52">
                 <SearchableDropdown
+                  compact
                   options={[
                     { value: 'newest', label: 'Mới nhất' },
                     { value: 'highest-quality', label: 'Chất lượng cao nhất' },
                     { value: 'lowest-quality', label: 'Chất lượng thấp nhất' },
                     { value: 'highest-difficulty', label: 'Độ khó cao nhất' },
+                    { value: 'helpful', label: 'Hữu ích nhất' },
+                    { value: 'oldest', label: 'Cũ nhất' },
                   ]}
                   value={profSort}
                   onChange={setProfSort}
@@ -1366,57 +1665,59 @@ export default function App() {
         <div className="flex flex-col gap-lg">
           <h2 className="text-heading text-text-primary">Đánh giá từ sinh viên</h2>
           {reviews.length === 0 ? (
-            <div className="bg-surface-bg rounded-corner-lg p-2xl text-center border border-border-secondary" style={{ borderStyle: 'dashed' }}>
+            <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center border border-border-secondary" style={{ borderStyle: 'dashed' }}>
               <p className="text-label text-text-secondary">Không có đánh giá phù hợp với bộ lọc</p>
             </div>
           ) : (
             reviews.map(rev => (
-              <div key={rev.id} className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg animate-fadeIn">
-                <div className="flex flex-col md:flex-row justify-between gap-lg border-b border-border-secondary pb-lg">
-                  <div className="flex flex-col gap-md">
+              <div key={rev.id} className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-2xl border border-black/5 dark:border-white/10 shadow-sm p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <div>
-                      <p className="text-label text-text-primary font-semibold">{rev.author_name || 'Người dùng ẩn danh'}</p>
-                      <p className="text-video-title text-text-tertiary mt-xs">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
+                      <p className="text-sm font-semibold text-text-primary">{rev.author_name || 'Người dùng ẩn danh'}</p>
+                      <p className="text-xs text-text-tertiary mt-0.5">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
                     </div>
-                    <div className="flex gap-lg">
-                      <div className="bg-bg-faint rounded-corner-md p-md text-center min-w-[64px]">
-                        <p className="text-video-title text-text-tertiary uppercase">Chất lượng</p>
-                        <p className={`text-heading font-semibold ${rev.teaching_rating >= 4 ? 'text-green-500' : rev.teaching_rating >= 3 ? 'text-yellow-400' : 'text-red-500'}`}>
+                    <div className="flex gap-2">
+                      <div className="bg-white/50 dark:bg-white/[0.08] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
+                        <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wider">Chất lượng</p>
+                        <p className={`text-sm font-bold leading-tight mt-0.5 ${rev.teaching_rating >= 4 ? 'text-emerald-500 dark:text-emerald-400' : rev.teaching_rating >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500'}`}>
                           {rev.teaching_rating.toFixed(1)}
                         </p>
                       </div>
-                      <div className="bg-bg-faint rounded-corner-md p-md text-center min-w-[64px]">
-                        <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
-                        <p className={`text-heading font-semibold ${rev.difficulty_rating >= 4 ? 'text-red-500' : rev.difficulty_rating >= 3 ? 'text-yellow-400' : 'text-green-500'}`}>
+                      <div className="bg-white/50 dark:bg-white/[0.08] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
+                        <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wider">Độ khó</p>
+                        <p className={`text-sm font-bold leading-tight mt-0.5 ${rev.difficulty_rating >= 4 ? 'text-red-500' : rev.difficulty_rating >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-500 dark:text-emerald-400'}`}>
                           {rev.difficulty_rating.toFixed(1)}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <div className="text-left md:text-right">
-                    <p className="text-label text-text-primary font-medium">{rev.course}</p>
+                  <div className="text-left sm:text-right">
+                    <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20">
+                      {rev.course}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-sm">
+                <div className="flex flex-wrap gap-1.5">
                   {[
                     ['Tính điểm', rev.for_credit],
                     ['Học lại', rev.would_take_again ? 'Có' : 'Không'],
                     ['Điểm', rev.grade],
                     ['Giáo trình', rev.textbook],
                   ].map(([k, v]) => (
-                    <div key={k} className="bg-bg-faint rounded-corner-md px-lg py-xs">
-                      <span className="text-video-title text-text-secondary">{k}: </span>
-                      <span className="text-video-title text-text-primary font-medium">{v}</span>
+                    <div key={k} className="bg-black/[0.02] dark:bg-white/[0.04] backdrop-blur-sm border border-black/[0.04] dark:border-white/[0.06] rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                      <span className="text-xs text-text-tertiary">{k}:</span>
+                      <span className="text-xs text-text-primary font-medium">{v}</span>
                     </div>
                   ))}
                 </div>
 
-                <p className="text-label text-text-primary">{rev.comment}</p>
+                <p className="text-sm leading-relaxed text-text-primary">{rev.comment}</p>
 
                 {rev.tags && rev.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-sm">
-                    {rev.tags.map(t => <Badge key={t} label={t} variant="secondary" />)}
+                  <div className="flex flex-wrap gap-1.5">
+                    {rev.tags.map(t => <Badge key={t} label={t} variant="secondary" className="px-2.5 py-0.5 text-xs" />)}
                   </div>
                 )}
 
@@ -1481,7 +1782,7 @@ export default function App() {
         </div>
 
         <form onSubmit={handleSub} className="flex flex-col gap-xl">
-          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
             <InputField
               label="Tên hiển thị (Tùy chọn)"
               placeholder="VD: Sinh viên năm 3..."
@@ -1496,12 +1797,12 @@ export default function App() {
             />
           </div>
 
-          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-xl">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-xl">
             <RatingSelector label="Đánh giá giảng viên *" value={reviewTeaching} onChange={setReviewTeaching} lowLabel="1 - Rất tệ" highLabel="5 - Tuyệt vời" />
             <RatingSelector label="Độ khó môn học *" value={reviewDifficulty} onChange={setReviewDifficulty} lowLabel="1 - Rất dễ" highLabel="5 - Rất khó" />
           </div>
 
-          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
             <div>
               <p className="text-label text-text-primary mb-lg">Bạn có muốn học lại không?</p>
               <div className="flex gap-md">
@@ -1534,8 +1835,8 @@ export default function App() {
             />
           </div>
 
-          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
-            <p className="text-label text-text-primary">Chọn tối đa 3 thẻ đặc điểm</p>
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+            <p className="text-label text-text-primary font-medium">Chọn tối đa 3 thẻ đặc điểm</p>
             <div className="flex flex-wrap gap-sm">
               {PROF_TAGS.map(t => {
                 const sel = reviewSelectedTags.includes(t)
@@ -1547,7 +1848,11 @@ export default function App() {
                       if (sel) setReviewSelectedTags(prev => prev.filter(x => x !== t))
                       else if (reviewSelectedTags.length < 3) setReviewSelectedTags(prev => [...prev, t])
                     }}
-                    className={`px-lg py-sm rounded-corner-md text-label-sm border transition-all ${sel ? 'bg-brand-primary text-on-brand border-brand-primary' : 'bg-bg-faint border-border-primary text-text-primary hover:border-border-selected'}`}
+                    className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
+                      sel
+                        ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
+                        : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.06] dark:border-white/[0.1] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
+                    }`}
                   >
                     {t}
                   </button>
@@ -1556,7 +1861,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-surface-bg rounded-corner-lg p-xl">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
             <TextareaField
               label="Nhận xét chi tiết *"
               placeholder="Bạn muốn sinh viên khác biết điều gì về giảng viên này?"
@@ -1617,7 +1922,7 @@ export default function App() {
         </div>
 
         <form onSubmit={handleSub} className="flex flex-col gap-xl">
-          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
             <InputField
               label="Tên hiển thị (Tùy chọn)"
               placeholder="VD: Cựu sinh viên..."
@@ -1626,7 +1931,7 @@ export default function App() {
             />
           </div>
           {CRITERIA_KEYS.map(criteria => (
-            <div key={criteria} className="bg-surface-bg rounded-corner-lg p-xl">
+            <div key={criteria} className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
               <RatingSelector
                 label={`${criteria} *`}
                 value={instMetrics[criteria]}
@@ -1637,7 +1942,7 @@ export default function App() {
             </div>
           ))}
 
-          <div className="bg-surface-bg rounded-corner-lg p-xl">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
             <TextareaField
               label="Nhận xét chi tiết *"
               placeholder="Chia sẻ trải nghiệm thực tế tại trường..."
@@ -1706,7 +2011,7 @@ export default function App() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-xl">
-          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
             <InputField
               label="Tên hiển thị (Tùy chọn)"
               placeholder="VD: Nguyễn Văn A..."
@@ -1727,7 +2032,7 @@ export default function App() {
             />
 
             {suggestionType === 'professor' && (
-              <div className="flex flex-col gap-lg z-20">
+              <div className="flex flex-col gap-lg">
                 <InputField label="Tên giảng viên *" placeholder="VD: PGS. TS Nguyễn Văn B" value={suggProfName} onChange={setSuggProfName} />
                 <SearchableDropdown label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={v => { setSuggSelectedUniv(v); setSuggSelectedDept('') }} />
                 <SearchableDropdown label="Khoa / Viện *" placeholder={suggSelectedUniv ? '-- Chọn khoa --' : 'Chọn trường trước'} options={deptOptions} value={suggSelectedDept} onChange={setSuggSelectedDept} disabled={!suggSelectedUniv} />
@@ -1735,7 +2040,7 @@ export default function App() {
             )}
 
             {suggestionType === 'institution' && (
-              <div className="flex flex-col gap-lg z-20">
+              <div className="flex flex-col gap-lg">
                 <InputField label="Tên đầy đủ *" placeholder="VD: Trường Đại học Ngoại thương" value={suggInstName} onChange={setSuggInstName} />
                 <InputField label="Tên viết tắt *" placeholder="VD: FTU" value={suggInstShortName} onChange={setSuggInstShortName} />
                 <SearchableDropdown label="Tỉnh / Thành phố *" placeholder="-- Chọn tỉnh thành --" options={provinceOptions} value={suggInstLocation} onChange={setSuggInstLocation} />
@@ -1744,14 +2049,14 @@ export default function App() {
             )}
 
             {suggestionType === 'department' && (
-              <div className="flex flex-col gap-lg z-20">
+              <div className="flex flex-col gap-lg">
                 <SearchableDropdown label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={setSuggSelectedUniv} />
                 <InputField label="Tên Khoa / Viện mới *" placeholder="VD: Khoa Khởi nghiệp..." value={suggNewDeptName} onChange={setSuggNewDeptName} />
               </div>
             )}
           </div>
 
-          <div className="bg-surface-bg rounded-corner-lg p-xl">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
             <TextareaField
               label="Ghi chú thêm"
               placeholder="Cung cấp thêm thông tin xác thực..."
@@ -1768,7 +2073,7 @@ export default function App() {
         </form>
 
         {suggestions.length > 0 && (
-          <div className="bg-surface-bg rounded-corner-lg p-xl flex flex-col gap-lg">
+          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
             <h2 className="text-heading text-text-primary">Đề xuất gần đây ({suggestions.length})</h2>
             {suggestions.map((s, idx) => (
               <div key={idx} className="flex items-center justify-between py-lg border-b border-border-secondary last:border-0">
@@ -1815,24 +2120,12 @@ export default function App() {
 
   return (
     <>
-    <div className="flex h-[100dvh] overflow-hidden bg-brand-tertiary">
+    <InteractiveBackground />
+    <div className="flex h-[100dvh] overflow-hidden bg-transparent">
       {/* Desktop sidebar */}
-      <div className="hidden md:flex relative"> 
-        <SidebarNavigation
-          logo={null} 
-          header={<div className="h-14 w-full mb-2" />} /* Adjusted spacer to push the Home button down safely */
-          footer={
-            <>
-              <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
-                <SidebarButton
-                  /* Swapped Sun and Moon here to reflect CURRENT state */
-                  icon={theme === 'dark' ? <Moon className="size-full" strokeWidth={1.5} /> : <Sun className="size-full" strokeWidth={1.5} />}
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                />
-              </Tooltip>
-            </>
-          }
-        >
+      <div className="hidden md:flex relative z-30"> 
+        <div className="h-full w-[72px] bg-white/40 dark:bg-black/40 backdrop-blur-2xl border-r border-black/5 dark:border-white/10 shadow-lg shadow-black/5 flex flex-col items-center py-sm gap-sm relative z-10">
+          <div className="h-14 w-full mb-2" />
           {regularNavItems.map(item => (
             <Tooltip key={item.id} content={item.label} position="right">
               <SidebarButton
@@ -1849,10 +2142,19 @@ export default function App() {
               onClick={() => setShowBookmarkPanel(v => !v)}
             />
           </Tooltip>
-        </SidebarNavigation>
+          
+          <div className="mt-auto flex flex-col gap-sm">
+            <Tooltip content={theme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'} position="right">
+              <SidebarButton
+                icon={theme === 'dark' ? <Moon className="size-full" strokeWidth={1.5} /> : <Sun className="size-full" strokeWidth={1.5} />}
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              />
+            </Tooltip>
+          </div>
+        </div>
 
         {/* The Escape Hatch: Reduced height (h-14) to prevent clipping, added border-r to restore the line */}
-        <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center bg-surface-bg z-50 border-r border-border-primary">
+        <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center bg-transparent z-50 border-r border-black/5 dark:border-white/10">
           <button 
             type="button"
             onClick={handleLogoClick}
@@ -1861,7 +2163,7 @@ export default function App() {
             <img 
               src={logoImg} 
               alt="Logo" 
-              className="w-6 h-6 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+              className="w-10 h-10 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
               style={{ transform: `rotate(${sidebarRotation}deg)` }}
             />
           </button>
@@ -1869,8 +2171,8 @@ export default function App() {
       </div>
 
       {/* Bookmark panel - desktop only */}
-      <div className={`hidden md:flex flex-col bg-surface-bg border-r border-border-primary overflow-hidden transition-all duration-200 ${showBookmarkPanel ? 'w-64' : 'w-0'}`}>
-          <div className="p-xl border-b border-border-primary flex items-center justify-between shrink-0">
+      <div className={`hidden md:flex flex-col bg-white/40 dark:bg-black/40 backdrop-blur-2xl border-r border-black/5 dark:border-white/10 shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-20 ${showBookmarkPanel ? 'w-72' : 'w-0'}`}>
+          <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/30 dark:bg-black/30">
             <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
               <BookmarkCheck size={14} className="text-brand-primary" />
               Đã lưu ({bookmarkedProfIds.length})
@@ -1878,15 +2180,26 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowBookmarkPanel(false)}
-              className="text-text-tertiary hover:text-text-primary transition-colors"
+              aria-label="Đóng danh sách đã lưu"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary transition-all duration-300 border border-black/5 dark:border-white/10 cursor-pointer"
             >
-              <X size={14} />
+              <X size={15} />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-sm flex flex-col gap-xs">
-            {bookmarkedProfIds.length === 0 ? (
-              <div className="p-xl text-center">
-                <Bookmark size={24} className="text-text-tertiary mx-auto mb-sm" />
+            {isLoadingData && bookmarkedProfIds.length > 0 ? (
+              Array.from({ length: Math.min(bookmarkedProfIds.length, 3) }).map((_, i) => (
+                <div key={i} className="flex items-center gap-md p-md rounded-2xl">
+                  <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <Skeleton className="w-28 h-4 rounded-md" />
+                    <Skeleton className="w-20 h-3 rounded-md" />
+                  </div>
+                </div>
+              ))
+            ) : bookmarkedProfIds.length === 0 ? (
+              <div className="p-xl text-center mt-4xl">
+                <Bookmark size={32} className="text-text-tertiary mx-auto mb-md opacity-50" />
                 <p className="text-label-sm text-text-tertiary">Chưa lưu giảng viên nào</p>
                 <p className="text-video-title text-text-tertiary mt-xs">Nhấn biểu tượng bookmark trên trang giảng viên để lưu</p>
               </div>
@@ -1897,30 +2210,30 @@ export default function App() {
                 const inst = institutions.find(i => i.name === prof.university)
                 const stats = calculateProfStats(prof.id)
                 return (
-                  <div key={id} className="group flex items-start gap-sm p-sm rounded-corner-md hover:bg-bg-hover transition-colors">
+                  <div key={id} className="group flex items-start gap-sm p-md rounded-2xl hover:bg-white/50 dark:hover:bg-black/50 transition-all duration-300">
                     <button
                       type="button"
                       onClick={() => {
                         if (inst) { navigate('professor', inst, prof.department, prof); setShowBookmarkPanel(false) }
                       }}
-                      className="flex items-start gap-sm flex-1 min-w-0 text-left"
+                      className="flex items-start gap-md flex-1 min-w-0 text-left"
                     >
                       <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
                       <div className="flex-1 min-w-0">
                         <p className="text-label-sm text-text-primary leading-tight line-clamp-2">{prof.name}</p>
                         <p className="text-video-title text-text-secondary line-clamp-1">{prof.department}</p>
                         {stats.avg_rating > 0 && (
-                          <p className="text-video-title text-brand-primary mt-xs">{stats.avg_rating.toFixed(1)} ★</p>
+                          <p className="text-video-title text-brand-primary mt-xs font-medium">{stats.avg_rating.toFixed(1)} ★</p>
                         )}
                       </div>
                     </button>
                     <button
                       type="button"
                       onClick={() => toggleBookmark(id)}
-                      className="opacity-0 group-hover:opacity-100 text-text-tertiary hover:text-danger transition-all shrink-0 mt-xs"
+                      className="opacity-0 group-hover:opacity-100 text-text-tertiary hover:text-danger transition-all shrink-0 p-xs"
                       title="Xóa bookmark"
                     >
-                      <X size={12} />
+                      <X size={14} />
                     </button>
                   </div>
                 )
@@ -1929,8 +2242,8 @@ export default function App() {
           </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto bg-brand-tertiary flex flex-col pb-20 md:pb-0">
-        <div className="max-w-7xl mx-auto p-xl md:px-3xl md:pt-3xl md:pb-0 flex-1 w-full">
+      <main className="flex-1 overflow-y-auto bg-transparent flex flex-col relative z-10">
+        <div className="max-w-7xl mx-auto p-xl pb-28 md:px-3xl md:pt-3xl md:pb-24 flex-1 w-full">
           {currentView === 'home' && renderHome()}
           {currentView === 'institution' && renderInstitution()}
           {currentView === 'department' && renderDepartment()}
@@ -1942,18 +2255,12 @@ export default function App() {
       </main>
 
       {/* Info Menu Modal (Replaces persistent footer) */}
-      <Modal
+      <LiquidModal
         isOpen={showInfoMenu}
         onClose={() => setShowInfoMenu(false)}
-        title="Về RateVietProfessors"
         size="small"
-        footer={
-          <ButtonGroup align="end">
-            <Button variant="neutral" onClick={() => setShowInfoMenu(false)}>Đóng</Button>
-          </ButtonGroup>
-        }
       >
-        <div className="flex flex-col gap-lg text-center items-center py-lg animate-scaleIn relative overflow-hidden">
+        <div className="flex flex-col text-center items-center py-2 relative overflow-hidden">
           <canvas ref={confettiCanvasRef} className="absolute inset-0 pointer-events-none z-0 w-full h-full" />
           <img 
             src={spinCount >= 10 ? easterEggImg : logoImg} 
@@ -1961,29 +2268,48 @@ export default function App() {
             tabIndex={0}
             onClick={handleFlyoutLogoClick}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFlyoutLogoClick() }}
-            className="w-16 h-16 object-contain mb-sm rounded-corner-md z-10 relative cursor-pointer outline-none focus-visible:ring-2 ring-brand-primary transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            className="w-20 h-20 object-cover rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] mb-3 z-10 relative cursor-pointer outline-none focus-visible:ring-2 ring-brand-primary transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
             style={{ transform: `rotate(${flyoutRotation}deg)` }}
           />
-          <p className="text-label-sm text-text-secondary z-10 relative">
+          <h2 className="text-lg font-bold text-text-primary z-10 relative mb-1">RateVietProfessors</h2>
+          <p className="text-xs text-text-secondary z-10 relative mb-6 leading-relaxed">
             © {new Date().getFullYear()} RateVietProfessors<br />
-            made with 💖 from HCMC
+            Phiên bản 1.0.0 (Build 42)
           </p>
-          <div className="flex flex-col gap-md mt-sm w-full items-center">
-            <div className="flex gap-xl font-medium justify-center">
-              <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">GitHub</a>
-              <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">Về chúng tôi</a>
-            </div>
-            <div className="flex gap-xl font-medium justify-center">
-              <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">Quy tắc cộng đồng</a>
-              <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="text-brand-primary hover:underline transition-colors">Bảo mật</a>
-            </div>
+
+          <div className="w-full flex flex-col bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl border border-black/5 dark:border-white/10 overflow-hidden text-left shadow-sm z-10 relative mb-6">
+            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
+              <span>GitHub</span>
+              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
+            </a>
+            <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
+              <span>Về chúng tôi</span>
+              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
+            </a>
+            <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
+              <span>Quy tắc cộng đồng</span>
+              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
+            </a>
+            <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
+              <span>Bảo mật</span>
+              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
+            </a>
           </div>
+          
+          <Button 
+            variant="neutral"
+            size="medium"
+            onClick={() => setShowInfoMenu(false)} 
+            className="min-w-[140px] z-10 relative"
+          >
+            Đóng
+          </Button>
         </div>
-      </Modal>
+      </LiquidModal>
 
       {/* Institution Comparison Modal */}
       {selectedInst && (
-        <Modal
+        <LiquidModal
           isOpen={compareInstModal}
           onClose={() => { setCompareInstModal(false); setCompareInstSelected(null) }}
           title="So sánh trường"
@@ -2000,7 +2326,7 @@ export default function App() {
                 {[{ inst: selectedInst, label: 'Hiện tại' }, { inst: compareInstSelected, label: 'So sánh' }].map(({ inst, label }) => {
                   const stats = calculateInstStats(inst.id)
                   return (
-                    <div key={inst.id} className="bg-bg-faint rounded-corner-lg p-xl flex flex-col gap-lg">
+                    <div key={inst.id} className="bg-white/30 dark:bg-black/30 backdrop-blur-xl rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
                       <div>
                         <Badge label={label} variant={label === 'Hiện tại' ? 'brand' : 'secondary'} />
                         <p className="text-label text-text-primary font-semibold mt-sm">{inst.name}</p>
@@ -2033,7 +2359,7 @@ export default function App() {
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm trường để so sánh với <strong>{selectedInst.name}</strong></p>
               
-              <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
+              <div className="relative flex items-center gap-md bg-white/50 dark:bg-black/50 border border-black/5 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
                 <Search size={18} className="text-text-secondary shrink-0" />
                 <input
                   type="text"
@@ -2058,7 +2384,7 @@ export default function App() {
                         key={i.id}
                         type="button"
                         onClick={() => setCompareInstSelected(i)}
-                        className="flex items-center justify-between gap-lg p-lg rounded-corner-md bg-bg-faint hover:bg-bg-hover transition-colors text-left"
+                        className="flex items-center justify-between gap-lg p-lg rounded-corner-md bg-black/5 dark:bg-white/5 backdrop-blur-sm hover:bg-black/10 dark:hover:bg-white/10 hover:backdrop-blur-xl transition-colors text-left"
                       >
                         <div className="flex items-center gap-md">
                           <Avatar type="initial" initials={i.short_name.charAt(0) || 'I'} size="small" shape="circle" />
@@ -2080,12 +2406,12 @@ export default function App() {
               </div>
             </div>
           )}
-        </Modal>
+        </LiquidModal>
       )}
 
       {/* Professor Comparison Modal */}
       {selectedProf && (
-        <Modal
+        <LiquidModal
           isOpen={compareModal}
           onClose={() => { setCompareModal(false); setCompareProf(null) }}
           title="So sánh giảng viên"
@@ -2102,7 +2428,7 @@ export default function App() {
                 {[{ prof: selectedProf, label: 'Hiện tại' }, { prof: compareProf, label: 'So sánh' }].map(({ prof, label }) => {
                   const s = calculateProfStats(prof.id)
                   return (
-                    <div key={prof.id} className="bg-bg-faint rounded-corner-lg p-xl flex flex-col gap-lg">
+                    <div key={prof.id} className="bg-white/30 dark:bg-black/30 backdrop-blur-xl rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
                       <div>
                         <Badge label={label} variant={label === 'Hiện tại' ? 'brand' : 'secondary'} />
                         <p className="text-label text-text-primary font-semibold mt-sm">{prof.name}</p>
@@ -2137,7 +2463,7 @@ export default function App() {
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm giảng viên để so sánh với <strong>{selectedProf.name}</strong></p>
               
-              <div className="relative flex items-center gap-md bg-input-bg border border-border-primary rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
+              <div className="relative flex items-center gap-md bg-white/50 dark:bg-black/50 border border-black/5 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
                 <Search size={18} className="text-text-secondary shrink-0" />
                 <input
                   type="text"
@@ -2195,7 +2521,7 @@ export default function App() {
                         key={p.id}
                         type="button"
                         onClick={() => setCompareProf(p)}
-                        className="flex items-center justify-between gap-lg p-lg rounded-corner-md bg-bg-faint hover:bg-bg-hover transition-colors text-left"
+                        className="flex items-center justify-between gap-lg p-lg rounded-corner-md bg-black/5 dark:bg-white/5 backdrop-blur-sm hover:bg-black/10 dark:hover:bg-white/10 hover:backdrop-blur-xl transition-colors text-left"
                       >
                         <div className="flex items-center gap-md">
                           <Avatar type="initial" initials={p.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
@@ -2219,11 +2545,11 @@ export default function App() {
               </div>
             </div>
           )}
-        </Modal>
+        </LiquidModal>
       )}
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-bg border-t border-border-primary flex items-stretch px-xs pb-safe">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/40 dark:bg-black/40 backdrop-blur-2xl border-t border-black/5 dark:border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.05)] flex items-stretch px-xs pb-safe">
         
         {/* Logo / Info Modal Trigger */}
         <button
@@ -2275,7 +2601,7 @@ export default function App() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-20 md:bottom-2xl right-2xl z-50 animate-scaleIn">
+        <div className="fixed bottom-20 md:bottom-2xl right-2xl z-50 animate-scaleIn overflow-hidden">
           <Toast
             message={toast.message}
             variant={toast.variant}
@@ -2291,14 +2617,19 @@ export default function App() {
     {showBookmarkPanel && (
       <div className="md:hidden fixed inset-0 z-50 flex flex-col">
         <div className="flex-1 bg-black/40" onClick={() => setShowBookmarkPanel(false)} />
-        <div className="bg-surface-bg rounded-t-2xl max-h-[70vh] flex flex-col animate-slideInLeft">
-          <div className="p-xl border-b border-border-primary flex items-center justify-between shrink-0">
+        <div className="bg-white/60 dark:bg-black/60 backdrop-blur-2xl rounded-t-2xl max-h-[70vh] flex flex-col animate-slideInLeft">
+          <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0">
             <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
               <BookmarkCheck size={14} className="text-brand-primary" />
               Giảng viên đã lưu ({bookmarkedProfIds.length})
             </h2>
-            <button type="button" onClick={() => setShowBookmarkPanel(false)} className="text-text-tertiary hover:text-text-primary">
-              <X size={16} />
+            <button 
+              type="button" 
+              onClick={() => setShowBookmarkPanel(false)} 
+              aria-label="Đóng danh sách đã lưu"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary transition-all duration-300 border border-black/5 dark:border-white/10 cursor-pointer"
+            >
+              <X size={15} />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-sm flex flex-col gap-xs">
@@ -2314,7 +2645,7 @@ export default function App() {
                 const inst = institutions.find(i => i.name === prof.university)
                 const stats = calculateProfStats(prof.id)
                 return (
-                  <div key={id} className="group flex items-start gap-sm p-sm rounded-corner-md hover:bg-bg-hover transition-colors">
+                  <div key={id} className="group flex items-start gap-sm p-sm rounded-corner-md hover:bg-black/5 dark:bg-white/5 hover:backdrop-blur-xl transition-colors">
                     <button
                       type="button"
                       onClick={() => { if (inst) { navigate('professor', inst, prof.department, prof); setShowBookmarkPanel(false) } }}
