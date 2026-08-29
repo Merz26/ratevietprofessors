@@ -399,7 +399,7 @@ function Badge({
 
   return (
     <span
-      className={`inline-flex items-center justify-center px-3 py-1 text-xs leading-none rounded-full border backdrop-blur-md select-none tracking-tight transition-colors ${variantStyles} ${className}`}
+      className={`inline-flex items-center justify-center w-fit max-w-fit shrink-0 self-start px-3 py-1 text-xs leading-none rounded-full border backdrop-blur-md select-none tracking-tight transition-colors whitespace-nowrap ${variantStyles} ${className}`}
     >
       {label}
     </span>
@@ -1191,7 +1191,7 @@ export default function App() {
         {renderBreadcrumb()}
 
         <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
-          <div className="flex flex-col gap-xs">
+          <div className="flex flex-col items-start gap-1.5">
             <Badge label={selectedInst.short_name} variant="brand" />
             <h1 className="text-title text-text-primary">{selectedInst.name}</h1>
             <p className="text-label-sm text-text-secondary flex items-center gap-xs">
