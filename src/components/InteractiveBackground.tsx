@@ -3,7 +3,7 @@ import { useAppTheme } from '../main';
 
 export default function InteractiveBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { theme } = useAppTheme();
+  const { resolvedTheme } = useAppTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -78,7 +78,7 @@ export default function InteractiveBackground() {
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
       
-      const isDark = theme === 'dark';
+      const isDark = resolvedTheme === 'dark';
       
       // Draw background gradient to match theme
       const gradient = ctx.createLinearGradient(0, 0, width, height);
@@ -133,7 +133,7 @@ export default function InteractiveBackground() {
       window.removeEventListener('mouseleave', onMouseLeave);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [theme]);
+  }, [resolvedTheme]);
 
   return (
     <canvas
