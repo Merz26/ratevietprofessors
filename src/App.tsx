@@ -61,7 +61,8 @@ import {
   Badge,
   ScoreBadge,
   RatingSelector,
-  VoteFooter
+  VoteFooter,
+  reviewAvg
 } from './components/ui/UIComponents';
 // ==========================================
 // MAIN APP

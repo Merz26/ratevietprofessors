@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { InputField } from '@figma/astraui';
-import { X, ChevronRight, Star, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { X, ChevronRight, Star, ThumbsUp, ThumbsDown, Flag } from 'lucide-react';
 import { Institution, Professor, InstitutionReview, ProfessorReview, Suggestion } from '../../types';
 import { VIETNAM_PROVINCES, PROF_TAGS, CRITERIA_KEYS, GRADE_OPTIONS } from '../../constants';
 // ==========================================
@@ -25,7 +25,7 @@ const barColorClass = (v: number): string => {
   return 'bg-red-500'
 }
 
-const reviewAvg = (metrics: Record<string, number>): number => {
+export const reviewAvg = (metrics: Record<string, number>): number => {
   const vals = Object.values(metrics)
   if (!vals.length) return 0
   return parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1))
