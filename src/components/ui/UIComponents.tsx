@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { InputField } from '@figma/astraui';
 import { X, ChevronRight, Star, ThumbsUp, ThumbsDown, Flag } from 'lucide-react';
 import { Institution, Professor, InstitutionReview, ProfessorReview, Suggestion } from '../../types';
@@ -61,7 +62,7 @@ function Button({
 
   const variantClasses = {
     primary: 'bg-brand-primary text-on-brand shadow-[0_2px_12px_rgba(20,90,220,0.28)] hover:shadow-[0_4px_20px_rgba(20,90,220,0.38)] hover:brightness-105 border border-brand-primary/20',
-    neutral: 'bg-white/20 dark:bg-white/[0.04] backdrop-blur-sm border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:bg-white/85 dark:hover:bg-white/[0.16] text-text-primary',
+    neutral: 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:bg-white/80 dark:hover:bg-[#111827]/80 text-text-primary',
     subtle: 'bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-text-secondary hover:text-text-primary border border-transparent',
     danger: 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 shadow-sm',
   }[variant]
@@ -109,15 +110,15 @@ function LiquidModal({ isOpen, onClose, title, children, size = 'small', footer 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 animate-backdropFade">
       <div 
-        className="absolute inset-0 bg-black/30 dark:bg-black/70 backdrop-blur-md transition-opacity duration-300" 
+        className="absolute inset-0 bg-black/40 dark:bg-black/75 backdrop-blur-md transition-opacity duration-300" 
         onClick={onClose} 
       />
       <div 
-        className={`relative flex flex-col bg-white/85 dark:bg-[#141416]/90 backdrop-blur-3xl border border-black/10 dark:border-white/15 shadow-[0_24px_64px_rgba(0,0,0,0.28)] rounded-[28px] animate-scaleIn ${size === 'small' ? 'max-w-md w-full' : 'max-w-2xl w-full'} max-h-[90vh] overflow-hidden`}
-        style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+        className={`relative flex flex-col bg-white/75 dark:bg-[#111827]/75 backdrop-blur-3xl border border-black/10 dark:border-white/15 shadow-[0_24px_64px_rgba(0,0,0,0.35)] rounded-[28px] animate-scaleIn ${size === 'small' ? 'max-w-md w-full' : 'max-w-2xl w-full'} max-h-[90vh] overflow-hidden`}
+        style={{ backdropFilter: 'blur(56px)', WebkitBackdropFilter: 'blur(56px)' }}
       >
         {title ? (
-          <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-white/20 dark:bg-white/[0.02]">
+          <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
              <h2 className="text-base font-semibold text-text-primary">{title}</h2>
              <button 
                type="button" 
@@ -166,7 +167,16 @@ function SearchableDropdown({
 }) {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [coords, setCoords] = useState<{
+    top: number
+    left: number
+    width: number
+    placeAbove: boolean
+    maxHeight: number
+  }>({ top: 0, left: 0, width: 200, placeAbove: false, maxHeight: 260 })
+
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const isCompact = compact || size === 'small'
   const showSearchInput = options.length > 6
@@ -176,27 +186,94 @@ function SearchableDropdown({
   )
   const selected = options.find(o => o.value === value)
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+
+    // If trigger button is completely scrolled offscreen, close dropdown
+    if (rect.bottom < 0 || rect.top > window.innerHeight) {
+      setOpen(false)
+      return
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+
+    const spaceBelow = window.innerHeight - rect.bottom - 12
+    const spaceAbove = rect.top - 12
+    const minHeight = 160
+
+    const placeAbove = spaceBelow < minHeight && spaceAbove > spaceBelow
+
+    const width = Math.max(rect.width, 180)
+    let left = rect.left
+    if (left + width > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - 12 - width)
+    }
+    if (left < 12) left = 12
+
+    const maxHeight = Math.max(120, placeAbove ? Math.min(280, spaceAbove) : Math.min(280, spaceBelow))
+    const top = placeAbove ? rect.top - 6 : rect.bottom + 6
+
+    setCoords({
+      top,
+      left,
+      width,
+      placeAbove,
+      maxHeight,
+    })
   }, [])
 
+  useEffect(() => {
+    if (!open) return
+
+    updatePosition()
+
+    const handleScrollOrResize = () => {
+      updatePosition()
+    }
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return
+      }
+      setOpen(false)
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+
+    window.addEventListener('scroll', handleScrollOrResize, true)
+    window.addEventListener('resize', handleScrollOrResize)
+    document.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true)
+      window.removeEventListener('resize', handleScrollOrResize)
+      document.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open, updatePosition])
+
   return (
-    <div className={`relative flex flex-col gap-xs ${className} ${open ? 'z-50' : ''}`} ref={ref}>
+    <div className={`flex flex-col gap-xs ${className}`}>
       {label && (
         <span className="text-label-sm text-text-secondary">{label}</span>
       )}
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(v => !v)}
+        onClick={() => {
+          if (!disabled) setOpen(v => !v)
+        }}
         className={`flex items-center justify-between transition-all duration-200 select-none ${
           isCompact
-            ? 'h-9 px-3.5 bg-white/50 dark:bg-white/[0.08] border border-black/[0.08] dark:border-white/[0.12] shadow-xs rounded-full text-xs font-medium text-text-primary hover:bg-white/80 dark:hover:bg-white/[0.14]'
-            : 'px-xl py-lg bg-white/20 dark:bg-white/[0.03] border border-black/5 dark:border-white/10 shadow-sm rounded-corner-md text-label text-text-primary'
+            ? 'h-9 px-3.5 bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-xs rounded-full text-xs font-medium text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
+            : 'px-xl py-lg bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-sm rounded-corner-md text-label text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-primary cursor-pointer active:scale-[0.98]'}`}
       >
         <span className={`truncate mr-2 ${selected ? 'text-text-primary' : 'text-text-tertiary'}`}>
@@ -208,13 +285,22 @@ function SearchableDropdown({
         />
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div 
-          className="absolute z-50 top-full mt-1.5 w-full min-w-[180px] bg-white/20 dark:bg-white/[0.04] backdrop-blur-sm border border-black/10 dark:border-white/15 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.18)] animate-scaleIn overflow-hidden"
-          style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: coords.placeAbove ? undefined : `${coords.top}px`,
+            bottom: coords.placeAbove ? `${window.innerHeight - coords.top}px` : undefined,
+            left: `${coords.left}px`,
+            width: `${coords.width}px`,
+            maxHeight: `${coords.maxHeight}px`,
+            zIndex: 999999,
+          }}
+          className="glass-dropdown rounded-2xl animate-scaleIn overflow-hidden flex flex-col shadow-2xl"
         >
           {showSearchInput && (
-            <div className="p-2 border-b border-black/5 dark:border-white/10 bg-transparent">
+            <div className="p-2 border-b border-black/5 dark:border-white/10 bg-transparent shrink-0">
               <InputField
                 value={search}
                 placeholder="Tìm kiếm..."
@@ -222,7 +308,7 @@ function SearchableDropdown({
               />
             </div>
           )}
-          <div className="max-h-60 overflow-y-auto bg-transparent py-1.5">
+          <div className="flex-1 overflow-y-auto bg-transparent py-1.5 dropdown-scrollbar">
             {filtered.length === 0 ? (
               <p className="text-xs text-text-tertiary text-center p-4">Không tìm thấy kết quả</p>
             ) : (
@@ -242,7 +328,8 @@ function SearchableDropdown({
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -306,7 +393,7 @@ function RatingSelector({
             className={`flex-1 h-11 rounded-2xl text-label transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border font-semibold active:scale-95 cursor-pointer ${
               value === n
                 ? `${ratingSelectedClass(n)} shadow-[0_2px_12px_rgba(0,0,0,0.15)]`
-                : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-xl border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
+                : 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
             }`}
           >
             {n}
@@ -340,7 +427,7 @@ function VoteFooter({
         className={`h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
           review.userVote === 'helpful'
             ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-            : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-brand-primary hover:bg-white/60 dark:hover:bg-white/[0.12]'
+            : 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-xl border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-brand-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
         }`}
       >
         <ThumbsUp size={13} />
@@ -352,7 +439,7 @@ function VoteFooter({
         className={`h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
           review.userVote === 'not_helpful'
             ? 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30 shadow-xs'
-            : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/60 dark:hover:bg-white/[0.12]'
+            : 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-xl border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/80 dark:hover:bg-[#111827]/80'
         }`}
       >
         <ThumbsDown size={13} />
@@ -361,7 +448,7 @@ function VoteFooter({
       <button 
         type="button" 
         aria-label="Báo cáo"
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/60 dark:hover:bg-white/[0.12] transition-all duration-300 active:scale-95 cursor-pointer"
+        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/55 dark:bg-[#111827]/55 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/80 dark:hover:bg-[#111827]/80 transition-all duration-300 active:scale-95 cursor-pointer"
       >
         <Flag size={13} />
       </button>

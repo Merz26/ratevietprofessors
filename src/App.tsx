@@ -35,8 +35,16 @@ import {
   Search,
   Monitor,
   Share2,
+  Database,
 } from 'lucide-react'
 import { supabase } from './supabaseClient'
+import { 
+  getStoredUserVotes, 
+  saveUserVote, 
+  computeVoteTransition, 
+  pushReviewVoteToSupabase 
+} from './services/voteService'
+import { SupabaseSetupModal } from './components/SupabaseSetupModal'
 import { ThemeContext } from './main'
 import logoImg from './logo.jpg'
 import InteractiveBackground from './components/InteractiveBackground'
@@ -74,6 +82,7 @@ export default function App() {
 
   // Header Logo States
   const [showInfoMenu, setShowInfoMenu] = useState(false)
+  const [showSupabaseModal, setShowSupabaseModal] = useState(false)
   const [sidebarRotation, setSidebarRotation] = useState(0)
   const [flyoutRotation, setFlyoutRotation] = useState(0)
   const [isFlyoutSpinning, setIsFlyoutSpinning] = useState(false)
@@ -330,10 +339,22 @@ export default function App() {
         if (instErr) console.error("Error fetching institutions:", instErr);
         if (profErr) console.error("Error fetching professors:", profErr);
 
+        const storedVotes = getStoredUserVotes();
+
         if (instData) setInstitutions(instData);
         if (profData) setProfessors(profData);
-        if (instRevData) setInstReviews(instRevData);
-        if (profRevData) setProfReviews(profRevData);
+        if (instRevData) {
+          setInstReviews(instRevData.map(r => ({
+            ...r,
+            userVote: storedVotes[r.id] || null
+          })));
+        }
+        if (profRevData) {
+          setProfReviews(profRevData.map(r => ({
+            ...r,
+            userVote: storedVotes[r.id] || null
+          })));
+        }
         
       } catch (error) {
         console.error("Failed to load database data:", error);
@@ -438,31 +459,28 @@ export default function App() {
     const targetReview = instReviews.find(r => r.id === id)
     if (!targetReview) return
 
-    let h = targetReview.helpful || 0
-    let nh = targetReview.not_helpful || 0
-    let newVote: typeof targetReview.userVote = vote
+    const { helpful: h, not_helpful: nh, nextVote } = computeVoteTransition(
+      targetReview.helpful || 0,
+      targetReview.not_helpful || 0,
+      targetReview.userVote || null,
+      vote
+    )
 
-    if (targetReview.userVote === vote) { 
-      vote === 'helpful' ? h-- : nh--; 
-      newVote = null 
-    }
-    else if (targetReview.userVote === 'helpful') { h--; nh++ }
-    else if (targetReview.userVote === 'not_helpful') { nh--; h++ }
-    else { vote === 'helpful' ? h++ : nh++ }
+    // Save vote to local storage so it persists across page reloads
+    saveUserVote(id, nextVote)
 
+    // Optimistic UI update
     setInstReviews(prev => prev.map(r => 
-      r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: newVote } : r
+      r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: nextVote } : r
     ))
 
-    try {
-      const { error } = await supabase
-        .from('institution_reviews')
-        .update({ helpful: h, not_helpful: nh })
-        .eq('id', id)
-        
-      if (error) throw error
-    } catch (error) {
-      console.error("Failed to push vote:", error)
+    // Push to Supabase backend (tries RPC security definer first, then direct UPDATE)
+    const result = await pushReviewVoteToSupabase('institution_reviews', id, h, nh)
+    
+    if (result.rlsBlocked) {
+      showToast('Supabase RLS đang chặn ghi. Nhấn icon CSDL ở thanh bên để lấy mã SQL cấu hình.', 'error')
+    } else if (!result.success) {
+      console.error("Failed to push vote to Supabase:", result.error)
       showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
     }
   }
@@ -482,31 +500,28 @@ export default function App() {
     const targetReview = profReviews.find(r => r.id === id)
     if (!targetReview) return
 
-    let h = targetReview.helpful || 0
-    let nh = targetReview.not_helpful || 0
-    let newVote: typeof targetReview.userVote = vote
+    const { helpful: h, not_helpful: nh, nextVote } = computeVoteTransition(
+      targetReview.helpful || 0,
+      targetReview.not_helpful || 0,
+      targetReview.userVote || null,
+      vote
+    )
 
-    if (targetReview.userVote === vote) { 
-      vote === 'helpful' ? h-- : nh--; 
-      newVote = null 
-    }
-    else if (targetReview.userVote === 'helpful') { h--; nh++ }
-    else if (targetReview.userVote === 'not_helpful') { nh--; h++ }
-    else { vote === 'helpful' ? h++ : nh++ }
+    // Save vote to local storage so it persists across page reloads
+    saveUserVote(id, nextVote)
 
+    // Optimistic UI update
     setProfReviews(prev => prev.map(r => 
-      r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: newVote } : r
+      r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: nextVote } : r
     ))
 
-    try {
-      const { error } = await supabase
-        .from('professor_reviews')
-        .update({ helpful: h, not_helpful: nh })
-        .eq('id', id)
-        
-      if (error) throw error
-    } catch (error) {
-      console.error("Failed to push vote:", error)
+    // Push to Supabase backend (tries RPC security definer first, then direct UPDATE)
+    const result = await pushReviewVoteToSupabase('professor_reviews', id, h, nh)
+    
+    if (result.rlsBlocked) {
+      showToast('Supabase RLS đang chặn ghi. Nhấn icon CSDL ở thanh bên để lấy mã SQL cấu hình.', 'error')
+    } else if (!result.success) {
+      console.error("Failed to push vote to Supabase:", result.error)
       showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
     }
   }
@@ -578,14 +593,13 @@ export default function App() {
 
     return (
       <div className="flex flex-col gap-2xl animate-fadeIn">
-        <div className="relative z-30 flex flex-col gap-xl p-2xl rounded-3xl shadow-lg shadow-black/5">
-          <div className="absolute inset-0 bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm border border-black/5 dark:border-white/10 rounded-3xl -z-10" />
+        <div className="relative z-30 flex flex-col gap-xl p-2xl rounded-3xl glass-panel">
           <div className="flex flex-col gap-xs">
             <h1 className="text-title text-text-primary">Tìm kiếm Trường Đại học</h1>
             <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
           </div>
 
-          <div className="relative flex items-center gap-md bg-white/20 dark:bg-white/[0.03] border border-black/5 dark:border-white/10 rounded-2xl focus-within:border-brand-primary transition-all duration-300 px-xl shadow-sm">
+          <div className={`relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl focus-within:border-brand-primary transition-all duration-300 px-xl shadow-sm ${showSearchSuggestions && searchSuggestions.length > 0 ? 'z-50' : 'z-20'}`}>
             <Search size={18} className="text-text-secondary shrink-0" />
             <input
               type="text"
@@ -600,8 +614,7 @@ export default function App() {
 
             {showSearchSuggestions && searchSuggestions.length > 0 && (
               <div 
-                className="absolute top-full left-0 right-0 mt-md bg-white/30 dark:bg-white/[0.04] backdrop-blur-sm border border-black/10 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 animate-scaleIn overflow-hidden py-xs"
-                style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+                className="absolute top-full left-0 right-0 mt-md glass-dropdown rounded-2xl z-[100] animate-scaleIn overflow-hidden py-xs shadow-2xl"
               >
                 {searchSuggestions.map(inst => {
                   const stats = calculateInstStats(inst.id)
@@ -610,7 +623,7 @@ export default function App() {
                       key={inst.id}
                       type="button"
                       onClick={() => { navigate('institution', inst); setSearchTerm(''); setShowSearchSuggestions(false) }}
-                      className="w-full flex items-center justify-between px-xl py-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-left"
+                      className="w-full flex items-center justify-between px-xl py-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left"
                     >
                       <div className="flex items-center gap-lg">
                         <div className="w-8 h-8 bg-brand-tertiary rounded-corner-md flex items-center justify-center shrink-0">
@@ -682,7 +695,7 @@ export default function App() {
                   key={inst.id}
                   type="button"
                   onClick={() => navigate('institution', inst)}
-                  className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl p-6 flex flex-col h-full text-left border border-black/5 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/[0.06] hover:shadow-xl hover:border-brand-primary/40 transition-all duration-300 group animate-scaleIn shadow-sm active:scale-[0.99] cursor-pointer"
+                  className="glass-panel glass-panel-interactive rounded-3xl p-6 flex flex-col h-full text-left group animate-scaleIn active:scale-[0.99] cursor-pointer"
                 >
                   <div className="flex flex-col gap-2 flex-1 min-w-0 mb-5">
                     <div className="flex items-start justify-between gap-sm">
@@ -709,7 +722,7 @@ export default function App() {
           </div>
 
           {paginated.length === 0 && (
-            <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center">
+            <div className="glass-panel rounded-3xl p-2xl text-center">
               <p className="text-label text-text-secondary">Không tìm thấy trường phù hợp</p>
             </div>
           )}
@@ -725,8 +738,7 @@ export default function App() {
                   const mainContainer = document.querySelector('main')
                   if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full bg-white/20 dark:bg-white/[0.04] backdrop-blur-sm border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:shadow-none hover:bg-white/90 dark:hover:bg-white/[0.16] hover:border-black/[0.14] dark:hover:border-white/[0.22] active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:bg-white/60 dark:disabled:hover:bg-white/[0.08] disabled:hover:border-black/[0.08] dark:disabled:hover:border-white/[0.12]"
-                style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full glass-panel glass-panel-interactive active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
                 aria-label="Trang trước"
               >
                 <ChevronLeft size={17} strokeWidth={2.25} className="text-text-primary group-hover:-translate-x-0.5 transition-transform duration-200" />
@@ -734,8 +746,7 @@ export default function App() {
               </button>
 
               <div 
-                className="h-11 px-4 flex items-center justify-center rounded-full bg-white/40 dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.08] text-[13px] font-medium text-text-secondary tracking-tight select-none"
-                style={{ backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}
+                className="h-11 px-4 flex items-center justify-center rounded-full glass-panel text-[13px] font-medium text-text-secondary tracking-tight select-none"
               >
                 <span>{currentPage}</span>
                 <span className="mx-1.5 opacity-40">/</span>
@@ -750,8 +761,7 @@ export default function App() {
                   const mainContainer = document.querySelector('main')
                   if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full bg-white/20 dark:bg-white/[0.04] backdrop-blur-sm border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:shadow-none hover:bg-white/90 dark:hover:bg-white/[0.16] hover:border-black/[0.14] dark:hover:border-white/[0.22] active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:bg-white/60 dark:disabled:hover:bg-white/[0.08] disabled:hover:border-black/[0.08] dark:disabled:hover:border-white/[0.12]"
-                style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
+                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full glass-panel glass-panel-interactive active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
                 aria-label="Trang sau"
               >
                 <span className="text-[14px] font-medium text-text-primary tracking-tight">Sau</span>
@@ -798,7 +808,7 @@ export default function App() {
       <div className="flex flex-col gap-2xl animate-fadeIn">
         {renderBreadcrumb()}
 
-        <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
+        <div className="glass-panel rounded-3xl p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
           <div className="flex flex-col items-start gap-1.5">
             <Badge label={selectedInst.short_name} variant="brand" />
             <h1 className="text-title text-text-primary">{selectedInst.name}</h1>
@@ -835,7 +845,7 @@ export default function App() {
           </ButtonGroup>
         </div>
 
-        <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
+        <div className="glass-panel rounded-3xl p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
           <div className="flex flex-col items-center justify-center p-xl">
             <span className="text-[56px] font-semibold text-text-primary leading-none">{stats.overall > 0 ? stats.overall.toFixed(1) : '0.0'}</span>
             <span className="text-label-sm text-text-secondary mt-xs">trên 5 ({stats.total} đánh giá)</span>
@@ -877,7 +887,7 @@ export default function App() {
                   key={idx}
                   type="button"
                   onClick={() => navigate('department', selectedInst, dept)}
-                  className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl p-5 sm:p-6 border border-black/5 dark:border-white/10 shadow-sm hover:border-brand-primary text-left flex flex-col h-full transition-all group animate-slideInLeft cursor-pointer active:scale-[0.99]"
+                  className="glass-panel glass-panel-interactive rounded-3xl p-5 sm:p-6 text-left flex flex-col h-full transition-all group animate-slideInLeft cursor-pointer active:scale-[0.99]"
                   style={{ animationDelay: `${idx * 40}ms` }}
                 >
                   <div className="flex flex-col gap-1.5 mb-5">
@@ -923,20 +933,20 @@ export default function App() {
           </div>
 
           {reviews.length === 0 ? (
-            <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center border border-border-secondary" style={{ borderStyle: 'dashed' }}>
+            <div className="glass-panel rounded-3xl p-2xl text-center border-border-secondary" style={{ borderStyle: 'dashed' }}>
               <p className="text-label text-text-secondary">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
             </div>
           ) : (
             reviews.map(rev => {
               const revScore = reviewAvg(rev.metrics || {})
               return (
-                <div key={rev.id} className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-2xl border border-black/5 dark:border-white/10 shadow-sm p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
+                <div key={rev.id} className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
                   <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
                     <div className="flex flex-col">
                       <p className="text-sm font-semibold text-text-primary">{rev.author_name || 'Người dùng ẩn danh'}</p>
                       <p className="text-xs text-text-tertiary mt-0.5">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-white/50 dark:bg-white/[0.08] backdrop-blur-md rounded-xl px-3 py-1 border border-black/[0.06] dark:border-white/[0.1] shadow-xs">
+                    <div className="flex items-center gap-1.5 bg-white/80 dark:bg-black/40 backdrop-blur-md rounded-xl px-3 py-1 border border-black/[0.06] dark:border-white/[0.1] shadow-xs">
                       <span className={`text-base font-bold leading-none ${revScore >= 4 ? 'text-emerald-500 dark:text-emerald-400' : revScore >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500'}`}>
                         {revScore.toFixed(1)}
                       </span>
@@ -946,7 +956,7 @@ export default function App() {
 
                   <p className="text-sm leading-relaxed text-text-primary">{rev.comment}</p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-3 sm:p-3.5 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl border border-black/[0.04] dark:border-white/[0.06]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-3 sm:p-3.5 bg-black/[0.03] dark:bg-black/40 rounded-xl border border-black/[0.04] dark:border-white/[0.06]">
                     {Object.entries(rev.metrics || {}).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between py-0.5 px-0.5">
                         <span className="text-xs font-medium text-text-secondary">{key}</span>
@@ -983,7 +993,7 @@ export default function App() {
       <div className="flex flex-col gap-2xl animate-fadeIn">
         {renderBreadcrumb()}
 
-        <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
+        <div className="glass-panel rounded-3xl p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
           <div className="flex flex-col gap-xs">
             <p className="text-label-sm text-text-secondary">{selectedInst.name}</p>
             <h1 className="text-title text-text-primary">{selectedDept}</h1>
@@ -999,22 +1009,22 @@ export default function App() {
           </Button>
         </div>
 
-        <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
-          <div className="relative flex items-center gap-md bg-white/20 dark:bg-white/[0.03] border border-black/5 dark:border-white/10 shadow-sm rounded-corner-lg focus-within:border-brand-primary transition-colors px-xl">
+        <div className="glass-panel rounded-3xl p-xl">
+          <div className="relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 shadow-sm rounded-2xl focus-within:border-brand-primary transition-colors px-xl">
             <Search size={18} className="text-text-secondary shrink-0" />
             <input
               type="text"
               value={deptSearchTerm}
               placeholder="Tìm kiếm giảng viên..."
               onChange={e => setDeptSearchTerm(e.target.value)}
-              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
+              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full placeholder:text-text-tertiary"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
           {filtered.length === 0 ? (
-            <div className="col-span-2 bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center">
+            <div className="col-span-2 glass-panel rounded-3xl p-2xl text-center">
               <p className="text-label text-text-secondary">Không tìm thấy giảng viên</p>
             </div>
           ) : (
@@ -1024,19 +1034,19 @@ export default function App() {
               return (
                 <div
                   key={prof.id}
-                  className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl border border-black/5 dark:border-white/10 hover:border-brand-primary text-left flex flex-col h-full transition-all animate-fadeIn"
+                  className="glass-panel glass-panel-interactive rounded-3xl p-xl text-left flex flex-col h-full animate-fadeIn"
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   <button
                     type="button"
                     onClick={() => navigate('professor', selectedInst, selectedDept, prof)}
-                    className="flex flex-col h-full text-left w-full"
+                    className="flex flex-col h-full text-left w-full cursor-pointer"
                   >
                     <div className="flex items-start justify-between gap-lg w-full mb-lg">
                       <div className="flex items-center gap-lg">
                         <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="medium" shape="circle" />
                         <div>
-                          <h3 className="text-label text-text-primary">{prof.name}</h3>
+                          <h3 className="text-label text-text-primary font-semibold">{prof.name}</h3>
                           <p className="text-video-title text-text-secondary">{stats.total_ratings} đánh giá</p>
                         </div>
                       </div>
@@ -1057,11 +1067,11 @@ export default function App() {
                     <div className="mt-auto flex gap-xl pt-lg border-t border-border-secondary w-full">
                       <div>
                         <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
-                        <p className="text-label-sm text-text-primary">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
+                        <p className="text-label-sm text-text-primary font-medium">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
-                        <p className="text-label-sm text-text-primary">{stats.would_take_again_pct}%</p>
+                        <p className="text-label-sm text-text-primary font-medium">{stats.would_take_again_pct}%</p>
                       </div>
                     </div>
                   </button>
@@ -1109,7 +1119,7 @@ export default function App() {
         {renderBreadcrumb()}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-xl">
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col gap-xl">
+          <div className="glass-panel rounded-3xl p-2xl flex flex-col gap-xl">
             <div className="flex flex-col gap-xs">
               <span className="text-[48px] font-semibold text-text-primary leading-none">
                 {stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : '0.0'}
@@ -1175,7 +1185,7 @@ export default function App() {
           </div>
 
           <div className="flex flex-col gap-xl">
-            <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+            <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
               <h3 className="text-label text-text-primary font-semibold">Tổng hợp đánh giá</h3>
               {([5, 4, 3, 2, 1] as const).map(star => (
                 <div key={star} className="flex items-center gap-lg">
@@ -1192,7 +1202,7 @@ export default function App() {
             </div>
 
             {selectedProf.tags && selectedProf.tags.length > 0 && (
-              <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+              <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
                 <h3 className="text-label text-text-primary font-semibold">Đặc điểm nổi bật</h3>
                 <div className="flex flex-wrap gap-sm">
                   {selectedProf.tags.map(t => (
@@ -1214,14 +1224,14 @@ export default function App() {
 
               if (similarProfs.length === 0) return null
               return (
-                <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+                <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
                   <h3 className="text-label text-text-primary font-semibold">Giảng viên tương tự</h3>
                   {similarProfs.map(({ prof, s }) => (
                     <button
                       key={prof.id}
                       type="button"
                       onClick={() => navigate('professor', selectedInst!, selectedDept!, prof)}
-                      className="flex items-center justify-between gap-lg hover:bg-black/5 dark:bg-white/5 hover:backdrop-blur-xl p-sm rounded-corner-md transition-colors text-left"
+                      className="flex items-center justify-between gap-lg hover:bg-black/5 dark:hover:bg-white/5 hover:backdrop-blur-xl p-sm rounded-corner-md transition-colors text-left"
                     >
                       <div className="flex items-center gap-md">
                         <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
@@ -1239,7 +1249,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+        <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
           <div className="flex flex-col sm:flex-row gap-lg items-start sm:items-center justify-between">
             <div className="flex flex-col gap-sm flex-1">
               <span className="text-label-sm text-text-secondary">Lọc theo thẻ:</span>
@@ -1250,7 +1260,7 @@ export default function App() {
                   className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
                     profTagFilter === 'all'
                       ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-                      : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.06] dark:border-white/[0.1] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
+                      : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/95 dark:hover:bg-gray-800/90'
                   }`}
                 >
                   Tất cả
@@ -1263,7 +1273,7 @@ export default function App() {
                     className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
                       profTagFilter === t
                         ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-                        : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.06] dark:border-white/[0.1] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
+                        : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/95 dark:hover:bg-gray-800/90'
                     }`}
                   >
                     {t}
@@ -1296,12 +1306,12 @@ export default function App() {
         <div className="flex flex-col gap-lg">
           <h2 className="text-heading text-text-primary">Đánh giá từ sinh viên</h2>
           {reviews.length === 0 ? (
-            <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl text-center border border-border-secondary" style={{ borderStyle: 'dashed' }}>
+            <div className="glass-panel rounded-3xl p-2xl text-center border-border-secondary" style={{ borderStyle: 'dashed' }}>
               <p className="text-label text-text-secondary">Không có đánh giá phù hợp với bộ lọc</p>
             </div>
           ) : (
             reviews.map(rev => (
-              <div key={rev.id} className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-2xl border border-black/5 dark:border-white/10 shadow-sm p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
+              <div key={rev.id} className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <div>
@@ -1309,13 +1319,13 @@ export default function App() {
                       <p className="text-xs text-text-tertiary mt-0.5">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
                     </div>
                     <div className="flex gap-2">
-                      <div className="bg-white/50 dark:bg-white/[0.08] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
+                      <div className="bg-white/80 dark:bg-black/40 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
                         <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wider">Chất lượng</p>
                         <p className={`text-sm font-bold leading-tight mt-0.5 ${rev.teaching_rating >= 4 ? 'text-emerald-500 dark:text-emerald-400' : rev.teaching_rating >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500'}`}>
                           {rev.teaching_rating.toFixed(1)}
                         </p>
                       </div>
-                      <div className="bg-white/50 dark:bg-white/[0.08] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
+                      <div className="bg-white/80 dark:bg-black/40 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
                         <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wider">Độ khó</p>
                         <p className={`text-sm font-bold leading-tight mt-0.5 ${rev.difficulty_rating >= 4 ? 'text-red-500' : rev.difficulty_rating >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-500 dark:text-emerald-400'}`}>
                           {rev.difficulty_rating.toFixed(1)}
@@ -1337,7 +1347,7 @@ export default function App() {
                     ['Điểm', rev.grade],
                     ['Giáo trình', rev.textbook],
                   ].map(([k, v]) => (
-                    <div key={k} className="bg-black/[0.02] dark:bg-white/[0.04] backdrop-blur-sm border border-black/[0.04] dark:border-white/[0.06] rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                    <div key={k} className="bg-black/[0.03] dark:bg-black/40 backdrop-blur-sm border border-black/[0.04] dark:border-white/[0.06] rounded-full px-2.5 py-0.5 flex items-center gap-1">
                       <span className="text-xs text-text-tertiary">{k}:</span>
                       <span className="text-xs text-text-primary font-medium">{v}</span>
                     </div>
@@ -1413,7 +1423,7 @@ export default function App() {
         </div>
 
         <form onSubmit={handleSub} className="flex flex-col gap-xl">
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <InputField
               label="Tên hiển thị (Tùy chọn)"
               placeholder="VD: Sinh viên năm 3..."
@@ -1428,12 +1438,12 @@ export default function App() {
             />
           </div>
 
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-xl">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-xl">
             <RatingSelector label="Đánh giá giảng viên *" value={reviewTeaching} onChange={setReviewTeaching} lowLabel="1 - Rất tệ" highLabel="5 - Tuyệt vời" />
             <RatingSelector label="Độ khó môn học *" value={reviewDifficulty} onChange={setReviewDifficulty} lowLabel="1 - Rất dễ" highLabel="5 - Rất khó" />
           </div>
 
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <div>
               <p className="text-label text-text-primary mb-lg">Bạn có muốn học lại không?</p>
               <div className="flex gap-md">
@@ -1466,7 +1476,7 @@ export default function App() {
             />
           </div>
 
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <p className="text-label text-text-primary font-medium">Chọn tối đa 3 thẻ đặc điểm</p>
             <div className="flex flex-wrap gap-sm">
               {PROF_TAGS.map(t => {
@@ -1482,7 +1492,7 @@ export default function App() {
                     className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
                       sel
                         ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-                        : 'bg-white/40 dark:bg-white/[0.06] backdrop-blur-md border-black/[0.06] dark:border-white/[0.1] text-text-primary hover:bg-white/70 dark:hover:bg-white/[0.12]'
+                        : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/95 dark:hover:bg-gray-800/90'
                     }`}
                   >
                     {t}
@@ -1492,7 +1502,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
+          <div className="glass-panel rounded-3xl p-xl">
             <TextareaField
               label="Nhận xét chi tiết *"
               placeholder="Bạn muốn sinh viên khác biết điều gì về giảng viên này?"
@@ -1553,7 +1563,7 @@ export default function App() {
         </div>
 
         <form onSubmit={handleSub} className="flex flex-col gap-xl">
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <InputField
               label="Tên hiển thị (Tùy chọn)"
               placeholder="VD: Cựu sinh viên..."
@@ -1562,7 +1572,7 @@ export default function App() {
             />
           </div>
           {CRITERIA_KEYS.map(criteria => (
-            <div key={criteria} className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
+            <div key={criteria} className="glass-panel rounded-3xl p-xl">
               <RatingSelector
                 label={`${criteria} *`}
                 value={instMetrics[criteria]}
@@ -1573,7 +1583,7 @@ export default function App() {
             </div>
           ))}
 
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
+          <div className="glass-panel rounded-3xl p-xl">
             <TextareaField
               label="Nhận xét chi tiết *"
               placeholder="Chia sẻ trải nghiệm thực tế tại trường..."
@@ -1642,7 +1652,7 @@ export default function App() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-xl">
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <InputField
               label="Tên hiển thị (Tùy chọn)"
               placeholder="VD: Nguyễn Văn A..."
@@ -1687,7 +1697,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
+          <div className="glass-panel rounded-3xl p-xl">
             <TextareaField
               label="Ghi chú thêm"
               placeholder="Cung cấp thêm thông tin xác thực..."
@@ -1704,7 +1714,7 @@ export default function App() {
         </form>
 
         {suggestions.length > 0 && (
-          <div className="bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg relative z-30">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <h2 className="text-heading text-text-primary">Đề xuất gần đây ({suggestions.length})</h2>
             {suggestions.map((s, idx) => (
               <div key={idx} className="flex items-center justify-between py-lg border-b border-border-secondary last:border-0">
@@ -1755,7 +1765,7 @@ export default function App() {
     <div className="flex h-[100dvh] overflow-hidden bg-transparent">
       {/* Desktop sidebar */}
       <div className="hidden md:flex relative z-30"> 
-        <div className="h-full w-[72px] bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm border-r border-black/5 dark:border-white/10 shadow-lg shadow-black/5 flex flex-col items-center py-sm gap-sm relative z-10">
+        <div className="h-full w-[72px] glass-bar border-r border-black/[0.06] dark:border-white/[0.1] shadow-lg shadow-black/5 flex flex-col items-center py-sm gap-sm relative z-10">
           <div className="h-14 w-full mb-2" />
           {regularNavItems.map(item => (
             <Tooltip key={item.id} content={item.label} position="right">
@@ -1775,6 +1785,13 @@ export default function App() {
           </Tooltip>
           
           <div className="mt-auto flex flex-col gap-sm pb-2">
+            <Tooltip content="Cấu hình Supabase Backend (SQL)" position="right">
+              <SidebarButton
+                icon={<Database className="size-full" strokeWidth={1.5} />}
+                active={showSupabaseModal}
+                onClick={() => setShowSupabaseModal(true)}
+              />
+            </Tooltip>
             <Tooltip content={theme === 'system' ? 'Theo hệ thống' : theme === 'dark' ? 'Giao diện tối' : 'Giao diện sáng'} position="right">
               <SidebarButton
                 icon={theme === 'system' ? <Monitor className="size-full" strokeWidth={1.5} /> : theme === 'dark' ? <Moon className="size-full" strokeWidth={1.5} /> : <Sun className="size-full" strokeWidth={1.5} />}
@@ -1785,7 +1802,7 @@ export default function App() {
         </div>
 
         {/* The Escape Hatch: Reduced height (h-14) to prevent clipping, added border-r to restore the line */}
-        <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center bg-transparent z-50 border-r border-black/5 dark:border-white/10">
+        <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center bg-transparent z-50 border-r border-black/[0.06] dark:border-white/[0.1]">
           <button 
             type="button"
             onClick={handleLogoClick}
@@ -1802,8 +1819,8 @@ export default function App() {
       </div>
 
       {/* Bookmark panel - desktop only */}
-      <div className={`hidden md:flex flex-col bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm border-r border-black/5 dark:border-white/10 shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-20 ${showBookmarkPanel ? 'w-72' : 'w-0'}`}>
-          <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/10 dark:bg-white/[0.02]">
+      <div className={`hidden md:flex flex-col glass-bar border-r border-black/[0.06] dark:border-white/[0.1] shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-20 ${showBookmarkPanel ? 'w-72' : 'w-0'}`}>
+          <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/40 dark:bg-black/20">
             <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
               <BookmarkCheck size={14} className="text-brand-primary" />
               Đã lưu ({bookmarkedProfIds.length})
@@ -1841,7 +1858,7 @@ export default function App() {
                 const inst = institutions.find(i => i.name === prof.university)
                 const stats = calculateProfStats(prof.id)
                 return (
-                  <div key={id} className="group flex items-start gap-sm p-md rounded-2xl hover:bg-white/50 dark:hover:bg-black/50 transition-all duration-300">
+                  <div key={id} className="group flex items-start gap-sm p-md rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-300">
                     <button
                       type="button"
                       onClick={() => {
@@ -1908,7 +1925,21 @@ export default function App() {
             Phiên bản 1.0.0 (Build 42)
           </p>
 
-          <div className="w-full flex flex-col bg-white/20 dark:bg-white/[0.03] backdrop-blur-md rounded-2xl border border-black/5 dark:border-white/10 overflow-hidden text-left shadow-sm z-10 relative mb-6">
+          <div className="w-full flex flex-col bg-black/[0.03] dark:bg-black/40 rounded-2xl border border-black/5 dark:border-white/10 overflow-hidden text-left shadow-sm z-10 relative mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setShowInfoMenu(false)
+                setShowSupabaseModal(true)
+              }}
+              className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group cursor-pointer w-full text-left"
+            >
+              <span className="flex items-center gap-2">
+                <Database size={16} className="text-brand-primary" />
+                <span>Cấu hình Supabase Backend (SQL)</span>
+              </span>
+              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
+            </button>
             <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
               <span>GitHub</span>
               <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
@@ -1957,7 +1988,7 @@ export default function App() {
                 {[{ inst: selectedInst, label: 'Hiện tại' }, { inst: compareInstSelected, label: 'So sánh' }].map(({ inst, label }) => {
                   const stats = calculateInstStats(inst.id)
                   return (
-                    <div key={inst.id} className="bg-white/10 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
+                    <div key={inst.id} className="bg-black/[0.03] dark:bg-black/40 rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
                       <div>
                         <Badge label={label} variant={label === 'Hiện tại' ? 'brand' : 'secondary'} />
                         <p className="text-label text-text-primary font-semibold mt-sm">{inst.name}</p>
@@ -1990,7 +2021,7 @@ export default function App() {
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm trường để so sánh với <strong>{selectedInst.name}</strong></p>
               
-              <div className="relative flex items-center gap-md bg-white/20 dark:bg-white/[0.03] border border-black/5 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
+              <div className="relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
                 <Search size={18} className="text-text-secondary shrink-0" />
                 <input
                   type="text"
@@ -2059,7 +2090,7 @@ export default function App() {
                 {[{ prof: selectedProf, label: 'Hiện tại' }, { prof: compareProf, label: 'So sánh' }].map(({ prof, label }) => {
                   const s = calculateProfStats(prof.id)
                   return (
-                    <div key={prof.id} className="bg-white/10 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
+                    <div key={prof.id} className="bg-black/[0.03] dark:bg-black/40 rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
                       <div>
                         <Badge label={label} variant={label === 'Hiện tại' ? 'brand' : 'secondary'} />
                         <p className="text-label text-text-primary font-semibold mt-sm">{prof.name}</p>
@@ -2094,7 +2125,7 @@ export default function App() {
             <div className="flex flex-col gap-lg">
               <p className="text-label-sm text-text-secondary">Tìm giảng viên để so sánh với <strong>{selectedProf.name}</strong></p>
               
-              <div className="relative flex items-center gap-md bg-white/20 dark:bg-white/[0.03] border border-black/5 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
+              <div className="relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
                 <Search size={18} className="text-text-secondary shrink-0" />
                 <input
                   type="text"
@@ -2179,8 +2210,15 @@ export default function App() {
         </LiquidModal>
       )}
 
+      {/* Supabase Backend Setup Modal */}
+      <SupabaseSetupModal
+        isOpen={showSupabaseModal}
+        onClose={() => setShowSupabaseModal(false)}
+        onCopied={() => showToast('Đã sao chép mã SQL vào bộ nhớ tạm!', 'success')}
+      />
+
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/20 dark:bg-white/[0.02] backdrop-blur-sm border-t border-black/5 dark:border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.05)] flex items-stretch px-xs pb-safe">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-bar border-t border-black/[0.06] dark:border-white/[0.1] shadow-[0_-4px_24px_rgba(0,0,0,0.05)] flex items-stretch px-xs pb-safe">
         
         {/* Logo / Info Modal Trigger */}
         <button
@@ -2222,7 +2260,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => setTheme(theme === 'dark' ? 'system' : theme === 'system' ? 'light' : 'dark')}
-          className="flex-1 flex flex-col items-center justify-center gap-sm pt-lg pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-text-tertiary transition-colors hover:text-brand-primary"
+          className="flex-1 flex flex-col items-center justify-center gap-sm py-lg text-text-tertiary transition-colors hover:text-brand-primary"
         >
           {theme === 'system' ? <Monitor size={24} strokeWidth={1.5} /> : theme === 'dark' ? <Moon size={24} strokeWidth={1.5} /> : <Sun size={24} strokeWidth={1.5} />}
           <span className="text-video-title">{theme === 'system' ? 'Hệ thống' : theme === 'dark' ? 'Tối' : 'Sáng'}</span>
@@ -2247,8 +2285,8 @@ export default function App() {
     {/* Mobile bookmark sheet */}
     {showBookmarkPanel && (
       <div className="md:hidden fixed inset-0 z-50 flex flex-col">
-        <div className="flex-1 bg-black/40" onClick={() => setShowBookmarkPanel(false)} />
-        <div className="bg-white/30 dark:bg-white/[0.04] backdrop-blur-sm rounded-t-2xl max-h-[70vh] flex flex-col animate-slideInLeft">
+        <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setShowBookmarkPanel(false)} />
+        <div className="glass-panel rounded-t-3xl border-t border-black/[0.06] dark:border-white/[0.1] max-h-[70vh] flex flex-col animate-slideInLeft">
           <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0">
             <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
               <BookmarkCheck size={14} className="text-brand-primary" />
@@ -2276,7 +2314,7 @@ export default function App() {
                 const inst = institutions.find(i => i.name === prof.university)
                 const stats = calculateProfStats(prof.id)
                 return (
-                  <div key={id} className="group flex items-start gap-sm p-sm rounded-corner-md hover:bg-black/5 dark:bg-white/5 hover:backdrop-blur-xl transition-colors">
+                  <div key={id} className="group flex items-start gap-sm p-sm rounded-corner-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <button
                       type="button"
                       onClick={() => { if (inst) { navigate('professor', inst, prof.department, prof); setShowBookmarkPanel(false) } }}

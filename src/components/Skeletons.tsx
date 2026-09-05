@@ -18,7 +18,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className = '', ...props }) 
  */
 export const InstitutionCardSkeleton: React.FC = () => {
   return (
-    <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl p-xl flex flex-col h-full border border-black/5 dark:border-white/10 shadow-sm animate-fadeIn">
+    <div className="glass-panel rounded-3xl p-xl flex flex-col h-full animate-fadeIn">
       <div className="flex flex-col gap-xs flex-1 min-w-0 mb-lg">
         <div className="flex items-start justify-between gap-sm">
           <Skeleton className="w-16 h-6 rounded-full" />
@@ -48,15 +48,14 @@ export const InstitutionListSkeleton: React.FC = () => {
   return (
     <div className="flex flex-col gap-2xl animate-fadeIn">
       {/* Search Header Banner */}
-      <div className="relative z-30 flex flex-col gap-xl p-2xl rounded-3xl shadow-lg shadow-black/5">
-        <div className="absolute inset-0 bg-white/40 dark:bg-black/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 rounded-3xl -z-10" />
+      <div className="relative z-30 flex flex-col gap-xl p-2xl rounded-3xl glass-panel">
         <div className="flex flex-col gap-xs">
           <Skeleton className="w-64 h-8 rounded-xl" />
           <Skeleton className="w-96 max-w-full h-4 rounded-lg mt-1" />
         </div>
 
         {/* Search input skeleton */}
-        <div className="h-12 bg-white/30 dark:bg-black/30 border border-black/5 dark:border-white/10 rounded-2xl px-xl flex items-center gap-md">
+        <div className="h-12 bg-white/30 dark:bg-white/[0.03] border border-black/5 dark:border-white/10 rounded-2xl px-xl flex items-center gap-md">
           <Skeleton className="w-5 h-5 rounded-full shrink-0" />
           <Skeleton className="w-64 max-w-[70%] h-4 rounded-md" />
         </div>
@@ -118,7 +117,7 @@ export const ProfessorDetailsSkeleton: React.FC = () => {
       {/* Main Top Grid (Profile Card & Summary Stats) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-xl">
         {/* Left: Profile & Primary Scores */}
-        <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col gap-xl">
+        <div className="glass-panel rounded-3xl p-2xl flex flex-col gap-xl">
           {/* Big Score Header */}
           <div className="flex flex-col gap-xs">
             <Skeleton className="w-24 h-12 rounded-2xl" />
@@ -158,7 +157,7 @@ export const ProfessorDetailsSkeleton: React.FC = () => {
         {/* Right: Star Breakdown & Tags */}
         <div className="flex flex-col gap-xl">
           {/* Star Distribution Box */}
-          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <Skeleton className="w-36 h-5 rounded-lg" />
             <div className="flex flex-col gap-3">
               {[5, 4, 3, 2, 1].map((star) => (
@@ -172,7 +171,7 @@ export const ProfessorDetailsSkeleton: React.FC = () => {
           </div>
 
           {/* Tags Skeleton */}
-          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg">
+          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
             <Skeleton className="w-36 h-5 rounded-lg" />
             <div className="flex flex-wrap gap-sm">
               <Skeleton className="w-24 h-7 rounded-full" />
@@ -185,7 +184,7 @@ export const ProfessorDetailsSkeleton: React.FC = () => {
       </div>
 
       {/* Filter & Sort Toolbar */}
-      <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col sm:flex-row gap-lg justify-between items-start sm:items-center">
+      <div className="glass-panel rounded-3xl p-xl flex flex-col sm:flex-row gap-lg justify-between items-start sm:items-center">
         <div className="flex items-center gap-sm flex-wrap">
           <Skeleton className="w-20 h-4 rounded-md mr-2" />
           <Skeleton className="w-16 h-8 rounded-full" />
@@ -206,7 +205,7 @@ export const ProfessorDetailsSkeleton: React.FC = () => {
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg"
+            className="glass-panel rounded-3xl p-xl flex flex-col gap-lg"
           >
             <div className="flex flex-col md:flex-row justify-between gap-lg border-b border-border-secondary pb-lg">
               <div className="flex flex-col gap-md">
@@ -263,7 +262,7 @@ export const InstitutionDetailsSkeleton: React.FC = () => {
       </div>
 
       {/* Header Banner */}
-      <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
+      <div className="glass-panel rounded-3xl p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
         <div className="flex flex-col gap-xs">
           <Skeleton className="w-20 h-6 rounded-full" />
           <Skeleton className="w-72 max-w-full h-8 rounded-xl mt-1" />
@@ -279,7 +278,7 @@ export const InstitutionDetailsSkeleton: React.FC = () => {
       </div>
 
       {/* Rating Breakdown & Metrics */}
-      <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
+      <div className="glass-panel rounded-3xl p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
         <div className="flex flex-col items-center justify-center p-xl gap-2">
           <Skeleton className="w-24 h-14 rounded-2xl" />
           <Skeleton className="w-36 h-4 rounded-md" />
@@ -312,7 +311,7 @@ export const InstitutionDetailsSkeleton: React.FC = () => {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-4"
+              className="glass-panel rounded-3xl p-xl flex flex-col gap-4"
             >
               <Skeleton className="w-4/5 h-5 rounded-lg" />
               <Skeleton className="w-24 h-4 rounded-md" />
@@ -343,7 +342,7 @@ export const DepartmentDetailsSkeleton: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
+      <div className="glass-panel rounded-3xl p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
         <div className="flex flex-col gap-xs">
           <Skeleton className="w-32 h-4 rounded-md" />
           <Skeleton className="w-60 max-w-full h-8 rounded-xl mt-1" />
@@ -353,8 +352,8 @@ export const DepartmentDetailsSkeleton: React.FC = () => {
       </div>
 
       {/* Search Input Skeleton */}
-      <div className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl">
-        <div className="h-12 bg-white/30 dark:bg-black/30 border border-black/5 dark:border-white/10 rounded-xl px-xl flex items-center gap-md">
+      <div className="glass-panel rounded-3xl p-xl">
+        <div className="h-12 bg-white/30 dark:bg-white/[0.03] border border-black/5 dark:border-white/10 rounded-xl px-xl flex items-center gap-md">
           <Skeleton className="w-5 h-5 rounded-full shrink-0" />
           <Skeleton className="w-48 h-4 rounded-md" />
         </div>
@@ -365,7 +364,7 @@ export const DepartmentDetailsSkeleton: React.FC = () => {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white/40 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-sm p-xl flex flex-col gap-lg"
+            className="glass-panel rounded-3xl p-xl flex flex-col gap-lg"
           >
             <div className="flex items-start justify-between gap-lg">
               <div className="flex items-center gap-lg">
