@@ -271,7 +271,7 @@ function InteractiveBackground() {
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none"
+      className="fixed inset-0 pointer-events-none overflow-hidden -z-10 select-none"
     >
       {/* Base Canvas Gradient */}
       <div

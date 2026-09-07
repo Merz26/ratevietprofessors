@@ -32,7 +32,7 @@ export const BookmarkDrawer: React.FC<BookmarkDrawerProps> = ({
       {/* Desktop Bookmark Panel */}
       <div className={`hidden md:flex flex-col glass-bar border-r border-black/[0.06] dark:border-white/[0.1] shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-20 ${isOpen ? 'w-72' : 'w-0'}`}>
         <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/40 dark:bg-black/20">
-          <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
+          <h2 className="text-label text-text-primary dark:text-slate-50 font-semibold flex items-center gap-sm">
             <BookmarkCheck size={14} className="text-brand-primary" />
             Đã lưu ({bookmarkedProfIds.length})
           </h2>
@@ -110,7 +110,7 @@ export const BookmarkDrawer: React.FC<BookmarkDrawerProps> = ({
           <div className="flex-1 bg-black/50 dark:bg-black/80 transition-opacity" onClick={onClose} />
           <div className="glass-flyout rounded-t-3xl border-t border-black/[0.06] dark:border-white/[0.1] max-h-[70vh] flex flex-col animate-slideInLeft">
             <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0">
-              <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
+              <h2 className="text-label text-text-primary dark:text-slate-50 font-semibold flex items-center gap-sm">
                 <BookmarkCheck size={14} className="text-brand-primary" />
                 Giảng viên đã lưu ({bookmarkedProfIds.length})
               </h2>

@@ -141,8 +141,8 @@ export const InstitutionView: React.FC<InstitutionViewProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-lg">
-        <h2 className="text-heading text-text-primary">Khoa / Viện trực thuộc</h2>
+      <div className="flex flex-col gap-lg relative z-10">
+        <h2 className="text-xl font-semibold text-text-primary text-slate-900 dark:text-slate-50 leading-tight">Khoa / Viện trực thuộc</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
           {selectedInst.departments?.map((dept, idx) => {
             const deptProfs = professors.filter(p => p.university === selectedInst.name && p.department === dept)
@@ -167,10 +167,10 @@ export const InstitutionView: React.FC<InstitutionViewProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-lg">
+      <div className="flex flex-col gap-lg relative z-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h2 className="text-heading text-text-primary">Đánh giá cơ sở</h2>
+            <h2 className="text-xl font-semibold text-text-primary text-slate-900 dark:text-slate-50 leading-tight">Đánh giá cơ sở</h2>
             <Badge label={`${stats.total} đánh giá`} variant="default" />
           </div>
 

@@ -166,8 +166,8 @@ export const SuggestView: React.FC<SuggestViewProps> = ({
       </form>
 
       {suggestions.length > 0 && (
-        <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
-          <h2 className="text-heading text-text-primary">Đề xuất gần đây ({suggestions.length})</h2>
+        <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-10">
+          <h2 className="text-xl font-semibold text-text-primary text-slate-900 dark:text-slate-50 leading-tight">Đề xuất gần đây ({suggestions.length})</h2>
           {suggestions.map((s, idx) => (
             <div key={idx} className="flex items-center justify-between py-lg border-b border-border-secondary last:border-0">
               <div className="flex flex-col gap-xs">

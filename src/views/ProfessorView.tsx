@@ -292,9 +292,9 @@ export const ProfessorView: React.FC<ProfessorViewProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-lg">
+      <div className="flex flex-col gap-lg relative z-10">
         <div className="flex items-center gap-3">
-          <h2 className="text-heading text-text-primary">Đánh giá từ sinh viên</h2>
+          <h2 className="text-xl font-semibold text-text-primary text-slate-900 dark:text-slate-50 leading-tight">Đánh giá từ sinh viên</h2>
           <Badge label={`${reviews.length} đánh giá`} variant="default" />
         </div>
         {reviews.length === 0 ? (

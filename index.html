@@ -18,6 +18,11 @@
           document.documentElement.classList.remove('light', 'dark');
           document.documentElement.classList.add(resolved);
           document.documentElement.setAttribute('data-theme', resolved);
+          if (document.body) {
+            document.body.classList.remove('light', 'dark');
+            document.body.classList.add(resolved);
+            document.body.setAttribute('data-theme', resolved);
+          }
         } catch(e) {}
       })();
     </script>

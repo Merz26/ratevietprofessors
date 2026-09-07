@@ -76,6 +76,11 @@ function Root() {
     root.classList.remove('light', 'dark')
     root.classList.add(resolvedTheme)
     root.setAttribute('data-theme', resolvedTheme)
+    if (document.body) {
+      document.body.classList.remove('light', 'dark')
+      document.body.classList.add(resolvedTheme)
+      document.body.setAttribute('data-theme', resolvedTheme)
+    }
     try {
       localStorage.setItem('astra-theme', theme)
     } catch { /* ignore */ }

@@ -32,12 +32,13 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 3000,
       strictPort: true,
-      allowedHosts: 'all',
+      allowedHosts: true,
       watch: { ignored: ['**/.figma/**'] },
     },
     preview: {
       host: '0.0.0.0',
       port: 3000,
+      allowedHosts: true,
     },
   }
 })

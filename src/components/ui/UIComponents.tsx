@@ -118,7 +118,7 @@ function LiquidModal({ isOpen, onClose, title, children, size = 'small', footer 
       >
         {title ? (
           <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
-             <h2 className="text-base font-semibold text-text-primary">{title}</h2>
+             <h2 className="text-base font-semibold text-text-primary dark:text-slate-50">{title}</h2>
              <button 
                type="button" 
                onClick={onClose} 
@@ -357,7 +357,7 @@ function Badge({
 
   return (
     <span
-      className={`inline-flex items-center justify-center w-fit max-w-fit shrink-0 self-start px-3 py-1 text-xs leading-none rounded-full border backdrop-blur-xs select-none tracking-tight transition-colors whitespace-nowrap ${variantStyles} ${className}`}
+      className={`inline-flex items-center justify-center h-6 px-2.5 text-xs font-medium leading-none rounded-full border backdrop-blur-xs select-none tracking-tight transition-colors whitespace-nowrap ${variantStyles} ${className}`}
     >
       {label}
     </span>

@@ -2,12 +2,12 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Core theme tokens declared at root level with highest specificity to override third-party defaults */
+/* Core theme tokens declared with high specificity to override third-party defaults */
 :root,
-html,
-body,
 [data-theme="light"],
 html[data-theme="light"],
+html.light,
+body.light,
 .light {
   --transition-fast: 200ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-base: 380ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -28,7 +28,8 @@ html.dark,
 .dark,
 body.dark,
 :root[data-theme="dark"],
-:root.dark {
+:root.dark,
+:is([data-theme="dark"], [data-theme="dark"] *) {
   /* Core high-contrast text tokens - Dark theme (never transparent or black) */
   --text-primary: #f8fafc !important;       /* Slate-50 - bright, clear white text */
   --text-secondary: #cbd5e1 !important;     /* Slate-300 - clear, high-contrast silver text */
@@ -36,6 +37,22 @@ body.dark,
   --on-brand: #ffffff !important;
   --border-primary: rgba(255, 255, 255, 0.14) !important;
   --border-secondary: rgba(255, 255, 255, 0.08) !important;
+}
+
+body {
+  color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+:is([data-theme="dark"], [data-theme="dark"] *) :is(h1, h2, h3, h4, h5, h6) {
+  color: #f8fafc;
+}
+
+:is([data-theme="light"], [data-theme="light"] *) :is(h1, h2, h3, h4, h5, h6) {
+  color: #0f172a;
 }
 
 /* Explicit class-level overrides to guarantee 100% theme visibility across every page */
@@ -116,6 +133,25 @@ html.light .text-text-tertiary {
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.3;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .text-heading,
+.dark .text-heading,
+html[data-theme="dark"] .text-heading,
+html.dark .text-heading,
+body.dark .text-heading,
+:is([data-theme="dark"], [data-theme="dark"] *) .text-heading {
+  color: #f8fafc !important;
+}
+
+[data-theme="light"] .text-heading,
+.light .text-heading,
+html[data-theme="light"] .text-heading,
+html.light .text-heading,
+body.light .text-heading,
+:is([data-theme="light"], [data-theme="light"] *) .text-heading {
+  color: #0f172a !important;
 }
 
 @keyframes fadeIn {
