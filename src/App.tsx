@@ -1,41 +1,21 @@
-import { useState, useEffect, useRef, useContext, useMemo, useCallback, type FormEvent } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect, useRef, useContext, useMemo, useCallback } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import confetti from 'canvas-confetti'
 import easterEggImg from './easter-egg-logo.jpg'
+import logoImg from './logo.jpg'
 import {
-  SidebarNavigation,
   SidebarButton,
-  Avatar,
   Tooltip,
-  Modal,
-  InputField,
-  TextareaField,
-  SearchComponent,
   Toast,
 } from '@figma/astraui'
 import {
   Home,
-  Star,
-  MapPin,
   ChevronRight,
-  ThumbsUp,
-  ThumbsDown,
-  Flag,
   Plus,
-  Filter,
-  ArrowUpDown,
-  ChevronLeft,
-  GraduationCap,
   Moon,
   Sun,
-  GitCompare,
-  X,
   Bookmark,
-  BookmarkCheck,
-  Search,
   Monitor,
-  Share2,
-  Database,
 } from 'lucide-react'
 import { supabase } from './supabaseClient'
 import { 
@@ -44,45 +24,33 @@ import {
   computeVoteTransition, 
   pushReviewVoteToSupabase 
 } from './services/voteService'
-import { SupabaseSetupModal } from './components/SupabaseSetupModal'
 import { ThemeContext } from './main'
-import logoImg from './logo.jpg'
 import InteractiveBackground from './components/InteractiveBackground'
-import {
-  Skeleton,
-  InstitutionCardSkeleton,
-  InstitutionListSkeleton,
-  ProfessorDetailsSkeleton,
-  InstitutionDetailsSkeleton,
-  DepartmentDetailsSkeleton,
-} from './components/Skeletons'
+import { Institution, Professor, InstitutionReview, ProfessorReview, Suggestion, InstStats, ProfStats } from './types'
+import { CRITERIA_KEYS } from './constants'
 
-import { Institution, Professor, InstitutionReview, ProfessorReview, Suggestion } from './types'
-import { VIETNAM_PROVINCES, PROF_TAGS, CRITERIA_KEYS, GRADE_OPTIONS } from './constants'
-import {
-  ratingSelectedClass,
-  barColorClass,
-  Button,
-  ButtonGroup,
-  LiquidModal,
-  SearchableDropdown,
-  Badge,
-  ScoreBadge,
-  RatingSelector,
-  VoteFooter,
-  reviewAvg
-} from './components/ui/UIComponents';
-// ==========================================
-// MAIN APP
-// ==========================================
+// Extracted views
+import { HomeView } from './views/HomeView'
+import { InstitutionView } from './views/InstitutionView'
+import { DepartmentView } from './views/DepartmentView'
+import { ProfessorView } from './views/ProfessorView'
+import { AddProfReviewView } from './views/AddProfReviewView'
+import { AddInstReviewView } from './views/AddInstReviewView'
+import { SuggestView } from './views/SuggestView'
+
+// Extracted modals
+import { InfoModal } from './components/modals/InfoModal'
+import { CompareInstModal } from './components/modals/CompareInstModal'
+import { CompareProfModal } from './components/modals/CompareProfModal'
+import { BookmarkDrawer } from './components/modals/BookmarkDrawer'
+
 export default function App() {
-  const { theme, setTheme, resolvedTheme } = useContext(ThemeContext)
+  const { theme, setTheme } = useContext(ThemeContext)
   
   const [toast, setToast] = useState<{ message: string; variant: 'default' | 'success' | 'error' } | null>(null)
 
   // Header Logo States
   const [showInfoMenu, setShowInfoMenu] = useState(false)
-  const [showSupabaseModal, setShowSupabaseModal] = useState(false)
   const [sidebarRotation, setSidebarRotation] = useState(0)
   const [flyoutRotation, setFlyoutRotation] = useState(0)
   const [isFlyoutSpinning, setIsFlyoutSpinning] = useState(false)
@@ -90,24 +58,24 @@ export default function App() {
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const handleLogoClick = () => {
-    setSidebarRotation(prev => prev + 360);
-    setShowInfoMenu(true);
+    setSidebarRotation(prev => prev + 360)
+    setShowInfoMenu(true)
   }
 
   const handleFlyoutLogoClick = () => {
-    if (isFlyoutSpinning) return;
-    setIsFlyoutSpinning(true);
-    setFlyoutRotation(prev => prev + 360);
+    if (isFlyoutSpinning) return
+    setIsFlyoutSpinning(true)
+    setFlyoutRotation(prev => prev + 360)
     
-    const nextSpinCount = spinCount + 1;
-    setSpinCount(nextSpinCount);
+    const nextSpinCount = spinCount + 1
+    setSpinCount(nextSpinCount)
     
     if (nextSpinCount === 10 && confettiCanvasRef.current) {
-      const myConfetti = confetti.create(confettiCanvasRef.current, { resize: true, useWorker: true });
-      myConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      const myConfetti = confetti.create(confettiCanvasRef.current, { resize: true, useWorker: true })
+      myConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
     }
     
-    setTimeout(() => setIsFlyoutSpinning(false), 500);
+    setTimeout(() => setIsFlyoutSpinning(false), 500)
   }
 
   // Bookmarks
@@ -121,16 +89,9 @@ export default function App() {
   })
   const [showBookmarkPanel, setShowBookmarkPanel] = useState<boolean>(false)
 
-  // Comparison state
+  // Comparison Modals
   const [compareModal, setCompareModal] = useState(false)
-  const [compareSearch, setCompareSearch] = useState('')
-  const [compareUniv, setCompareUniv] = useState('')
-  const [compareDept, setCompareDept] = useState('')
-  const [compareProf, setCompareProf] = useState<Professor | null>(null)
-
   const [compareInstModal, setCompareInstModal] = useState(false)
-  const [compareInstSearch, setCompareInstSearch] = useState('')
-  const [compareInstSelected, setCompareInstSelected] = useState<Institution | null>(null)
 
   // Data
   const [isLoadingData, setIsLoadingData] = useState(true)
@@ -149,29 +110,34 @@ export default function App() {
   const [selectedDept, setSelectedDept] = useState<string | null>(null)
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null)
   const [activeSideNav, setActiveSideNav] = useState('home')
+  const [homeResetKey, setHomeResetKey] = useState(0)
 
-  const mainRef = useRef<HTMLElement>(null)
   const scrollPositions = useRef<Record<string, number>>({})
   const lastPathname = useRef(location.pathname)
 
   useEffect(() => {
-    if (!mainRef.current) return
+    const handleScroll = () => {
+      scrollPositions.current[location.pathname] = window.scrollY
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [location.pathname])
+
+  useEffect(() => {
     const prevParts = lastPathname.current.split('/').filter(Boolean)
     const currentParts = location.pathname.split('/').filter(Boolean)
     
-    // We navigate to a lower level page if current parts is greater than prev parts
+    // Navigate to a lower level page if current parts is greater than prev parts
     if (currentParts.length >= prevParts.length) {
-      // scroll to top
-      mainRef.current.scrollTo({ top: 0, behavior: 'auto' })
+      window.scrollTo({ top: 0, behavior: 'auto' })
     } else {
       // returned to a higher level page, restore scroll
       const savedScroll = scrollPositions.current[location.pathname] || 0
-      mainRef.current.scrollTo({ top: savedScroll, behavior: 'auto' })
+      window.scrollTo({ top: savedScroll, behavior: 'auto' })
     }
     
     lastPathname.current = location.pathname
   }, [location.pathname, isLoadingData])
-
 
   useEffect(() => {
     const parts = location.pathname.split('/').filter(Boolean)
@@ -252,10 +218,10 @@ export default function App() {
     }
   }, [location.pathname, institutions, professors, isLoadingData])
 
-  const navigate = (view: string, inst?: Institution, dept?: string, prof?: Professor) => {
-    const targetInst = inst !== undefined ? inst : (selectedInst || undefined);
-    const targetDept = dept !== undefined ? dept : (selectedDept || undefined);
-    const targetProf = prof !== undefined ? prof : (selectedProf || undefined);
+  const navigate = useCallback((view: string, inst?: Institution, dept?: string, prof?: Professor) => {
+    const targetInst = inst !== undefined ? inst : (selectedInst || undefined)
+    const targetDept = dept !== undefined ? dept : (selectedDept || undefined)
+    const targetProf = prof !== undefined ? prof : (selectedProf || undefined)
     
     if (view === 'home') routerNavigate('/')
     else if (view === 'suggest') routerNavigate('/suggest')
@@ -264,60 +230,7 @@ export default function App() {
     else if (view === 'institution' && targetInst) routerNavigate(`/${encodeURIComponent(targetInst.short_name)}`)
     else if (view === 'department' && targetInst && targetDept) routerNavigate(`/${encodeURIComponent(targetInst.short_name)}/${encodeURIComponent(targetDept)}`)
     else if (view === 'professor' && targetInst && targetDept && targetProf) routerNavigate(`/${encodeURIComponent(targetInst.short_name)}/${encodeURIComponent(targetDept)}/${targetProf.id}`)
-  }
-
-  // Search & Filters
-  const [searchTerm, setSearchTerm] = useState('')
-  const [searchSuggestions, setSearchSuggestions] = useState<Institution[]>([])
-  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
-  const [sortBy, setSortBy] = useState<'name' | 'rating' | 'reviews'>('name')
-  const [locationFilter, setLocationFilter] = useState('')
-  const [deptSearchTerm, setDeptSearchTerm] = useState('')
-  const [profSort, setProfSort] = useState('newest')
-  const [instSort, setInstSort] = useState('newest')
-  const [profTagFilter, setProfTagFilter] = useState('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const entriesPerPage = 16
-  
-  // Prof review form
-  const [reviewAuthorName, setReviewAuthorName] = useState('')
-  const [reviewCourse, setReviewCourse] = useState('')
-  const [reviewTeaching, setReviewTeaching] = useState(5)
-  const [reviewDifficulty, setReviewDifficulty] = useState(3)
-  const [reviewWouldTakeAgain, setReviewWouldTakeAgain] = useState(true)
-  const [reviewForCredit, setReviewForCredit] = useState('Có')
-  const [reviewTextbook, setReviewTextbook] = useState('Không')
-  const [reviewAttendance, setReviewAttendance] = useState('Có')
-  const [reviewGrade, setReviewGrade] = useState('A')
-  const [reviewSelectedTags, setReviewSelectedTags] = useState<string[]>([])
-  const [reviewComment, setReviewComment] = useState('')
-
-  // Inst review form
-  const [instAuthorName, setInstAuthorName] = useState('')
-  const [instMetrics, setInstMetrics] = useState<Record<string, number>>(
-    Object.fromEntries(CRITERIA_KEYS.map(k => [k, 5]))
-  )
-  const [instReviewComment, setInstReviewComment] = useState('')
-
-  // Suggest form
-  const [suggAuthorName, setSuggAuthorName] = useState('')
-  const [suggestionType, setSuggestionType] = useState<'professor' | 'institution' | 'department'>('professor')
-  const [suggProfName, setSuggProfName] = useState('')
-  const [suggSelectedUniv, setSuggSelectedUniv] = useState('')
-  const [suggSelectedDept, setSuggSelectedDept] = useState('')
-  const [suggInstName, setSuggInstName] = useState('')
-  const [suggInstShortName, setSuggInstShortName] = useState('')
-  const [suggInstLocation, setSuggInstLocation] = useState('')
-  const [suggInstDepts, setSuggInstDepts] = useState('')
-  const [suggNewDeptName, setSuggNewDeptName] = useState('')
-  const [suggestionContent, setSuggestionContent] = useState('')
-
-  // ==========================================
-  // EFFECTS
-  // ==========================================
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, sortBy, locationFilter])
+  }, [routerNavigate, selectedInst, selectedDept, selectedProf])
 
   // Fetch info and review data
   useEffect(() => {
@@ -327,73 +240,53 @@ export default function App() {
         const [
           { data: instData, error: instErr },
           { data: profData, error: profErr },
-          { data: instRevData, error: instRevErr },
-          { data: profRevData, error: profRevErr }
+          { data: instRevData },
+          { data: profRevData }
         ] = await Promise.all([
           supabase.from('institutions').select('*'),
           supabase.from('professors').select('*'),
           supabase.from('institution_reviews').select('*'),
           supabase.from('professor_reviews').select('*')
-        ]);
+        ])
 
-        if (instErr) console.error("Error fetching institutions:", instErr);
-        if (profErr) console.error("Error fetching professors:", profErr);
+        if (instErr) console.error("Error fetching institutions:", instErr)
+        if (profErr) console.error("Error fetching professors:", profErr)
 
-        const storedVotes = getStoredUserVotes();
+        const storedVotes = getStoredUserVotes()
 
-        if (instData) setInstitutions(instData);
-        if (profData) setProfessors(profData);
+        if (instData) setInstitutions(instData)
+        if (profData) setProfessors(profData)
         if (instRevData) {
           setInstReviews(instRevData.map(r => ({
             ...r,
             userVote: storedVotes[r.id] || null
-          })));
+          })))
         }
         if (profRevData) {
           setProfReviews(profRevData.map(r => ({
             ...r,
             userVote: storedVotes[r.id] || null
-          })));
+          })))
         }
         
       } catch (error) {
-        console.error("Failed to load database data:", error);
+        console.error("Failed to load database data:", error)
       } finally {
-        setIsLoadingData(false);
+        setIsLoadingData(false)
       }
-    };
-
-    fetchRealData();
-  }, []);
-
-  // Predictive search suggestions
-  useEffect(() => {
-    if (searchTerm.length >= 1) {
-      const matches = institutions.filter(inst =>
-        (inst.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (inst.short_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 5)
-      setSearchSuggestions(matches)
-      setShowSearchSuggestions(true)
-    } else {
-      setSearchSuggestions([])
-      setShowSearchSuggestions(false)
     }
-  }, [searchTerm, institutions])
 
-  const showToast = (message: string, variant: 'success' | 'error' | 'default' = 'default') => {
+    fetchRealData()
+  }, [])
+
+  const showToast = useCallback((message: string, variant: 'success' | 'error' | 'default' = 'default') => {
     setToast({ message, variant })
     setTimeout(() => setToast(null), 3000)
-  }
+  }, [])
 
-  // ==========================================
-  // HELPERS
-  // ==========================================
-  const toSlug = (text: string) =>
-    text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
-
+  // Inst stats map cache
   const instStatsMap = useMemo(() => {
-    const map = new Map()
+    const map = new Map<number, InstStats>()
     const reviewsByInst: Record<number, typeof instReviews> = {}
     for (const r of instReviews) {
       if (!reviewsByInst[r.inst_id]) reviewsByInst[r.inst_id] = []
@@ -402,7 +295,7 @@ export default function App() {
     for (const inst of institutions) {
       const list = reviewsByInst[inst.id] || []
       if (list.length === 0) {
-        map.set(inst.id, { overall: 0, total: 0, metricsAvg: {} as Record<string, string> })
+        map.set(inst.id, { overall: 0, total: 0, metricsAvg: {} })
         continue
       }
       const metricsAvg: Record<string, string> = {}
@@ -418,12 +311,13 @@ export default function App() {
     return map
   }, [institutions, instReviews])
 
-  const calculateInstStats = useCallback((inst_id: number) => {
-    return instStatsMap.get(inst_id) || { overall: 0, total: 0, metricsAvg: {} as Record<string, string> }
+  const calculateInstStats = useCallback((inst_id: number): InstStats => {
+    return instStatsMap.get(inst_id) || { overall: 0, total: 0, metricsAvg: {} }
   }, [instStatsMap])
 
+  // Prof stats map cache
   const profStatsMap = useMemo(() => {
-    const map = new Map()
+    const map = new Map<number, ProfStats>()
     const reviewsByProf: Record<number, typeof profReviews> = {}
     for (const r of profReviews) {
       if (!reviewsByProf[r.prof_id]) reviewsByProf[r.prof_id] = []
@@ -451,11 +345,11 @@ export default function App() {
     return map
   }, [professors, profReviews])
 
-  const calculateProfStats = useCallback((prof_id: number) => {
+  const calculateProfStats = useCallback((prof_id: number): ProfStats => {
     return profStatsMap.get(prof_id) || { avg_rating: 0, avg_difficulty: 0, total_ratings: 0, would_take_again_pct: 0 }
   }, [profStatsMap])
 
-  const handleInstVote = async (id: string, vote: 'helpful' | 'not_helpful') => {
+  const handleInstVote = useCallback(async (id: string, vote: 'helpful' | 'not_helpful') => {
     const targetReview = instReviews.find(r => r.id === id)
     if (!targetReview) return
 
@@ -466,37 +360,34 @@ export default function App() {
       vote
     )
 
-    // Save vote to local storage so it persists across page reloads
     saveUserVote(id, nextVote)
 
-    // Optimistic UI update
     setInstReviews(prev => prev.map(r => 
       r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: nextVote } : r
     ))
 
-    // Push to Supabase backend (tries RPC security definer first, then direct UPDATE)
     const result = await pushReviewVoteToSupabase('institution_reviews', id, h, nh)
     
-    if (result.rlsBlocked) {
-      showToast('Supabase RLS đang chặn ghi. Nhấn icon CSDL ở thanh bên để lấy mã SQL cấu hình.', 'error')
-    } else if (!result.success) {
-      console.error("Failed to push vote to Supabase:", result.error)
+    if (!result.success) {
+      console.error("Failed to push vote to Supabase:", result.error || (result.rlsBlocked ? 'RLS blocked' : 'Unknown error'))
       showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
     }
-  }
+  }, [instReviews, showToast])
 
-  const toggleBookmark = (profId: number) => {
-    const isBookmarked = bookmarkedProfIds.includes(profId)
-    const updated = isBookmarked
-      ? bookmarkedProfIds.filter(id => id !== profId)
-      : [...bookmarkedProfIds, profId]
-    
-    setBookmarkedProfIds(updated)
-    localStorage.setItem('bookmarked_profs', JSON.stringify(updated))
-    showToast(isBookmarked ? 'Đã xóa khỏi danh sách lưu' : 'Đã lưu giảng viên', isBookmarked ? 'default' : 'success')
-  }
+  const toggleBookmark = useCallback((profId: number) => {
+    setBookmarkedProfIds(prev => {
+      const isBookmarked = prev.includes(profId)
+      const updated = isBookmarked
+        ? prev.filter(id => id !== profId)
+        : [...prev, profId]
+      
+      localStorage.setItem('bookmarked_profs', JSON.stringify(updated))
+      showToast(isBookmarked ? 'Đã xóa khỏi danh sách lưu' : 'Đã lưu giảng viên', isBookmarked ? 'default' : 'success')
+      return updated
+    })
+  }, [showToast])
 
-  const handleProfVote = async (id: string, vote: 'helpful' | 'not_helpful') => {
+  const handleProfVote = useCallback(async (id: string, vote: 'helpful' | 'not_helpful') => {
     const targetReview = profReviews.find(r => r.id === id)
     if (!targetReview) return
 
@@ -507,29 +398,22 @@ export default function App() {
       vote
     )
 
-    // Save vote to local storage so it persists across page reloads
     saveUserVote(id, nextVote)
 
-    // Optimistic UI update
     setProfReviews(prev => prev.map(r => 
       r.id === id ? { ...r, helpful: h, not_helpful: nh, userVote: nextVote } : r
     ))
 
-    // Push to Supabase backend (tries RPC security definer first, then direct UPDATE)
     const result = await pushReviewVoteToSupabase('professor_reviews', id, h, nh)
     
-    if (result.rlsBlocked) {
-      showToast('Supabase RLS đang chặn ghi. Nhấn icon CSDL ở thanh bên để lấy mã SQL cấu hình.', 'error')
-    } else if (!result.success) {
-      console.error("Failed to push vote to Supabase:", result.error)
+    if (!result.success) {
+      console.error("Failed to push vote to Supabase:", result.error || (result.rlsBlocked ? 'RLS blocked' : 'Unknown error'))
       showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
     }
-  }
+  }, [profReviews, showToast])
 
-  // ==========================================
-  // BREADCRUMB
-  // ==========================================
-  const renderBreadcrumb = () => {
+  // Breadcrumb renderer
+  const renderBreadcrumb = useCallback(() => {
     const crumbs: { label: string; onClick?: () => void }[] = [{ label: 'Trang chủ', onClick: () => navigate('home') }]
     if (selectedInst) crumbs.push({ label: selectedInst.short_name, onClick: () => navigate('institution', selectedInst) })
     if (selectedDept) crumbs.push({ label: selectedDept, onClick: () => selectedInst ? navigate('department', selectedInst, selectedDept) : undefined })
@@ -544,12 +428,12 @@ export default function App() {
               <button 
                 type="button"
                 onClick={c.onClick} 
-                className="h-8 px-3 rounded-full text-label-sm text-text-secondary hover:text-brand-primary bg-white/40 dark:bg-white/[0.05] hover:bg-white/70 dark:hover:bg-white/[0.1] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer font-medium"
+                className="h-8 px-3 rounded-full text-label-sm text-text-secondary hover:text-brand-primary bg-white/18 dark:bg-white/[0.03] hover:bg-white/35 dark:hover:bg-white/[0.06] backdrop-blur-xs border border-black/[0.06] dark:border-white/[0.08] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer font-medium"
               >
                 {c.label}
               </button>
             ) : (
-              <span className="h-8 px-3 flex items-center rounded-full text-label-sm font-semibold text-text-primary bg-white/60 dark:bg-white/[0.09] backdrop-blur-md border border-black/[0.08] dark:border-white/[0.12]">
+              <span className="h-8 px-3 flex items-center rounded-full text-label-sm font-semibold text-text-primary bg-white/28 dark:bg-white/[0.05] backdrop-blur-xs border border-black/[0.08] dark:border-white/[0.12]">
                 {c.label}
               </span>
             )}
@@ -557,1184 +441,9 @@ export default function App() {
         ))}
       </div>
     )
-  }
+  }, [selectedInst, selectedDept, selectedProf, navigate])
 
-  // ==========================================
-  // HOME VIEW
-  // ==========================================
-  const renderHome = () => {
-    if (isLoadingData && institutions.length === 0) {
-      return <InstitutionListSkeleton />
-    }
-
-    const locationOptions = [
-      { value: '', label: 'Tất cả tỉnh thành' },
-      ...VIETNAM_PROVINCES.map(p => ({ value: p, label: p })),
-    ]
-
-    const filtered = institutions.filter(inst => {
-      const safeName = inst.name || '';
-      const safeShortName = inst.short_name || '';
-
-      const matchSearch = !searchTerm ||
-        safeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        safeShortName.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchLocation = !locationFilter || inst.location === locationFilter
-      return matchSearch && matchLocation
-    })
-    let sorted = [...filtered]
-    if (sortBy === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name))
-    else if (sortBy === 'rating') sorted.sort((a, b) => calculateInstStats(b.id).overall - calculateInstStats(a.id).overall)
-    else sorted.sort((a, b) => calculateInstStats(b.id).total - calculateInstStats(a.id).total)
-
-    const totalPages = Math.ceil(sorted.length / entriesPerPage)
-    const paginated = sorted.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage)
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn">
-        <div className="relative z-30 flex flex-col gap-xl p-2xl rounded-3xl glass-panel">
-          <div className="flex flex-col gap-xs">
-            <h1 className="text-title text-text-primary">Tìm kiếm Trường Đại học</h1>
-            <p className="text-label-sm text-text-secondary">Xem đánh giá thực tế từ sinh viên về trường và giảng viên</p>
-          </div>
-
-          <div className={`relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl focus-within:border-brand-primary transition-all duration-300 px-xl shadow-sm ${showSearchSuggestions && searchSuggestions.length > 0 ? 'z-50' : 'z-20'}`}>
-            <Search size={18} className="text-text-secondary shrink-0" />
-            <input
-              type="text"
-              value={searchTerm}
-              placeholder="Tìm kiếm theo tên trường hoặc mã trường..."
-              onChange={e => {
-                setSearchTerm(e.target.value)
-                setShowSearchSuggestions(true)
-              }}
-              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full placeholder:text-text-tertiary"
-            />
-
-            {showSearchSuggestions && searchSuggestions.length > 0 && (
-              <div 
-                className="absolute top-full left-0 right-0 mt-md glass-dropdown rounded-2xl z-[100] animate-scaleIn overflow-hidden py-xs shadow-2xl"
-              >
-                {searchSuggestions.map(inst => {
-                  const stats = calculateInstStats(inst.id)
-                  return (
-                    <button
-                      key={inst.id}
-                      type="button"
-                      onClick={() => { navigate('institution', inst); setSearchTerm(''); setShowSearchSuggestions(false) }}
-                      className="w-full flex items-center justify-between px-xl py-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-lg">
-                        <div className="w-8 h-8 bg-brand-tertiary rounded-corner-md flex items-center justify-center shrink-0">
-                          <GraduationCap size={14} className="text-brand-primary" />
-                        </div>
-                        <div>
-                          <p className="text-label-sm text-text-primary">{inst.name}</p>
-                          <p className="text-video-title text-text-secondary flex items-center gap-xs">
-                            <MapPin size={10} />
-                            {inst.location}
-                          </p>
-                        </div>
-                      </div>
-                      <ScoreBadge value={stats.overall} />
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-lg flex-wrap">
-            <div className="flex items-center gap-sm text-label-sm text-text-secondary">
-              <Filter size={14} />
-              <span>Lọc:</span>
-            </div>
-            <div className="w-48">
-              <SearchableDropdown
-                options={locationOptions}
-                value={locationFilter}
-                onChange={setLocationFilter}
-                placeholder="Tỉnh / thành"
-              />
-            </div>
-            <div className="flex items-center gap-sm text-label-sm text-text-secondary ml-auto">
-              <ArrowUpDown size={14} />
-              <span>Sắp xếp:</span>
-            </div>
-            <div className="flex gap-sm">
-              {([['name', 'A-Z'], ['rating', 'Điểm ⭐'], ['reviews', 'Phổ biến']] as const).map(([val, label]) => (
-                <Button
-                  key={val}
-                  variant={sortBy === val ? 'primary' : 'neutral'}
-                  size="small"
-                  onClick={() => setSortBy(val)}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-lg">
-            <p className="text-label-sm text-text-secondary">
-              {filtered.length} trường {locationFilter ? `tại ${locationFilter}` : ''}
-            </p>
-            {totalPages > 1 && (
-              <p className="text-label-sm text-text-secondary">Trang {currentPage} / {totalPages}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-lg">
-            {paginated.map(inst => {
-              const stats = calculateInstStats(inst.id)
-              return (
-                <button
-                  key={inst.id}
-                  type="button"
-                  onClick={() => navigate('institution', inst)}
-                  className="glass-panel glass-panel-interactive rounded-3xl p-6 flex flex-col h-full text-left group animate-scaleIn active:scale-[0.99] cursor-pointer"
-                >
-                  <div className="flex flex-col gap-2 flex-1 min-w-0 mb-5">
-                    <div className="flex items-start justify-between gap-sm">
-                      <Badge label={inst.short_name} variant="brand" />
-                    </div>
-                    <h3 className="text-label font-semibold text-text-primary leading-snug group-hover:text-brand-primary transition-colors line-clamp-2 mt-1">
-                      {inst.name}
-                    </h3>
-                  </div>
-                  
-                  <div className="mt-auto w-full flex flex-col gap-3.5">
-                    <p className="text-video-title text-text-secondary flex items-center gap-1.5">
-                      <MapPin size={12} className="shrink-0 text-text-tertiary" />
-                      <span className="truncate">{inst.location}</span>
-                    </p>
-                    <div className="flex items-center justify-between pt-3.5 border-t border-border-secondary w-full shrink-0">
-                      <ScoreBadge value={stats.overall} />
-                      <span className="text-video-title text-text-secondary font-medium">{stats.total} đánh giá</span>
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          {paginated.length === 0 && (
-            <div className="glass-panel rounded-3xl p-2xl text-center">
-              <p className="text-label text-text-secondary">Không tìm thấy trường phù hợp</p>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-10 pb-4xl">
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => {
-                  setCurrentPage(p => Math.max(1, p - 1))
-                  const mainContainer = document.querySelector('main')
-                  if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full glass-panel glass-panel-interactive active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
-                aria-label="Trang trước"
-              >
-                <ChevronLeft size={17} strokeWidth={2.25} className="text-text-primary group-hover:-translate-x-0.5 transition-transform duration-200" />
-                <span className="text-[14px] font-medium text-text-primary tracking-tight">Trước</span>
-              </button>
-
-              <div 
-                className="h-11 px-4 flex items-center justify-center rounded-full glass-panel text-[13px] font-medium text-text-secondary tracking-tight select-none"
-              >
-                <span>{currentPage}</span>
-                <span className="mx-1.5 opacity-40">/</span>
-                <span>{totalPages}</span>
-              </div>
-
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => {
-                  setCurrentPage(p => Math.min(totalPages, p + 1))
-                  const mainContainer = document.querySelector('main')
-                  if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                className="group inline-flex items-center gap-2.5 h-11 px-5 rounded-full glass-panel glass-panel-interactive active:scale-[0.96] transition-all duration-200 ease-out select-none disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
-                aria-label="Trang sau"
-              >
-                <span className="text-[14px] font-medium text-text-primary tracking-tight">Sau</span>
-                <ChevronRight size={17} strokeWidth={2.25} className="text-text-primary group-hover:translate-x-0.5 transition-transform duration-200" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ==========================================
-  // INSTITUTION VIEW
-  // ==========================================
-  const renderInstitution = () => {
-    if (isLoadingData || !selectedInst) {
-      return <InstitutionDetailsSkeleton />
-    }
-    const stats = calculateInstStats(selectedInst.id)
-    let reviews = instReviews.filter(r => r.inst_id === selectedInst.id)
-
-    if (instSort === 'highest-rating') {
-      reviews.sort((a, b) => reviewAvg(b.metrics || {}) - reviewAvg(a.metrics || {}))
-    } else if (instSort === 'lowest-rating') {
-      reviews.sort((a, b) => reviewAvg(a.metrics || {}) - reviewAvg(b.metrics || {}))
-    } else if (instSort === 'helpful') {
-      reviews.sort((a, b) => {
-        const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
-        const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
-        if (scoreB !== scoreA) return scoreB - scoreA
-        return (b.helpful || 0) - (a.helpful || 0)
-      })
-    } else if (instSort === 'oldest') {
-      reviews.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-    } else {
-      reviews.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    }
-
-    const leftCriteria = CRITERIA_KEYS.slice(0, 5)
-    const rightCriteria = CRITERIA_KEYS.slice(5)
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn">
-        {renderBreadcrumb()}
-
-        <div className="glass-panel rounded-3xl p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
-          <div className="flex flex-col items-start gap-1.5">
-            <Badge label={selectedInst.short_name} variant="brand" />
-            <h1 className="text-title text-text-primary">{selectedInst.name}</h1>
-            <p className="text-label-sm text-text-secondary flex items-center gap-xs">
-              <MapPin size={13} /> {selectedInst.location}
-            </p>
-          </div>
-          <ButtonGroup align="end">
-            <Button
-              variant="neutral"
-              size="small"
-              iconStart={<Share2 size={16} />}
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                showToast('Đã sao chép liên kết!', 'success');
-              }}
-            >
-              Chia sẻ
-            </Button>
-            <Button
-              variant="neutral"
-              size="small"
-              onClick={() => { setCompareInstSelected(null); setCompareInstSearch(''); setCompareInstModal(true) }}
-            >
-              So sánh
-            </Button>
-            <Button
-              variant="primary"
-              size="small"
-              onClick={() => navigate('add-inst-review')}
-            >
-              Đánh giá
-            </Button>
-          </ButtonGroup>
-        </div>
-
-        <div className="glass-panel rounded-3xl p-2xl grid grid-cols-1 lg:grid-cols-3 gap-xl items-center">
-          <div className="flex flex-col items-center justify-center p-xl">
-            <span className="text-[56px] font-semibold text-text-primary leading-none">{stats.overall > 0 ? stats.overall.toFixed(1) : '0.0'}</span>
-            <span className="text-label-sm text-text-secondary mt-xs">trên 5 ({stats.total} đánh giá)</span>
-          </div>
-
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-xl">
-            <div className="flex flex-col gap-lg">
-              {leftCriteria.map(key => {
-                const val = parseFloat(stats.metricsAvg[key] || '0')
-                return (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-label-sm text-text-secondary">{key}</span>
-                    <ScoreBadge value={val} />
-                  </div>
-                )
-              })}
-            </div>
-            <div className="flex flex-col gap-lg">
-              {rightCriteria.map(key => {
-                const val = parseFloat(stats.metricsAvg[key] || '0')
-                return (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-label-sm text-text-secondary">{key}</span>
-                    <ScoreBadge value={val} />
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-lg">
-          <h2 className="text-heading text-text-primary">Khoa / Viện trực thuộc</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
-            {selectedInst.departments?.map((dept, idx) => {
-              const deptProfs = professors.filter(p => p.university === selectedInst.name && p.department === dept)
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => navigate('department', selectedInst, dept)}
-                  className="glass-panel glass-panel-interactive rounded-3xl p-5 sm:p-6 text-left flex flex-col h-full transition-all group animate-slideInLeft cursor-pointer active:scale-[0.99]"
-                  style={{ animationDelay: `${idx * 40}ms` }}
-                >
-                  <div className="flex flex-col gap-1.5 mb-5">
-                    <h3 className="text-label font-semibold text-text-primary group-hover:text-brand-primary transition-colors">{dept}</h3>
-                    <p className="text-video-title text-text-secondary">{deptProfs.length} giảng viên</p>
-                  </div>
-                  <div className="mt-auto flex items-center justify-end text-brand-primary">
-                    <ChevronRight size={16} />
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <h2 className="text-heading text-text-primary">Đánh giá cơ sở</h2>
-              <Badge label={`${stats.total} đánh giá`} variant="default" />
-            </div>
-
-            {instReviews.filter(r => r.inst_id === selectedInst.id).length > 0 && (
-              <div className="flex items-center gap-2.5 shrink-0">
-                <span className="text-xs font-medium text-text-secondary whitespace-nowrap">Sắp xếp:</span>
-                <div className="w-48 sm:w-52">
-                  <SearchableDropdown
-                    compact
-                    options={[
-                      { value: 'newest', label: 'Mới nhất' },
-                      { value: 'highest-rating', label: 'Đánh giá cao nhất' },
-                      { value: 'lowest-rating', label: 'Đánh giá thấp nhất' },
-                      { value: 'helpful', label: 'Hữu ích nhất' },
-                      { value: 'oldest', label: 'Cũ nhất' },
-                    ]}
-                    value={instSort}
-                    onChange={(v: any) => setInstSort(v)}
-                    placeholder="Sắp xếp"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {reviews.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-2xl text-center border-border-secondary" style={{ borderStyle: 'dashed' }}>
-              <p className="text-label text-text-secondary">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
-            </div>
-          ) : (
-            reviews.map(rev => {
-              const revScore = reviewAvg(rev.metrics || {})
-              return (
-                <div key={rev.id} className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
-                  <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
-                    <div className="flex flex-col">
-                      <p className="text-sm font-semibold text-text-primary">{rev.author_name || 'Người dùng ẩn danh'}</p>
-                      <p className="text-xs text-text-tertiary mt-0.5">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-white/80 dark:bg-black/40 backdrop-blur-md rounded-xl px-3 py-1 border border-black/[0.06] dark:border-white/[0.1] shadow-xs">
-                      <span className={`text-base font-bold leading-none ${revScore >= 4 ? 'text-emerald-500 dark:text-emerald-400' : revScore >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500'}`}>
-                        {revScore.toFixed(1)}
-                      </span>
-                      <span className="text-[11px] text-text-tertiary font-medium">/ 5</span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm leading-relaxed text-text-primary">{rev.comment}</p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-3 sm:p-3.5 bg-black/[0.03] dark:bg-black/40 rounded-xl border border-black/[0.04] dark:border-white/[0.06]">
-                    {Object.entries(rev.metrics || {}).map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between py-0.5 px-0.5">
-                        <span className="text-xs font-medium text-text-secondary">{key}</span>
-                        <div className="flex gap-1 items-center">
-                          {[1, 2, 3, 4, 5].map(s => (
-                            <div key={s} className={`h-1.5 w-4 rounded-full transition-all ${s <= Number(val) ? barColorClass(Number(val)) : 'bg-black/10 dark:bg-white/10'}`} />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <VoteFooter review={rev} onVote={handleInstVote} />
-                </div>
-              )
-            })
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ==========================================
-  // DEPARTMENT VIEW
-  // ==========================================
-  const renderDepartment = () => {
-    if (isLoadingData || !selectedInst || !selectedDept) {
-      return <DepartmentDetailsSkeleton />
-    }
-    const deptProfs = professors.filter(p => p.university === selectedInst.name && p.department === selectedDept)
-    const filtered = deptProfs.filter(p => p.name.toLowerCase().includes(deptSearchTerm.toLowerCase()))
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn">
-        {renderBreadcrumb()}
-
-        <div className="glass-panel rounded-3xl p-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-xl">
-          <div className="flex flex-col gap-xs">
-            <p className="text-label-sm text-text-secondary">{selectedInst.name}</p>
-            <h1 className="text-title text-text-primary">{selectedDept}</h1>
-            <p className="text-label-sm text-text-secondary">{deptProfs.length} giảng viên</p>
-          </div>
-          <Button
-            variant="neutral"
-            size="small"
-            iconStart={<Plus size={16} />}
-            onClick={() => navigate('suggest')}
-          >
-            Thêm giảng viên
-          </Button>
-        </div>
-
-        <div className="glass-panel rounded-3xl p-xl">
-          <div className="relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 shadow-sm rounded-2xl focus-within:border-brand-primary transition-colors px-xl">
-            <Search size={18} className="text-text-secondary shrink-0" />
-            <input
-              type="text"
-              value={deptSearchTerm}
-              placeholder="Tìm kiếm giảng viên..."
-              onChange={e => setDeptSearchTerm(e.target.value)}
-              className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full placeholder:text-text-tertiary"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
-          {filtered.length === 0 ? (
-            <div className="col-span-2 glass-panel rounded-3xl p-2xl text-center">
-              <p className="text-label text-text-secondary">Không tìm thấy giảng viên</p>
-            </div>
-          ) : (
-            filtered.map((prof, idx) => {
-              const stats = calculateProfStats(prof.id)
-              const isBookmarked = bookmarkedProfIds.includes(prof.id)
-              return (
-                <div
-                  key={prof.id}
-                  className="glass-panel glass-panel-interactive rounded-3xl p-xl text-left flex flex-col h-full animate-fadeIn"
-                  style={{ animationDelay: `${idx * 50}ms` }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => navigate('professor', selectedInst, selectedDept, prof)}
-                    className="flex flex-col h-full text-left w-full cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between gap-lg w-full mb-lg">
-                      <div className="flex items-center gap-lg">
-                        <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="medium" shape="circle" />
-                        <div>
-                          <h3 className="text-label text-text-primary font-semibold">{prof.name}</h3>
-                          <p className="text-video-title text-text-secondary">{stats.total_ratings} đánh giá</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-sm z-10">
-                        <ScoreBadge value={stats.avg_rating} />
-                        <div
-                          role="button"
-                          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleBookmark(prof.id) }}
-                          className={`p-1 cursor-pointer transition-colors ${isBookmarked ? 'text-brand-primary' : 'text-text-tertiary hover:text-brand-primary'}`}
-                          title={isBookmarked ? 'Xóa bookmark' : 'Lưu giảng viên'}
-                        >
-                          {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-auto flex gap-xl pt-lg border-t border-border-secondary w-full">
-                      <div>
-                        <p className="text-video-title text-text-tertiary uppercase">Độ khó</p>
-                        <p className="text-label-sm text-text-primary font-medium">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-video-title text-text-tertiary uppercase">Học lại</p>
-                        <p className="text-label-sm text-text-primary font-medium">{stats.would_take_again_pct}%</p>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              )
-            })
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ==========================================
-  // PROFESSOR VIEW
-  // ==========================================
-  const renderProfessor = () => {
-    if (isLoadingData || !selectedProf || !selectedInst) {
-      return <ProfessorDetailsSkeleton />
-    }
-    const stats = calculateProfStats(selectedProf.id)
-    let reviews = profReviews.filter(r => r.prof_id === selectedProf.id)
-
-    if (profSort === 'highest-quality') reviews.sort((a, b) => b.teaching_rating - a.teaching_rating)
-    else if (profSort === 'lowest-quality') reviews.sort((a, b) => a.teaching_rating - b.teaching_rating)
-    else if (profSort === 'highest-difficulty') reviews.sort((a, b) => b.difficulty_rating - a.difficulty_rating)
-    else if (profSort === 'helpful') {
-      reviews.sort((a, b) => {
-        const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
-        const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
-        if (scoreB !== scoreA) return scoreB - scoreA
-        return (b.helpful || 0) - (a.helpful || 0)
-      })
-    }
-    else if (profSort === 'oldest') reviews.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-    else reviews.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-    if (profTagFilter !== 'all') reviews = reviews.filter(r => r.tags?.includes(profTagFilter))
-
-    const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
-    reviews.forEach(r => { const rating = Math.round(r.teaching_rating); if (rating >= 1 && rating <= 5) distribution[rating]++ })
-    const maxDist = Math.max(...Object.values(distribution), 1)
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn">
-        {renderBreadcrumb()}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-xl">
-          <div className="glass-panel rounded-3xl p-2xl flex flex-col gap-xl">
-            <div className="flex flex-col gap-xs">
-              <span className="text-[48px] font-semibold text-text-primary leading-none">
-                {stats.avg_rating > 0 ? stats.avg_rating.toFixed(1) : '0.0'}
-              </span>
-              <p className="text-label-sm text-text-secondary">Dựa trên {stats.total_ratings} đánh giá</p>
-            </div>
-
-            <div className="flex items-center gap-lg">
-              <Avatar type="initial" initials={selectedProf.name.split(' ').pop()?.charAt(0) || 'P'} size="large" shape="circle" />
-              <div>
-                <h1 className="text-title text-text-primary">{selectedProf.name}</h1>
-                <p className="text-label-sm text-text-secondary">{selectedProf.department} • {selectedProf.university}</p>
-              </div>
-            </div>
-
-            <div className="flex gap-2xl py-lg border-y border-border-secondary">
-              <div>
-                <p className="text-[28px] font-semibold text-text-primary leading-none">{stats.would_take_again_pct}%</p>
-                <p className="text-video-title text-text-tertiary uppercase mt-xs">Sẽ học tiếp</p>
-              </div>
-              <div className="w-px bg-border-secondary" />
-              <div>
-                <p className="text-[28px] font-semibold text-text-primary leading-none">{stats.avg_difficulty > 0 ? stats.avg_difficulty.toFixed(1) : '0.0'}</p>
-                <p className="text-video-title text-text-tertiary uppercase mt-xs">Độ khó</p>
-              </div>
-            </div>
-
-            <ButtonGroup align="justify">
-              <div className="flex items-center gap-md">
-                <Button
-                  variant="neutral"
-                  iconStart={<Share2 size={16} />}
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    showToast('Đã sao chép liên kết!', 'success');
-                  }}
-                >
-                  Chia sẻ
-                </Button>
-                <Button
-                  variant="neutral"
-                  iconStart={<GitCompare size={16} />}
-                  onClick={() => { setCompareProf(null); setCompareSearch(''); setCompareUniv(''); setCompareDept(''); setCompareModal(true) }}
-                >
-                  So sánh
-                </Button>
-              </div>
-              <Button
-                variant={bookmarkedProfIds.includes(selectedProf.id) ? 'primary' : 'neutral'}
-                iconStart={bookmarkedProfIds.includes(selectedProf.id) ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-                onClick={() => toggleBookmark(selectedProf.id)}
-              >
-                {bookmarkedProfIds.includes(selectedProf.id) ? 'Đã lưu' : 'Lưu'}
-              </Button>
-              <Button
-                variant="primary"
-                iconEnd={<ChevronRight size={16} />}
-                onClick={() => navigate('add-prof-review')}
-              >
-                Đánh giá
-              </Button>
-            </ButtonGroup>
-          </div>
-
-          <div className="flex flex-col gap-xl">
-            <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
-              <h3 className="text-label text-text-primary font-semibold">Tổng hợp đánh giá</h3>
-              {([5, 4, 3, 2, 1] as const).map(star => (
-                <div key={star} className="flex items-center gap-lg">
-                  <span className="text-label-sm text-text-secondary w-20 shrink-0">{star} sao</span>
-                  <div className="flex-1 bg-black/5 dark:bg-white/5 backdrop-blur-sm rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${barColorClass(star)}`}
-                      style={{ width: `${(distribution[star] / maxDist) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-video-title text-text-secondary w-4 text-right">{distribution[star]}</span>
-                </div>
-              ))}
-            </div>
-
-            {selectedProf.tags && selectedProf.tags.length > 0 && (
-              <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
-                <h3 className="text-label text-text-primary font-semibold">Đặc điểm nổi bật</h3>
-                <div className="flex flex-wrap gap-sm">
-                  {selectedProf.tags.map(t => (
-                    <Badge key={t} label={t} variant="secondary" />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(() => {
-              const similarProfs = professors
-                .filter(p => p.id !== selectedProf.id && p.university === selectedProf.university)
-                .map(p => ({ prof: p, s: calculateProfStats(p.id) }))
-                .filter(({ prof, s }) =>
-                  prof.tags.some(t => selectedProf.tags.includes(t)) ||
-                  Math.abs(s.avg_rating - stats.avg_rating) <= 0.8
-                )
-                .slice(0, 3)
-
-              if (similarProfs.length === 0) return null
-              return (
-                <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
-                  <h3 className="text-label text-text-primary font-semibold">Giảng viên tương tự</h3>
-                  {similarProfs.map(({ prof, s }) => (
-                    <button
-                      key={prof.id}
-                      type="button"
-                      onClick={() => navigate('professor', selectedInst!, selectedDept!, prof)}
-                      className="flex items-center justify-between gap-lg hover:bg-black/5 dark:hover:bg-white/5 hover:backdrop-blur-xl p-sm rounded-corner-md transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-md">
-                        <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
-                        <div>
-                          <p className="text-label-sm text-text-primary leading-tight">{prof.name}</p>
-                          <p className="text-video-title text-text-secondary">{prof.department}</p>
-                        </div>
-                      </div>
-                      <ScoreBadge value={s.avg_rating} />
-                    </button>
-                  ))}
-                </div>
-              )
-            })()}
-          </div>
-        </div>
-
-        <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg relative z-30">
-          <div className="flex flex-col sm:flex-row gap-lg items-start sm:items-center justify-between">
-            <div className="flex flex-col gap-sm flex-1">
-              <span className="text-label-sm text-text-secondary">Lọc theo thẻ:</span>
-              <div className="flex flex-wrap gap-sm">
-                <button
-                  type="button"
-                  onClick={() => setProfTagFilter('all')}
-                  className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
-                    profTagFilter === 'all'
-                      ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-                      : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/95 dark:hover:bg-gray-800/90'
-                  }`}
-                >
-                  Tất cả
-                </button>
-                {(selectedProf.tags || []).map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setProfTagFilter(t === profTagFilter ? 'all' : t)}
-                    className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
-                      profTagFilter === t
-                        ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-                        : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/95 dark:hover:bg-gray-800/90'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <span className="text-xs font-medium text-text-secondary whitespace-nowrap">Sắp xếp:</span>
-              <div className="w-48 sm:w-52">
-                <SearchableDropdown
-                  compact
-                  options={[
-                    { value: 'newest', label: 'Mới nhất' },
-                    { value: 'highest-quality', label: 'Chất lượng cao nhất' },
-                    { value: 'lowest-quality', label: 'Chất lượng thấp nhất' },
-                    { value: 'highest-difficulty', label: 'Độ khó cao nhất' },
-                    { value: 'helpful', label: 'Hữu ích nhất' },
-                    { value: 'oldest', label: 'Cũ nhất' },
-                  ]}
-                  value={profSort}
-                  onChange={setProfSort}
-                  placeholder="Sắp xếp"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-lg">
-          <h2 className="text-heading text-text-primary">Đánh giá từ sinh viên</h2>
-          {reviews.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-2xl text-center border-border-secondary" style={{ borderStyle: 'dashed' }}>
-              <p className="text-label text-text-secondary">Không có đánh giá phù hợp với bộ lọc</p>
-            </div>
-          ) : (
-            reviews.map(rev => (
-              <div key={rev.id} className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 animate-fadeIn">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-text-primary">{rev.author_name || 'Người dùng ẩn danh'}</p>
-                      <p className="text-xs text-text-tertiary mt-0.5">{new Date(rev.created_at).toLocaleDateString('vi-VN')}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="bg-white/80 dark:bg-black/40 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
-                        <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wider">Chất lượng</p>
-                        <p className={`text-sm font-bold leading-tight mt-0.5 ${rev.teaching_rating >= 4 ? 'text-emerald-500 dark:text-emerald-400' : rev.teaching_rating >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500'}`}>
-                          {rev.teaching_rating.toFixed(1)}
-                        </p>
-                      </div>
-                      <div className="bg-white/80 dark:bg-black/40 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1] rounded-xl px-2.5 py-1 text-center min-w-[56px] shadow-xs">
-                        <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wider">Độ khó</p>
-                        <p className={`text-sm font-bold leading-tight mt-0.5 ${rev.difficulty_rating >= 4 ? 'text-red-500' : rev.difficulty_rating >= 3 ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-500 dark:text-emerald-400'}`}>
-                          {rev.difficulty_rating.toFixed(1)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20">
-                      {rev.course}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    ['Tính điểm', rev.for_credit],
-                    ['Học lại', rev.would_take_again ? 'Có' : 'Không'],
-                    ['Điểm', rev.grade],
-                    ['Giáo trình', rev.textbook],
-                  ].map(([k, v]) => (
-                    <div key={k} className="bg-black/[0.03] dark:bg-black/40 backdrop-blur-sm border border-black/[0.04] dark:border-white/[0.06] rounded-full px-2.5 py-0.5 flex items-center gap-1">
-                      <span className="text-xs text-text-tertiary">{k}:</span>
-                      <span className="text-xs text-text-primary font-medium">{v}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <p className="text-sm leading-relaxed text-text-primary">{rev.comment}</p>
-
-                {rev.tags && rev.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {rev.tags.map(t => <Badge key={t} label={t} variant="secondary" className="px-2.5 py-0.5 text-xs" />)}
-                  </div>
-                )}
-
-                <VoteFooter review={rev} onVote={handleProfVote} />
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ==========================================
-  // ADD PROF REVIEW
-  // ==========================================
-  const renderAddProfReview = () => {
-    if (!selectedProf) return null
-
-    const handleSub = async (e: FormEvent) => {
-      e.preventDefault()
-      if (!reviewCourse.trim() || !reviewComment.trim()) { showToast('Vui lòng nhập đầy đủ thông tin', 'error'); return }
-
-      const finalName = reviewAuthorName.trim() || 'Ẩn danh'
-
-      const newRev = {
-        prof_id: selectedProf.id, 
-        author_name: finalName,
-        course: reviewCourse.trim(), teaching_rating: reviewTeaching, difficulty_rating: reviewDifficulty,
-        would_take_again: reviewWouldTakeAgain, for_credit: reviewForCredit, textbook: reviewTextbook,
-        attendance: reviewAttendance, grade: reviewGrade, tags: reviewSelectedTags, comment: reviewComment.trim(),
-        helpful: 0, not_helpful: 0,
-      }
-
-      const { data, error } = await supabase.from('professor_reviews').insert([newRev]).select() as any
-      if (error) { showToast(error.message, 'error'); return }
-      if (data) setProfReviews(prev => [{ ...data[0], userVote: null } as ProfessorReview, ...prev])
-      showToast('Đánh giá đã được gửi thành công!', 'success')
-      
-      // RESET FORM STATES
-      setReviewAuthorName('')
-      setReviewCourse('')
-      setReviewTeaching(5)
-      setReviewDifficulty(3)
-      setReviewWouldTakeAgain(true)
-      setReviewForCredit('Có')
-      setReviewTextbook('Không')
-      setReviewAttendance('Có')
-      setReviewGrade('A')
-      setReviewSelectedTags([])
-      setReviewComment('')
-
-      setTimeout(() => navigate('professor'), 1200)
-    }
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn max-w-2xl mx-auto">
-        {renderBreadcrumb()}
-
-        <div className="flex flex-col gap-xs">
-          <h1 className="text-title text-text-primary">Đánh giá {selectedProf.name}</h1>
-          <p className="text-label-sm text-text-secondary">{selectedProf.department} • {selectedProf.university}</p>
-        </div>
-
-        <form onSubmit={handleSub} className="flex flex-col gap-xl">
-          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
-            <InputField
-              label="Tên hiển thị (Tùy chọn)"
-              placeholder="VD: Sinh viên năm 3..."
-              value={reviewAuthorName}
-              onChange={setReviewAuthorName}
-            />
-            <InputField
-              label="Mã môn học *"
-              placeholder="VD: CS101, MTH201..."
-              value={reviewCourse}
-              onChange={setReviewCourse}
-            />
-          </div>
-
-          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-xl">
-            <RatingSelector label="Đánh giá giảng viên *" value={reviewTeaching} onChange={setReviewTeaching} lowLabel="1 - Rất tệ" highLabel="5 - Tuyệt vời" />
-            <RatingSelector label="Độ khó môn học *" value={reviewDifficulty} onChange={setReviewDifficulty} lowLabel="1 - Rất dễ" highLabel="5 - Rất khó" />
-          </div>
-
-          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
-            <div>
-              <p className="text-label text-text-primary mb-lg">Bạn có muốn học lại không?</p>
-              <div className="flex gap-md">
-                <Button variant={reviewWouldTakeAgain ? 'primary' : 'neutral'} onClick={() => setReviewWouldTakeAgain(true)}>Có</Button>
-                <Button variant={!reviewWouldTakeAgain ? 'primary' : 'neutral'} onClick={() => setReviewWouldTakeAgain(false)}>Không</Button>
-              </div>
-            </div>
-
-            {[
-              { label: 'Môn học tính tín chỉ?', value: reviewForCredit, set: setReviewForCredit, opts: ['Có', 'Không'] },
-              { label: 'Giáo viên dùng giáo trình?', value: reviewTextbook, set: setReviewTextbook, opts: ['Có', 'Không'] },
-              { label: 'Điểm danh bắt buộc?', value: reviewAttendance, set: setReviewAttendance, opts: ['Có', 'Không'] },
-            ].map(({ label, value, set, opts }) => (
-              <div key={label} className="flex items-center justify-between">
-                <span className="text-label-sm text-text-primary">{label}</span>
-                <div className="flex gap-sm">
-                  {opts.map(opt => (
-                    <Button key={opt} size="small" variant={value === opt ? 'primary' : 'neutral'} onClick={() => set(opt)}>{opt}</Button>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            <SearchableDropdown
-              label="Điểm số đạt được"
-              options={GRADE_OPTIONS.map(g => ({ value: g, label: g }))}
-              value={reviewGrade}
-              onChange={setReviewGrade}
-              placeholder="-- Chọn điểm --"
-            />
-          </div>
-
-          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
-            <p className="text-label text-text-primary font-medium">Chọn tối đa 3 thẻ đặc điểm</p>
-            <div className="flex flex-wrap gap-sm">
-              {PROF_TAGS.map(t => {
-                const sel = reviewSelectedTags.includes(t)
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      if (sel) setReviewSelectedTags(prev => prev.filter(x => x !== t))
-                      else if (reviewSelectedTags.length < 3) setReviewSelectedTags(prev => [...prev, t])
-                    }}
-                    className={`h-8 px-3.5 rounded-full text-label-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
-                      sel
-                        ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-                        : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/95 dark:hover:bg-gray-800/90'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="glass-panel rounded-3xl p-xl">
-            <TextareaField
-              label="Nhận xét chi tiết *"
-              placeholder="Bạn muốn sinh viên khác biết điều gì về giảng viên này?"
-              rows={4}
-              value={reviewComment}
-              onChange={setReviewComment}
-            />
-          </div>
-
-          <ButtonGroup align="justify">
-            <Button variant="neutral" onClick={() => navigate('professor')}>Hủy</Button>
-            <Button variant="primary" type="submit">Gửi đánh giá</Button>
-          </ButtonGroup>
-        </form>
-      </div>
-    )
-  }
-
-  // ==========================================
-  // ADD INST REVIEW
-  // ==========================================
-  const renderAddInstReview = () => {
-    if (!selectedInst) return null
-
-    const handleSub = async (e: FormEvent) => {
-      e.preventDefault()
-      if (!instReviewComment.trim()) { showToast('Vui lòng nhập nhận xét', 'error'); return }
-
-      const finalName = instAuthorName.trim() || 'Ẩn danh'
-      const newRev = { 
-        inst_id: selectedInst.id, 
-        author_name: finalName, 
-        metrics: { ...instMetrics }, 
-        comment: instReviewComment.trim(), 
-        helpful: 0, 
-        not_helpful: 0 
-      }
-
-      const { data, error } = await supabase.from('institution_reviews').insert([newRev]).select() as any
-      if (error) { showToast(error.message, 'error'); return }
-      if (data) setInstReviews(prev => [{ ...data[0], userVote: null } as InstitutionReview, ...prev])
-      showToast('Đánh giá trường đã được gửi!', 'success')
-      
-      // RESET FORM STATES
-      setInstAuthorName('')
-      setInstMetrics(Object.fromEntries(CRITERIA_KEYS.map(k => [k, 5])))
-      setInstReviewComment('')
-
-      setTimeout(() => navigate('institution'), 1200)
-    }
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn max-w-2xl mx-auto">
-        {renderBreadcrumb()}
-        <div className="flex flex-col gap-xs">
-          <h1 className="text-title text-text-primary">Đánh giá {selectedInst.name}</h1>
-          <p className="text-label-sm text-text-secondary">{selectedInst.location}</p>
-        </div>
-
-        <form onSubmit={handleSub} className="flex flex-col gap-xl">
-          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
-            <InputField
-              label="Tên hiển thị (Tùy chọn)"
-              placeholder="VD: Cựu sinh viên..."
-              value={instAuthorName}
-              onChange={setInstAuthorName}
-            />
-          </div>
-          {CRITERIA_KEYS.map(criteria => (
-            <div key={criteria} className="glass-panel rounded-3xl p-xl">
-              <RatingSelector
-                label={`${criteria} *`}
-                value={instMetrics[criteria]}
-                onChange={val => setInstMetrics(prev => ({ ...prev, [criteria]: val }))}
-                lowLabel="1 - Rất tệ"
-                highLabel="5 - Tuyệt vời"
-              />
-            </div>
-          ))}
-
-          <div className="glass-panel rounded-3xl p-xl">
-            <TextareaField
-              label="Nhận xét chi tiết *"
-              placeholder="Chia sẻ trải nghiệm thực tế tại trường..."
-              rows={4}
-              value={instReviewComment}
-              onChange={setInstReviewComment}
-            />
-          </div>
-
-          <ButtonGroup align="justify">
-            <Button variant="neutral" onClick={() => navigate('institution')}>Hủy</Button>
-            <Button variant="primary" type="submit">Gửi đánh giá</Button>
-          </ButtonGroup>
-        </form>
-      </div>
-    )
-  }
-
-  // ==========================================
-  // SUGGEST VIEW
-  // ==========================================
-  const renderSuggest = () => {
-    const univOptions = institutions
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(i => ({ value: i.name, label: `${i.short_name} - ${i.name}` }))
-    
-    const selectedUnivObj = institutions.find(i => i.name === suggSelectedUniv)
-    
-    const deptOptions = (selectedUnivObj?.departments || [])
-      .slice()
-      .sort((a, b) => a.localeCompare(b))
-      .map(d => ({ value: d, label: d }))
-    
-    const provinceOptions = VIETNAM_PROVINCES.map(p => ({ value: p, label: p }))
-
-    const handleSubmit = async (e: FormEvent) => {
-      e.preventDefault()
-
-      const finalName = suggAuthorName.trim() || 'Ẩn danh'
-      let newSugg: Partial<Suggestion> = { type: suggestionType, author_name: finalName, content: suggestionContent.trim(), status: 'Chờ xét duyệt' }
-
-      if (suggestionType === 'professor') {
-        if (!suggProfName.trim() || !suggSelectedUniv || !suggSelectedDept) { showToast('Vui lòng nhập đầy đủ thông tin', 'error'); return }
-        newSugg = { ...newSugg, targetName: suggProfName.trim(), university: suggSelectedUniv, department: suggSelectedDept }
-      } else if (suggestionType === 'institution') {
-        if (!suggInstName.trim() || !suggInstShortName.trim() || !suggInstLocation) { showToast('Vui lòng nhập đầy đủ thông tin', 'error'); return }
-        newSugg = { ...newSugg, targetName: suggInstName.trim(), short_name: suggInstShortName.trim(), location: suggInstLocation, departments: suggInstDepts ? suggInstDepts.split(',').map(d => d.trim()).filter(Boolean) : [] }
-      } else {
-        if (!suggSelectedUniv || !suggNewDeptName.trim()) { showToast('Vui lòng nhập đầy đủ thông tin', 'error'); return }
-        newSugg = { ...newSugg, targetName: suggNewDeptName.trim(), university: suggSelectedUniv, department: suggNewDeptName.trim() }
-      }
-
-      const { data, error } = await supabase.from('suggestions').insert([newSugg]).select() as any
-      if (error) { showToast(error.message, 'error'); return }
-      if (data) setSuggestions(prev => [data[0] as Suggestion, ...prev])
-      showToast('Đề xuất đã được gửi thành công!', 'success')
-      setSuggAuthorName(''); setSuggProfName(''); setSuggInstName(''); setSuggInstShortName(''); setSuggInstLocation(''); setSuggInstDepts(''); setSuggNewDeptName(''); setSuggestionContent('')
-    }
-
-    return (
-      <div className="flex flex-col gap-2xl animate-fadeIn max-w-2xl mx-auto">
-        <div className="flex flex-col gap-xs">
-          <h1 className="text-title text-text-primary">Đề xuất thêm dữ liệu</h1>
-          <p className="text-label-sm text-text-secondary">Gửi đề xuất thêm trường, khoa hoặc giảng viên mới vào hệ thống</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-xl">
-          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
-            <InputField
-              label="Tên hiển thị (Tùy chọn)"
-              placeholder="VD: Nguyễn Văn A..."
-              value={suggAuthorName}
-              onChange={setSuggAuthorName}
-            />
-            
-            <SearchableDropdown
-              label="Loại đề xuất *"
-              options={[
-                { value: 'professor', label: 'Giảng viên mới' },
-                { value: 'institution', label: 'Trường đại học mới' },
-                { value: 'department', label: 'Khoa / Viện mới' },
-              ]}
-              value={suggestionType}
-              onChange={v => setSuggestionType(v as any)}
-              placeholder="-- Chọn loại đề xuất --"
-            />
-
-            {suggestionType === 'professor' && (
-              <div className="flex flex-col gap-lg">
-                <InputField label="Tên giảng viên *" placeholder="VD: PGS. TS Nguyễn Văn B" value={suggProfName} onChange={setSuggProfName} />
-                <SearchableDropdown label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={v => { setSuggSelectedUniv(v); setSuggSelectedDept('') }} />
-                <SearchableDropdown label="Khoa / Viện *" placeholder={suggSelectedUniv ? '-- Chọn khoa --' : 'Chọn trường trước'} options={deptOptions} value={suggSelectedDept} onChange={setSuggSelectedDept} disabled={!suggSelectedUniv} />
-              </div>
-            )}
-
-            {suggestionType === 'institution' && (
-              <div className="flex flex-col gap-lg">
-                <InputField label="Tên đầy đủ *" placeholder="VD: Trường Đại học Ngoại thương" value={suggInstName} onChange={setSuggInstName} />
-                <InputField label="Tên viết tắt *" placeholder="VD: FTU" value={suggInstShortName} onChange={setSuggInstShortName} />
-                <SearchableDropdown label="Tỉnh / Thành phố *" placeholder="-- Chọn tỉnh thành --" options={provinceOptions} value={suggInstLocation} onChange={setSuggInstLocation} />
-                <InputField label="Danh sách khoa (phân cách bằng dấu phẩy)" placeholder="Khoa A, Khoa B..." value={suggInstDepts} onChange={setSuggInstDepts} />
-              </div>
-            )}
-
-            {suggestionType === 'department' && (
-              <div className="flex flex-col gap-lg">
-                <SearchableDropdown label="Trường đại học *" placeholder="-- Chọn trường --" options={univOptions} value={suggSelectedUniv} onChange={setSuggSelectedUniv} />
-                <InputField label="Tên Khoa / Viện mới *" placeholder="VD: Khoa Khởi nghiệp..." value={suggNewDeptName} onChange={setSuggNewDeptName} />
-              </div>
-            )}
-          </div>
-
-          <div className="glass-panel rounded-3xl p-xl">
-            <TextareaField
-              label="Ghi chú thêm"
-              placeholder="Cung cấp thêm thông tin xác thực..."
-              rows={3}
-              value={suggestionContent}
-              onChange={setSuggestionContent}
-            />
-          </div>
-
-          <ButtonGroup align="justify">
-            <Button variant="neutral" onClick={() => navigate('home')}>Hủy</Button>
-            <Button variant="primary" type="submit">Gửi đề xuất</Button>
-          </ButtonGroup>
-        </form>
-
-        {suggestions.length > 0 && (
-          <div className="glass-panel rounded-3xl p-xl flex flex-col gap-lg">
-            <h2 className="text-heading text-text-primary">Đề xuất gần đây ({suggestions.length})</h2>
-            {suggestions.map((s, idx) => (
-              <div key={idx} className="flex items-center justify-between py-lg border-b border-border-secondary last:border-0">
-                <div className="flex flex-col gap-xs">
-                  <Badge label={s.type} variant="brand" />
-                  <p className="text-label text-text-primary">{s.targetName}</p>
-                  <p className="text-video-title text-text-secondary">{s.university && `${s.university}`}{s.department && ` • ${s.department}`}</p>
-                </div>
-                <Badge label={s.status} variant="warning" />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // ==========================================
-  // MAIN LAYOUT
-  // ==========================================
+  // Navigation handlers
   const regularNavItems = [
     { id: 'home', icon: Home, label: 'Trang chủ' },
     { id: 'suggest', icon: Plus, label: 'Đề xuất' },
@@ -1743,16 +452,7 @@ export default function App() {
   const handleNavClick = (id: string) => {
     setActiveSideNav(id)
     if (id === 'home') {
-      // RESET ALL SEARCH AND FILTER STATES ON HOME CLICK
-      setSearchTerm('')
-      setLocationFilter('')
-      setSortBy('name')
-      setDeptSearchTerm('')
-      setCompareSearch('')
-      setCompareUniv('')
-      setCompareDept('')
-      setProfSort('newest')
-      setProfTagFilter('all')
+      setHomeResetKey(k => k + 1)
       navigate('home')
     }
     else if (id === 'suggest') navigate('suggest')
@@ -1760,467 +460,191 @@ export default function App() {
   }
 
   return (
-    <>
-    <InteractiveBackground />
-    <div className="flex h-[100dvh] overflow-hidden bg-transparent">
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex relative z-30"> 
-        <div className="h-full w-[72px] glass-bar border-r border-black/[0.06] dark:border-white/[0.1] shadow-lg shadow-black/5 flex flex-col items-center py-sm gap-sm relative z-10">
-          <div className="h-14 w-full mb-2" />
-          {regularNavItems.map(item => (
-            <Tooltip key={item.id} content={item.label} position="right">
+    <div id="app-root" className="relative isolate w-full min-h-[100dvh] bg-transparent">
+      <InteractiveBackground />
+      <div className="flex min-h-[100dvh] w-full bg-transparent">
+        {/* Desktop sidebar */}
+        <div className="hidden md:flex sticky top-0 h-[100dvh] z-30"> 
+          <div className="h-full w-[72px] glass-bar border-r border-black/[0.06] dark:border-white/[0.1] shadow-lg shadow-black/5 flex flex-col items-center py-sm gap-sm">
+            <div className="h-14 w-full mb-2" />
+            {regularNavItems.map(item => (
+              <Tooltip key={item.id} content={item.label} position="right">
+                <SidebarButton
+                  icon={<item.icon className="size-full" strokeWidth={1.5} />}
+                  active={activeSideNav === item.id}
+                  onClick={() => handleNavClick(item.id)}
+                />
+              </Tooltip>
+            ))}
+            <Tooltip key="bookmarks" content="Giảng viên đã lưu" position="right">
               <SidebarButton
-                icon={<item.icon className="size-full" strokeWidth={1.5} />}
-                active={activeSideNav === item.id}
-                onClick={() => handleNavClick(item.id)}
+                icon={<Bookmark className="size-full" strokeWidth={1.5} />}
+                active={showBookmarkPanel}
+                onClick={() => setShowBookmarkPanel(v => !v)}
               />
             </Tooltip>
-          ))}
-          <Tooltip key="bookmarks" content="Giảng viên đã lưu" position="right">
-            <SidebarButton
-              icon={<Bookmark className="size-full" strokeWidth={1.5} />}
-              active={showBookmarkPanel}
-              onClick={() => setShowBookmarkPanel(v => !v)}
-            />
-          </Tooltip>
-          
-          <div className="mt-auto flex flex-col gap-sm pb-2">
-            <Tooltip content="Cấu hình Supabase Backend (SQL)" position="right">
-              <SidebarButton
-                icon={<Database className="size-full" strokeWidth={1.5} />}
-                active={showSupabaseModal}
-                onClick={() => setShowSupabaseModal(true)}
-              />
-            </Tooltip>
-            <Tooltip content={theme === 'system' ? 'Theo hệ thống' : theme === 'dark' ? 'Giao diện tối' : 'Giao diện sáng'} position="right">
-              <SidebarButton
-                icon={theme === 'system' ? <Monitor className="size-full" strokeWidth={1.5} /> : theme === 'dark' ? <Moon className="size-full" strokeWidth={1.5} /> : <Sun className="size-full" strokeWidth={1.5} />}
-                onClick={() => setTheme(theme === 'dark' ? 'system' : theme === 'system' ? 'light' : 'dark')}
-              />
-            </Tooltip>
+            
+            <div className="mt-auto flex flex-col gap-sm pb-2">
+              <Tooltip content={theme === 'system' ? 'Theo hệ thống' : theme === 'dark' ? 'Giao diện tối' : 'Giao diện sáng'} position="right">
+                <SidebarButton
+                  icon={theme === 'system' ? <Monitor className="size-full" strokeWidth={1.5} /> : theme === 'dark' ? <Moon className="size-full" strokeWidth={1.5} /> : <Sun className="size-full" strokeWidth={1.5} />}
+                  onClick={() => setTheme(theme === 'dark' ? 'system' : theme === 'system' ? 'light' : 'dark')}
+                />
+              </Tooltip>
+            </div>
           </div>
-        </div>
 
-        {/* The Escape Hatch: Reduced height (h-14) to prevent clipping, added border-r to restore the line */}
-        <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center bg-transparent z-50 border-r border-black/[0.06] dark:border-white/[0.1]">
-          <button 
-            type="button"
-            onClick={handleLogoClick}
-            className="flex items-center justify-center bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src={spinCount >= 10 ? easterEggImg : logoImg} 
-              alt="Logo" 
-              className="w-10 h-10 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-              style={{ transform: `rotate(${sidebarRotation}deg)` }}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* Bookmark panel - desktop only */}
-      <div className={`hidden md:flex flex-col glass-bar border-r border-black/[0.06] dark:border-white/[0.1] shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-20 ${showBookmarkPanel ? 'w-72' : 'w-0'}`}>
-          <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/40 dark:bg-black/20">
-            <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
-              <BookmarkCheck size={14} className="text-brand-primary" />
-              Đã lưu ({bookmarkedProfIds.length})
-            </h2>
-            <button
+          {/* Escape Hatch logo */}
+          <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-center bg-transparent z-50 border-r border-black/[0.06] dark:border-white/[0.1]">
+            <button 
               type="button"
-              onClick={() => setShowBookmarkPanel(false)}
-              aria-label="Đóng danh sách đã lưu"
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary transition-all duration-300 border border-black/5 dark:border-white/10 cursor-pointer"
+              onClick={handleLogoClick}
+              className="flex items-center justify-center bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
             >
-              <X size={15} />
+              <img 
+                src={spinCount >= 10 ? easterEggImg : logoImg} 
+                alt="Logo" 
+                className="w-10 h-10 object-cover rounded-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                style={{ transform: `rotate(${sidebarRotation}deg)` }}
+              />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-sm flex flex-col gap-xs">
-            {isLoadingData && bookmarkedProfIds.length > 0 ? (
-              Array.from({ length: Math.min(bookmarkedProfIds.length, 3) }).map((_, i) => (
-                <div key={i} className="flex items-center gap-md p-md rounded-2xl">
-                  <Skeleton className="w-8 h-8 rounded-full shrink-0" />
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <Skeleton className="w-28 h-4 rounded-md" />
-                    <Skeleton className="w-20 h-3 rounded-md" />
-                  </div>
-                </div>
-              ))
-            ) : bookmarkedProfIds.length === 0 ? (
-              <div className="p-xl text-center mt-4xl">
-                <Bookmark size={32} className="text-text-tertiary mx-auto mb-md opacity-50" />
-                <p className="text-label-sm text-text-tertiary">Chưa lưu giảng viên nào</p>
-                <p className="text-video-title text-text-tertiary mt-xs">Nhấn biểu tượng bookmark trên trang giảng viên để lưu</p>
-              </div>
-            ) : (
-              bookmarkedProfIds.map(id => {
-                const prof = professors.find(p => p.id === id)
-                if (!prof) return null
-                const inst = institutions.find(i => i.name === prof.university)
-                const stats = calculateProfStats(prof.id)
-                return (
-                  <div key={id} className="group flex items-start gap-sm p-md rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-300">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (inst) { navigate('professor', inst, prof.department, prof); setShowBookmarkPanel(false) }
-                      }}
-                      className="flex items-start gap-md flex-1 min-w-0 text-left"
-                    >
-                      <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-label-sm text-text-primary leading-tight line-clamp-2">{prof.name}</p>
-                        <p className="text-video-title text-text-secondary line-clamp-1">{prof.department}</p>
-                        {stats.avg_rating > 0 && (
-                          <p className="text-video-title text-brand-primary mt-xs font-medium">{stats.avg_rating.toFixed(1)} ★</p>
-                        )}
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleBookmark(id)}
-                      className="opacity-0 group-hover:opacity-100 text-text-tertiary hover:text-danger transition-all shrink-0 p-xs"
-                      title="Xóa bookmark"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )
-              })
+        </div>
+
+        {/* Bookmark drawer (desktop panel + mobile sheet) */}
+        <BookmarkDrawer
+          isOpen={showBookmarkPanel}
+          onClose={() => setShowBookmarkPanel(false)}
+          bookmarkedProfIds={bookmarkedProfIds}
+          professors={professors}
+          institutions={institutions}
+          isLoadingData={isLoadingData}
+          calculateProfStats={calculateProfStats}
+          toggleBookmark={toggleBookmark}
+          navigate={navigate}
+        />
+
+        {/* Main page content area */}
+        <main className="flex-1 bg-transparent flex flex-col pb-[72px] md:pb-0">
+          <div className="max-w-7xl mx-auto p-xl pb-28 md:px-3xl md:pt-3xl md:pb-24 flex-1 w-full">
+            {currentView === 'home' && (
+              <HomeView
+                isLoadingData={isLoadingData}
+                institutions={institutions}
+                professors={professors}
+                calculateInstStats={calculateInstStats}
+                calculateProfStats={calculateProfStats}
+                navigate={navigate}
+                resetKey={homeResetKey}
+              />
+            )}
+            {currentView === 'institution' && (
+              <InstitutionView
+                isLoadingData={isLoadingData}
+                selectedInst={selectedInst}
+                professors={professors}
+                instReviews={instReviews}
+                calculateInstStats={calculateInstStats}
+                handleInstVote={handleInstVote}
+                navigate={navigate}
+                renderBreadcrumb={renderBreadcrumb}
+                onOpenCompare={() => setCompareInstModal(true)}
+                showToast={showToast}
+              />
+            )}
+            {currentView === 'department' && (
+              <DepartmentView
+                isLoadingData={isLoadingData}
+                selectedInst={selectedInst}
+                selectedDept={selectedDept}
+                professors={professors}
+                bookmarkedProfIds={bookmarkedProfIds}
+                calculateProfStats={calculateProfStats}
+                toggleBookmark={toggleBookmark}
+                navigate={navigate}
+                renderBreadcrumb={renderBreadcrumb}
+              />
+            )}
+            {currentView === 'professor' && (
+              <ProfessorView
+                isLoadingData={isLoadingData}
+                selectedInst={selectedInst}
+                selectedDept={selectedDept}
+                selectedProf={selectedProf}
+                professors={professors}
+                profReviews={profReviews}
+                bookmarkedProfIds={bookmarkedProfIds}
+                calculateProfStats={calculateProfStats}
+                toggleBookmark={toggleBookmark}
+                handleProfVote={handleProfVote}
+                navigate={navigate}
+                renderBreadcrumb={renderBreadcrumb}
+                onOpenCompare={() => setCompareModal(true)}
+                showToast={showToast}
+              />
+            )}
+            {currentView === 'add-prof-review' && (
+              <AddProfReviewView
+                selectedProf={selectedProf}
+                onReviewAdded={newRev => setProfReviews(prev => [newRev, ...prev])}
+                navigate={navigate}
+                renderBreadcrumb={renderBreadcrumb}
+                showToast={showToast}
+              />
+            )}
+            {currentView === 'add-inst-review' && (
+              <AddInstReviewView
+                selectedInst={selectedInst}
+                onReviewAdded={newRev => setInstReviews(prev => [newRev, ...prev])}
+                navigate={navigate}
+                renderBreadcrumb={renderBreadcrumb}
+                showToast={showToast}
+              />
+            )}
+            {currentView === 'suggest' && (
+              <SuggestView
+                institutions={institutions}
+                suggestions={suggestions}
+                onSuggestionAdded={newSugg => setSuggestions(prev => [newSugg, ...prev])}
+                navigate={navigate}
+                showToast={showToast}
+              />
             )}
           </div>
+        </main>
       </div>
 
-      <main ref={mainRef} onScroll={(e) => { scrollPositions.current[location.pathname] = e.currentTarget.scrollTop }} className="flex-1 overflow-y-auto bg-transparent flex flex-col relative z-10">
-        <div className="max-w-7xl mx-auto p-xl pb-28 md:px-3xl md:pt-3xl md:pb-24 flex-1 w-full">
-          {currentView === 'home' && renderHome()}
-          {currentView === 'institution' && renderInstitution()}
-          {currentView === 'department' && renderDepartment()}
-          {currentView === 'professor' && renderProfessor()}
-          {currentView === 'add-prof-review' && renderAddProfReview()}
-          {currentView === 'add-inst-review' && renderAddInstReview()}
-          {currentView === 'suggest' && renderSuggest()}
-        </div>
-      </main>
-
-      {/* Info Menu Modal (Replaces persistent footer) */}
-      <LiquidModal
+      {/* Info Menu Modal */}
+      <InfoModal
         isOpen={showInfoMenu}
         onClose={() => setShowInfoMenu(false)}
-        size="small"
-      >
-        <div className="flex flex-col text-center items-center py-2 relative overflow-hidden">
-          <canvas ref={confettiCanvasRef} className="absolute inset-0 pointer-events-none z-0 w-full h-full" />
-          <img 
-            src={spinCount >= 10 ? easterEggImg : logoImg} 
-            alt="RateVietProfessors Logo" 
-            tabIndex={0}
-            onClick={handleFlyoutLogoClick}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFlyoutLogoClick() }}
-            className="w-20 h-20 object-cover rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] mb-3 z-10 relative cursor-pointer outline-none focus-visible:ring-2 ring-brand-primary transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-            style={{ transform: `rotate(${flyoutRotation}deg)` }}
-          />
-          <h2 className="text-lg font-bold text-text-primary z-10 relative mb-1">RateVietProfessors</h2>
-          <p className="text-xs text-text-secondary z-10 relative mb-6 leading-relaxed">
-            © {new Date().getFullYear()} RateVietProfessors<br />
-            Phiên bản 1.0.0 (Build 42)
-          </p>
-
-          <div className="w-full flex flex-col bg-black/[0.03] dark:bg-black/40 rounded-2xl border border-black/5 dark:border-white/10 overflow-hidden text-left shadow-sm z-10 relative mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                setShowInfoMenu(false)
-                setShowSupabaseModal(true)
-              }}
-              className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group cursor-pointer w-full text-left"
-            >
-              <span className="flex items-center gap-2">
-                <Database size={16} className="text-brand-primary" />
-                <span>Cấu hình Supabase Backend (SQL)</span>
-              </span>
-              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
-            </button>
-            <a href="https://github.com/Merz26/ratevietprofessors" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
-              <span>GitHub</span>
-              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
-            </a>
-            <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
-              <span>Về chúng tôi</span>
-              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
-            </a>
-            <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
-              <span>Quy tắc cộng đồng</span>
-              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
-            </a>
-            <a href="https://github.com/Merz26/ratevietprofessors/wiki" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between px-5 py-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-primary text-sm font-medium group">
-              <span>Bảo mật</span>
-              <ChevronRight size={16} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
-            </a>
-          </div>
-          
-          <Button 
-            variant="neutral"
-            size="medium"
-            onClick={() => setShowInfoMenu(false)} 
-            className="min-w-[140px] z-10 relative"
-          >
-            Đóng
-          </Button>
-        </div>
-      </LiquidModal>
-
-      {/* Institution Comparison Modal */}
-      {selectedInst && (
-        <LiquidModal
-          isOpen={compareInstModal}
-          onClose={() => { setCompareInstModal(false); setCompareInstSelected(null) }}
-          title="So sánh trường"
-          size="medium"
-          footer={
-            <ButtonGroup align="end">
-              <Button variant="neutral" onClick={() => { setCompareInstModal(false); setCompareInstSelected(null) }}>Đóng</Button>
-            </ButtonGroup>
-          }
-        >
-          {compareInstSelected ? (
-            <div className="flex flex-col gap-xl">
-              <div className="grid grid-cols-2 gap-xl">
-                {[{ inst: selectedInst, label: 'Hiện tại' }, { inst: compareInstSelected, label: 'So sánh' }].map(({ inst, label }) => {
-                  const stats = calculateInstStats(inst.id)
-                  return (
-                    <div key={inst.id} className="bg-black/[0.03] dark:bg-black/40 rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
-                      <div>
-                        <Badge label={label} variant={label === 'Hiện tại' ? 'brand' : 'secondary'} />
-                        <p className="text-label text-text-primary font-semibold mt-sm">{inst.name}</p>
-                        <p className="text-video-title text-text-secondary">{inst.short_name}</p>
-                        <p className="text-video-title text-text-tertiary">{inst.location}</p>
-                      </div>
-                      <div className="flex flex-col gap-sm">
-                        {[
-                          { key: 'Uy tín trường', val: stats.metricsAvg['Uy tín trường'] || '0.0' },
-                          { key: 'Cơ hội việc làm', val: stats.metricsAvg['Cơ hội việc làm'] || '0.0' },
-                          { key: 'Cơ sở vật chất', val: stats.metricsAvg['Cơ sở vật chất'] || '0.0' },
-                          { key: 'Tổng quan', val: stats.overall.toFixed(1) },
-                          { key: 'Đánh giá', val: stats.total },
-                        ].map(({ key, val }) => (
-                          <div key={key} className="flex justify-between items-center">
-                            <span className="text-video-title text-text-secondary">{key}</span>
-                            <span className="text-label-sm text-text-primary font-semibold">{val}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              <Button variant="subtle" size="small" onClick={() => setCompareInstSelected(null)} iconStart={<X size={14} />}>
-                Chọn lại
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-lg">
-              <p className="text-label-sm text-text-secondary">Tìm trường để so sánh với <strong>{selectedInst.name}</strong></p>
-              
-              <div className="relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
-                <Search size={18} className="text-text-secondary shrink-0" />
-                <input
-                  type="text"
-                  value={compareInstSearch}
-                  placeholder="Tìm theo tên trường..."
-                  onChange={e => setCompareInstSearch(e.target.value)}
-                  className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
-                />
-              </div>
-
-              <div className="flex flex-col gap-sm max-h-64 overflow-y-auto">
-                {institutions
-                  .filter(i =>
-                    i.id !== selectedInst.id &&
-                    (!compareInstSearch || i.name.toLowerCase().includes(compareInstSearch.toLowerCase()) || i.short_name.toLowerCase().includes(compareInstSearch.toLowerCase()))
-                  )
-                  .slice(0, 8)
-                  .map(i => {
-                    const stats = calculateInstStats(i.id)
-                    return (
-                      <button
-                        key={i.id}
-                        type="button"
-                        onClick={() => setCompareInstSelected(i)}
-                        className="flex items-center justify-between gap-lg p-lg rounded-corner-md bg-black/5 dark:bg-white/5 backdrop-blur-sm hover:bg-black/10 dark:hover:bg-white/10 hover:backdrop-blur-xl transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-md">
-                          <Avatar type="initial" initials={i.short_name.charAt(0) || 'I'} size="small" shape="circle" />
-                          <div>
-                            <p className="text-label-sm text-text-primary">{i.short_name}</p>
-                            <p className="text-video-title text-text-secondary">{i.name}</p>
-                          </div>
-                        </div>
-                        <ScoreBadge value={stats.overall} />
-                      </button>
-                    )
-                  })}
-                {institutions.filter(i =>
-                  i.id !== selectedInst.id &&
-                  (!compareInstSearch || i.name.toLowerCase().includes(compareInstSearch.toLowerCase()) || i.short_name.toLowerCase().includes(compareInstSearch.toLowerCase()))
-                ).length === 0 && (
-                  <p className="text-center text-label-sm text-text-secondary py-lg">Không tìm thấy trường nào phù hợp.</p>
-                )}
-              </div>
-            </div>
-          )}
-        </LiquidModal>
-      )}
-
-      {/* Professor Comparison Modal */}
-      {selectedProf && (
-        <LiquidModal
-          isOpen={compareModal}
-          onClose={() => { setCompareModal(false); setCompareProf(null) }}
-          title="So sánh giảng viên"
-          size="medium"
-          footer={
-            <ButtonGroup align="end">
-              <Button variant="neutral" onClick={() => { setCompareModal(false); setCompareProf(null) }}>Đóng</Button>
-            </ButtonGroup>
-          }
-        >
-          {compareProf ? (
-            <div className="flex flex-col gap-xl">
-              <div className="grid grid-cols-2 gap-xl">
-                {[{ prof: selectedProf, label: 'Hiện tại' }, { prof: compareProf, label: 'So sánh' }].map(({ prof, label }) => {
-                  const s = calculateProfStats(prof.id)
-                  return (
-                    <div key={prof.id} className="bg-black/[0.03] dark:bg-black/40 rounded-2xl border border-black/5 dark:border-white/10 p-xl flex flex-col gap-lg">
-                      <div>
-                        <Badge label={label} variant={label === 'Hiện tại' ? 'brand' : 'secondary'} />
-                        <p className="text-label text-text-primary font-semibold mt-sm">{prof.name}</p>
-                        <p className="text-video-title text-text-secondary">{prof.department}</p>
-                        <p className="text-video-title text-text-tertiary">{prof.university}</p>
-                      </div>
-                      <div className="flex flex-col gap-sm">
-                        {[
-                          { key: 'Chất lượng', val: s.avg_rating.toFixed(1) },
-                          { key: 'Độ khó', val: s.avg_difficulty.toFixed(1) },
-                          { key: 'Học lại', val: `${s.would_take_again_pct}%` },
-                          { key: 'Đánh giá', val: s.total_ratings },
-                        ].map(({ key, val }) => (
-                          <div key={key} className="flex justify-between items-center">
-                            <span className="text-video-title text-text-secondary">{key}</span>
-                            <span className="text-label-sm text-text-primary font-semibold">{val}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap gap-xs">
-                        {(prof.tags || []).map(t => <Badge key={t} label={t} variant="secondary" />)}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              <Button variant="subtle" size="small" onClick={() => setCompareProf(null)} iconStart={<X size={14} />}>
-                Chọn lại
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-lg">
-              <p className="text-label-sm text-text-secondary">Tìm giảng viên để so sánh với <strong>{selectedProf.name}</strong></p>
-              
-              <div className="relative flex items-center gap-md bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 shadow-sm rounded-corner-md focus-within:border-brand-primary transition-colors px-xl">
-                <Search size={18} className="text-text-secondary shrink-0" />
-                <input
-                  type="text"
-                  value={compareSearch}
-                  placeholder="Tìm theo tên giảng viên..."
-                  onChange={e => setCompareSearch(e.target.value)}
-                  className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full"
-                />
-              </div>
-
-              <div className="flex gap-sm flex-wrap">
-                <div className="flex-1 min-w-40">
-                  <SearchableDropdown
-                    placeholder="Lọc theo trường"
-                    options={[
-                      { value: '', label: 'Tất cả trường' },
-                      ...institutions
-                        .slice()
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map(i => ({ value: i.name, label: i.short_name + ' - ' + i.name })),
-                    ]}
-                    value={compareUniv}
-                    onChange={v => { setCompareUniv(v); setCompareDept('') }}
-                  />
-                </div>
-                <div className="flex-1 min-w-40">
-                  <SearchableDropdown
-                    placeholder="Lọc theo khoa"
-                    options={[
-                      { value: '', label: 'Tất cả khoa' },
-                      ...(institutions.find(i => i.name === compareUniv)?.departments || [])
-                        .slice()
-                        .sort((a, b) => a.localeCompare(b))
-                        .map(d => ({ value: d, label: d })),
-                    ]}
-                    value={compareDept}
-                    onChange={setCompareDept}
-                    disabled={!compareUniv}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-sm max-h-64 overflow-y-auto">
-                {professors
-                  .filter(p =>
-                    p.id !== selectedProf.id &&
-                    (!compareSearch || p.name.toLowerCase().includes(compareSearch.toLowerCase())) &&
-                    (!compareUniv || p.university === compareUniv) &&
-                    (!compareDept || p.department === compareDept)
-                  )
-                  .slice(0, 8)
-                  .map(p => {
-                    const s = calculateProfStats(p.id)
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setCompareProf(p)}
-                        className="flex items-center justify-between gap-lg p-lg rounded-corner-md bg-black/5 dark:bg-white/5 backdrop-blur-sm hover:bg-black/10 dark:hover:bg-white/10 hover:backdrop-blur-xl transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-md">
-                          <Avatar type="initial" initials={p.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
-                          <div>
-                            <p className="text-label-sm text-text-primary">{p.name}</p>
-                            <p className="text-video-title text-text-secondary">{p.department} • {p.university}</p>
-                          </div>
-                        </div>
-                        <ScoreBadge value={s.avg_rating} />
-                      </button>
-                    )
-                  })}
-                {professors.filter(p =>
-                  p.id !== selectedProf.id &&
-                  (!compareSearch || p.name.toLowerCase().includes(compareSearch.toLowerCase())) &&
-                  (!compareUniv || p.university === compareUniv) &&
-                  (!compareDept || p.department === compareDept)
-                ).length === 0 && (
-                  <p className="text-label-sm text-text-tertiary text-center p-xl">Không tìm thấy giảng viên</p>
-                )}
-              </div>
-            </div>
-          )}
-        </LiquidModal>
-      )}
-
-      {/* Supabase Backend Setup Modal */}
-      <SupabaseSetupModal
-        isOpen={showSupabaseModal}
-        onClose={() => setShowSupabaseModal(false)}
-        onCopied={() => showToast('Đã sao chép mã SQL vào bộ nhớ tạm!', 'success')}
+        spinCount={spinCount}
+        flyoutRotation={flyoutRotation}
+        onFlyoutLogoClick={handleFlyoutLogoClick}
+        confettiCanvasRef={confettiCanvasRef}
       />
 
-      {/* Mobile bottom nav */}
+      {/* Institution Comparison Modal */}
+      <CompareInstModal
+        isOpen={compareInstModal}
+        onClose={() => setCompareInstModal(false)}
+        selectedInst={selectedInst}
+        institutions={institutions}
+        calculateInstStats={calculateInstStats}
+      />
+
+      {/* Professor Comparison Modal */}
+      <CompareProfModal
+        isOpen={compareModal}
+        onClose={() => setCompareModal(false)}
+        selectedProf={selectedProf}
+        professors={professors}
+        institutions={institutions}
+        calculateProfStats={calculateProfStats}
+      />
+
+      {/* Mobile bottom navigation bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-bar border-t border-black/[0.06] dark:border-white/[0.1] shadow-[0_-4px_24px_rgba(0,0,0,0.05)] flex items-stretch px-xs pb-safe">
-        
-        {/* Logo / Info Modal Trigger */}
         <button
           type="button"
           onClick={handleLogoClick}
@@ -2235,7 +659,6 @@ export default function App() {
           <span className="text-video-title">Thông tin</span>
         </button>
 
-        {/* Standard Nav Items */}
         {[
           { id: 'home', icon: Home, label: 'Trang chủ' },
           { id: 'suggest', icon: Plus, label: 'Đề xuất' },
@@ -2256,7 +679,6 @@ export default function App() {
           </button>
         ))}
 
-        {/* Theme Toggle */}
         <button
           type="button"
           onClick={() => setTheme(theme === 'dark' ? 'system' : theme === 'system' ? 'light' : 'dark')}
@@ -2265,10 +687,9 @@ export default function App() {
           {theme === 'system' ? <Monitor size={24} strokeWidth={1.5} /> : theme === 'dark' ? <Moon size={24} strokeWidth={1.5} /> : <Sun size={24} strokeWidth={1.5} />}
           <span className="text-video-title">{theme === 'system' ? 'Hệ thống' : theme === 'dark' ? 'Tối' : 'Sáng'}</span>
         </button>
-        
       </nav>
 
-      {/* Toast */}
+      {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-20 md:bottom-2xl right-2xl z-50 animate-scaleIn overflow-hidden">
           <Toast
@@ -2281,63 +702,5 @@ export default function App() {
         </div>
       )}
     </div>
-
-    {/* Mobile bookmark sheet */}
-    {showBookmarkPanel && (
-      <div className="md:hidden fixed inset-0 z-50 flex flex-col">
-        <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setShowBookmarkPanel(false)} />
-        <div className="glass-panel rounded-t-3xl border-t border-black/[0.06] dark:border-white/[0.1] max-h-[70vh] flex flex-col animate-slideInLeft">
-          <div className="p-xl border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0">
-            <h2 className="text-label text-text-primary font-semibold flex items-center gap-sm">
-              <BookmarkCheck size={14} className="text-brand-primary" />
-              Giảng viên đã lưu ({bookmarkedProfIds.length})
-            </h2>
-            <button 
-              type="button" 
-              onClick={() => setShowBookmarkPanel(false)} 
-              aria-label="Đóng danh sách đã lưu"
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary transition-all duration-300 border border-black/5 dark:border-white/10 cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-sm flex flex-col gap-xs">
-            {bookmarkedProfIds.length === 0 ? (
-              <div className="p-2xl text-center">
-                <Bookmark size={28} className="text-text-tertiary mx-auto mb-sm" />
-                <p className="text-label-sm text-text-tertiary">Chưa lưu giảng viên nào</p>
-              </div>
-            ) : (
-              bookmarkedProfIds.map(id => {
-                const prof = professors.find(p => p.id === id)
-                if (!prof) return null
-                const inst = institutions.find(i => i.name === prof.university)
-                const stats = calculateProfStats(prof.id)
-                return (
-                  <div key={id} className="group flex items-start gap-sm p-sm rounded-corner-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                    <button
-                      type="button"
-                      onClick={() => { if (inst) { navigate('professor', inst, prof.department, prof); setShowBookmarkPanel(false) } }}
-                      className="flex items-start gap-sm flex-1 min-w-0 text-left"
-                    >
-                      <Avatar type="initial" initials={prof.name.split(' ').pop()?.charAt(0) || 'P'} size="small" shape="circle" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-label-sm text-text-primary leading-tight">{prof.name}</p>
-                        <p className="text-video-title text-text-secondary">{prof.department}</p>
-                        {stats.avg_rating > 0 && <p className="text-video-title text-brand-primary">{stats.avg_rating.toFixed(1)} ★</p>}
-                      </div>
-                    </button>
-                    <button type="button" onClick={() => toggleBookmark(id)} className="text-text-tertiary hover:text-danger transition-colors mt-xs shrink-0">
-                      <X size={14} />
-                    </button>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </div>
-      </div>
-    )}
-    </>
   )
 }

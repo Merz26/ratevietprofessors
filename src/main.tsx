@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
-import { ThemeProvider } from '@figma/astraui'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import '@figma/astraui/styles.css'
@@ -22,16 +21,32 @@ export const ThemeContext = createContext<ThemeCtx>({
 
 export const useAppTheme = () => useContext(ThemeContext)
 
-function Root() {
-  const [theme, setThemeState] = useState<AppTheme>(() => {
-    try {
-      const stored = localStorage.getItem('astra-theme')
-      if (stored === 'light' || stored === 'dark' || stored === 'system') return stored as AppTheme
-    } catch { /* ignore */ }
-    return 'system'
-  })
+const getInitialTheme = (): AppTheme => {
+  try {
+    const stored = localStorage.getItem('astra-theme')
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored as AppTheme
+  } catch { /* ignore */ }
+  // On first visit with no stored setting, default to 'system'
+  return 'system'
+}
 
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark')
+const getSystemTheme = (): 'light' | 'dark' => {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  return 'dark'
+}
+
+const getInitialResolvedTheme = (pref: AppTheme): 'light' | 'dark' => {
+  if (pref === 'system') return getSystemTheme()
+  return pref
+}
+
+function Root() {
+  const [theme, setThemeState] = useState<AppTheme>(getInitialTheme)
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
+    return getInitialResolvedTheme(getInitialTheme())
+  })
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)')
@@ -44,31 +59,33 @@ function Root() {
     }
     updateResolved()
     
-    // Add event listener for media query
+    // Listen for live system theme changes when user has chosen 'system'
     media.addEventListener('change', updateResolved)
     return () => media.removeEventListener('change', updateResolved)
   }, [theme])
 
   const setTheme = (t: AppTheme) => {
     setThemeState(t)
-    try { localStorage.setItem('astra-theme', t) } catch { /* ignore */ }
+    try { 
+      localStorage.setItem('astra-theme', t) 
+    } catch { /* ignore */ }
   }
 
   useEffect(() => {
     const root = document.documentElement
-    if (root.classList.contains(resolvedTheme) && root.getAttribute('data-theme') === resolvedTheme) return
     root.classList.remove('light', 'dark')
     root.classList.add(resolvedTheme)
     root.setAttribute('data-theme', resolvedTheme)
-  }, [resolvedTheme])
+    try {
+      localStorage.setItem('astra-theme', theme)
+    } catch { /* ignore */ }
+  }, [resolvedTheme, theme])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
-      <ThemeProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ThemeProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </ThemeContext.Provider>
   )
 }

@@ -18,7 +18,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className = '', ...props }) 
  */
 export const InstitutionCardSkeleton: React.FC = () => {
   return (
-    <div className="glass-panel rounded-3xl p-xl flex flex-col h-full animate-fadeIn">
+    <div className="glass-panel rounded-3xl p-xl flex flex-col h-full ">
       <div className="flex flex-col gap-xs flex-1 min-w-0 mb-lg">
         <div className="flex items-start justify-between gap-sm">
           <Skeleton className="w-16 h-6 rounded-full" />
@@ -46,7 +46,7 @@ export const InstitutionCardSkeleton: React.FC = () => {
  */
 export const InstitutionListSkeleton: React.FC = () => {
   return (
-    <div className="flex flex-col gap-2xl animate-fadeIn">
+    <div className="flex flex-col gap-2xl ">
       {/* Search Header Banner */}
       <div className="relative z-30 flex flex-col gap-xl p-2xl rounded-3xl glass-panel">
         <div className="flex flex-col gap-xs">
@@ -102,7 +102,7 @@ export const InstitutionListSkeleton: React.FC = () => {
  */
 export const ProfessorDetailsSkeleton: React.FC = () => {
   return (
-    <div className="flex flex-col gap-2xl animate-fadeIn">
+    <div className="flex flex-col gap-2xl ">
       {/* Breadcrumb Skeleton */}
       <div className="flex items-center gap-sm flex-wrap">
         <Skeleton className="w-20 h-4 rounded-md" />
@@ -253,7 +253,7 @@ export const ProfessorDetailsSkeleton: React.FC = () => {
  */
 export const InstitutionDetailsSkeleton: React.FC = () => {
   return (
-    <div className="flex flex-col gap-2xl animate-fadeIn">
+    <div className="flex flex-col gap-2xl ">
       {/* Breadcrumb Skeleton */}
       <div className="flex items-center gap-sm flex-wrap">
         <Skeleton className="w-20 h-4 rounded-md" />
@@ -331,7 +331,7 @@ export const InstitutionDetailsSkeleton: React.FC = () => {
  */
 export const DepartmentDetailsSkeleton: React.FC = () => {
   return (
-    <div className="flex flex-col gap-2xl animate-fadeIn">
+    <div className="flex flex-col gap-2xl ">
       {/* Breadcrumb Skeleton */}
       <div className="flex items-center gap-sm flex-wrap">
         <Skeleton className="w-20 h-4 rounded-md" />

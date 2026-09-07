@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import { useAppTheme } from '../main';
 
 interface Dot {
@@ -10,7 +10,7 @@ interface Dot {
   vy: number;
 }
 
-export default function InteractiveBackground() {
+function InteractiveBackground() {
   const { resolvedTheme } = useAppTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const spotlightRef = useRef<HTMLDivElement | null>(null);
@@ -41,12 +41,126 @@ export default function InteractiveBackground() {
 
     const SPACING = 28;
     const REPEL_RADIUS = 130;
+    const REPEL_RADIUS_SQ = REPEL_RADIUS * REPEL_RADIUS;
     const REPEL_STRENGTH = 6.5;
     const SPRING_FACTOR = 0.07;
     const DAMPING = 0.84;
 
+    let isLoopRunning = false;
+    const requestWakeup = () => {
+      if (!isLoopRunning) {
+        isLoopRunning = true;
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    // Render loop declared as hoisted function
+    function render() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+      const mouse = mouseRef.current;
+      const now = performance.now();
+      const timeSinceMove = now - mouse.lastMovedTime;
+
+      // Stillness threshold: after 900ms of no movement, start dialing down to normal over 600ms
+      const STILL_DELAY = 900;
+      const FADE_TIME = 600;
+
+      let targetIntensity = 0;
+      if (mouse.active) {
+        if (timeSinceMove < STILL_DELAY) {
+          targetIntensity = 1;
+        } else {
+          const progress = Math.min(1, (timeSinceMove - STILL_DELAY) / FADE_TIME);
+          targetIntensity = Math.max(0, 1 - progress);
+        }
+      } else {
+        targetIntensity = 0;
+      }
+
+      if (targetIntensity > mouse.intensity) {
+        mouse.intensity = Math.min(targetIntensity, mouse.intensity + 0.12);
+      } else {
+        mouse.intensity = Math.max(targetIntensity, mouse.intensity - 0.04);
+      }
+
+      const intensity = mouse.intensity;
+
+      if (spotlightRef.current) {
+        spotlightRef.current.style.opacity = intensity.toFixed(3);
+      }
+
+      const baseRadius = 1.25;
+      let anyDotMoving = false;
+
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i];
+
+        // Repel from cursor scaled by dialed intensity (optimized using squared distance)
+        if (intensity > 0.001) {
+          const dx = dot.x - mouse.x;
+          const dy = dot.y - mouse.y;
+          const distSq = dx * dx + dy * dy;
+
+          if (distSq < REPEL_RADIUS_SQ && distSq > 0.04) {
+            const dist = Math.sqrt(distSq);
+            const force = Math.pow((REPEL_RADIUS - dist) / REPEL_RADIUS, 1.3) * intensity;
+            const angle = Math.atan2(dy, dx);
+            dot.vx += Math.cos(angle) * force * REPEL_STRENGTH;
+            dot.vy += Math.sin(angle) * force * REPEL_STRENGTH;
+          }
+        }
+
+        // Spring force returning to base position
+        const homeDx = dot.baseX - dot.x;
+        const homeDy = dot.baseY - dot.y;
+        dot.vx += homeDx * SPRING_FACTOR;
+        dot.vy += homeDy * SPRING_FACTOR;
+
+        // Friction damping
+        dot.vx *= DAMPING;
+        dot.vy *= DAMPING;
+
+        // Move dot
+        dot.x += dot.vx;
+        dot.y += dot.vy;
+
+        // Render dot
+        const distFromHomeSq = homeDx * homeDx + homeDy * homeDy;
+        const isDisplaced = distFromHomeSq > 0.64;
+
+        if (isDisplaced || Math.abs(dot.vx) > 0.02 || Math.abs(dot.vy) > 0.02) {
+          anyDotMoving = true;
+        }
+
+        ctx.beginPath();
+        if (isDisplaced) {
+          const distFromHome = Math.sqrt(distFromHomeSq);
+          const ratio = Math.min(distFromHome / 25, 1);
+          const r = baseRadius + ratio * 0.7;
+          ctx.arc(dot.x, dot.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = isDark
+            ? `rgba(165, 180, 252, ${0.12 + ratio * 0.5})`
+            : `rgba(79, 70, 229, ${0.12 + ratio * 0.45})`;
+        } else {
+          ctx.arc(dot.x, dot.y, baseRadius, 0, Math.PI * 2);
+          ctx.fillStyle = isDark
+            ? 'rgba(255, 255, 255, 0.09)'
+            : 'rgba(30, 41, 59, 0.08)';
+        }
+        ctx.fill();
+      }
+
+      // If no movement and dots have settled, pause animation loop to save 100% CPU/GPU
+      if (!anyDotMoving && intensity <= 0.001 && !mouse.active) {
+        isLoopRunning = false;
+      } else {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    }
+
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const width = window.innerWidth;
       const height = window.innerHeight;
 
@@ -78,6 +192,7 @@ export default function InteractiveBackground() {
           });
         }
       }
+      requestWakeup();
     };
 
     resize();
@@ -102,6 +217,8 @@ export default function InteractiveBackground() {
           ? `radial-gradient(550px circle at ${clientX}px ${clientY}px, rgba(99, 102, 241, 0.16), transparent 80%)`
           : `radial-gradient(550px circle at ${clientX}px ${clientY}px, rgba(99, 102, 241, 0.12), transparent 80%)`;
       }
+
+      requestWakeup();
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -110,6 +227,7 @@ export default function InteractiveBackground() {
 
     const handleMouseLeave = () => {
       mouseRef.current.active = false;
+      requestWakeup();
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -125,8 +243,8 @@ export default function InteractiveBackground() {
     };
 
     const handleTouchEnd = () => {
-      // When touch input is released, immediately mark inactive so effect returns to normal
       mouseRef.current.active = false;
+      requestWakeup();
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -136,104 +254,7 @@ export default function InteractiveBackground() {
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
     window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
-    // Render loop
-    const render = () => {
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-      const mouse = mouseRef.current;
-      const now = performance.now();
-      const timeSinceMove = now - mouse.lastMovedTime;
-
-      // Stillness threshold: after 900ms of no movement, start dialing down to normal over 600ms
-      const STILL_DELAY = 900;
-      const FADE_TIME = 600;
-
-      let targetIntensity = 0;
-      if (mouse.active) {
-        if (timeSinceMove < STILL_DELAY) {
-          targetIntensity = 1;
-        } else {
-          // Progressively dial down back to 0
-          const progress = Math.min(1, (timeSinceMove - STILL_DELAY) / FADE_TIME);
-          targetIntensity = Math.max(0, 1 - progress);
-        }
-      } else {
-        // No touch or mouse left window -> immediately dial down to 0
-        targetIntensity = 0;
-      }
-
-      // Smooth easing of intensity: responsive to new movement, gentle returning to normal
-      if (targetIntensity > mouse.intensity) {
-        mouse.intensity = Math.min(targetIntensity, mouse.intensity + 0.12);
-      } else {
-        mouse.intensity = Math.max(targetIntensity, mouse.intensity - 0.04);
-      }
-
-      const intensity = mouse.intensity;
-
-      // Sync spotlight opacity with dialed intensity
-      if (spotlightRef.current) {
-        spotlightRef.current.style.opacity = intensity.toFixed(3);
-      }
-
-      const baseRadius = 1.25;
-
-      for (let i = 0; i < dots.length; i++) {
-        const dot = dots[i];
-
-        // Repel from cursor scaled by dialed intensity
-        if (intensity > 0.001) {
-          const dx = dot.x - mouse.x;
-          const dy = dot.y - mouse.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < REPEL_RADIUS && dist > 0.1) {
-            const force = Math.pow((REPEL_RADIUS - dist) / REPEL_RADIUS, 1.3) * intensity;
-            const angle = Math.atan2(dy, dx);
-            dot.vx += Math.cos(angle) * force * REPEL_STRENGTH;
-            dot.vy += Math.sin(angle) * force * REPEL_STRENGTH;
-          }
-        }
-
-        // Spring force returning to base position
-        const homeDx = dot.baseX - dot.x;
-        const homeDy = dot.baseY - dot.y;
-        dot.vx += homeDx * SPRING_FACTOR;
-        dot.vy += homeDy * SPRING_FACTOR;
-
-        // Friction damping
-        dot.vx *= DAMPING;
-        dot.vy *= DAMPING;
-
-        // Move dot
-        dot.x += dot.vx;
-        dot.y += dot.vy;
-
-        // Render dot
-        const distFromHome = Math.sqrt(homeDx * homeDx + homeDy * homeDy);
-        const isDisplaced = distFromHome > 0.8;
-
-        ctx.beginPath();
-        if (isDisplaced) {
-          const ratio = Math.min(distFromHome / 25, 1);
-          const r = baseRadius + ratio * 0.7;
-          ctx.arc(dot.x, dot.y, r, 0, Math.PI * 2);
-          ctx.fillStyle = isDark
-            ? `rgba(165, 180, 252, ${0.12 + ratio * 0.5})`
-            : `rgba(79, 70, 229, ${0.12 + ratio * 0.45})`;
-        } else {
-          ctx.arc(dot.x, dot.y, baseRadius, 0, Math.PI * 2);
-          ctx.fillStyle = isDark
-            ? 'rgba(255, 255, 255, 0.09)'
-            : 'rgba(30, 41, 59, 0.08)';
-        }
-        ctx.fill();
-      }
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    animationFrameId = requestAnimationFrame(render);
+    requestWakeup();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
@@ -295,4 +316,6 @@ export default function InteractiveBackground() {
     </div>
   );
 }
+
+export default memo(InteractiveBackground);
 

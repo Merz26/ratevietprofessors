@@ -56,3 +56,16 @@ export interface Suggestion {
   status: string
   created_at?: string
 }
+
+export interface InstStats {
+  overall: number
+  total: number
+  metricsAvg: Record<string, string>
+}
+
+export interface ProfStats {
+  avg_rating: number
+  avg_difficulty: number
+  total_ratings: number
+  would_take_again_pct: number
+}

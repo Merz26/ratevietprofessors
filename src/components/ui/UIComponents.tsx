@@ -62,7 +62,7 @@ function Button({
 
   const variantClasses = {
     primary: 'bg-brand-primary text-on-brand shadow-[0_2px_12px_rgba(20,90,220,0.28)] hover:shadow-[0_4px_20px_rgba(20,90,220,0.38)] hover:brightness-105 border border-brand-primary/20',
-    neutral: 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:bg-white/80 dark:hover:bg-[#111827]/80 text-text-primary',
+    neutral: 'bg-white/20 dark:bg-[#111827]/25 backdrop-blur-xs border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:bg-white/35 dark:hover:bg-[#111827]/40 text-text-primary',
     subtle: 'bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-text-secondary hover:text-text-primary border border-transparent',
     danger: 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 shadow-sm',
   }[variant]
@@ -108,14 +108,13 @@ function ButtonGroup({
 function LiquidModal({ isOpen, onClose, title, children, size = 'small', footer }: any) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 animate-backdropFade">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8">
       <div 
-        className="absolute inset-0 bg-black/40 dark:bg-black/75 backdrop-blur-md transition-opacity duration-300" 
+        className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-backdropFade" 
         onClick={onClose} 
       />
       <div 
-        className={`relative flex flex-col bg-white/75 dark:bg-[#111827]/75 backdrop-blur-3xl border border-black/10 dark:border-white/15 shadow-[0_24px_64px_rgba(0,0,0,0.35)] rounded-[28px] animate-scaleIn ${size === 'small' ? 'max-w-md w-full' : 'max-w-2xl w-full'} max-h-[90vh] overflow-hidden`}
-        style={{ backdropFilter: 'blur(56px)', WebkitBackdropFilter: 'blur(56px)' }}
+        className={`relative flex flex-col glass-flyout rounded-[28px] animate-scaleIn ${size === 'small' ? 'max-w-md w-full' : 'max-w-2xl w-full'} max-h-[90vh] overflow-hidden`}
       >
         {title ? (
           <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
@@ -124,7 +123,7 @@ function LiquidModal({ isOpen, onClose, title, children, size = 'small', footer 
                type="button" 
                onClick={onClose} 
                aria-label="Đóng"
-               className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary backdrop-blur-md transition-all duration-300 border border-black/5 dark:border-white/10 shrink-0 cursor-pointer"
+               className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary transition-all duration-300 border border-black/5 dark:border-white/10 shrink-0 cursor-pointer"
              >
                <X size={16} />
              </button>
@@ -134,7 +133,7 @@ function LiquidModal({ isOpen, onClose, title, children, size = 'small', footer 
             type="button" 
             onClick={onClose} 
             aria-label="Đóng"
-            className="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary backdrop-blur-md transition-all duration-300 border border-black/5 dark:border-white/10 z-30 cursor-pointer"
+            className="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 text-text-secondary hover:text-text-primary transition-all duration-300 border border-black/5 dark:border-white/10 z-30 cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -270,10 +269,10 @@ function SearchableDropdown({
         onClick={() => {
           if (!disabled) setOpen(v => !v)
         }}
-        className={`flex items-center justify-between transition-all duration-200 select-none ${
+        className={`flex items-center justify-between transition-all duration-200 select-none glass-panel ${
           isCompact
-            ? 'h-9 px-3.5 bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-xs rounded-full text-xs font-medium text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
-            : 'px-xl py-lg bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-sm rounded-corner-md text-label text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
+            ? 'h-9 px-3.5 shadow-xs rounded-full text-xs font-medium text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
+            : 'px-xl py-lg shadow-sm rounded-corner-md text-label text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-primary cursor-pointer active:scale-[0.98]'}`}
       >
         <span className={`truncate mr-2 ${selected ? 'text-text-primary' : 'text-text-tertiary'}`}>
@@ -329,7 +328,7 @@ function SearchableDropdown({
             )}
           </div>
         </div>,
-        document.body
+        document.getElementById('app-root') || document.body
       )}
     </div>
   )
@@ -358,7 +357,7 @@ function Badge({
 
   return (
     <span
-      className={`inline-flex items-center justify-center w-fit max-w-fit shrink-0 self-start px-3 py-1 text-xs leading-none rounded-full border backdrop-blur-md select-none tracking-tight transition-colors whitespace-nowrap ${variantStyles} ${className}`}
+      className={`inline-flex items-center justify-center w-fit max-w-fit shrink-0 self-start px-3 py-1 text-xs leading-none rounded-full border backdrop-blur-xs select-none tracking-tight transition-colors whitespace-nowrap ${variantStyles} ${className}`}
     >
       {label}
     </span>
@@ -393,7 +392,7 @@ function RatingSelector({
             className={`flex-1 h-11 rounded-2xl text-label transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border font-semibold active:scale-95 cursor-pointer ${
               value === n
                 ? `${ratingSelectedClass(n)} shadow-[0_2px_12px_rgba(0,0,0,0.15)]`
-                : 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-2xl border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
+                : 'bg-white/20 dark:bg-[#111827]/25 backdrop-blur-xs border-black/[0.08] dark:border-white/[0.12] text-text-primary hover:bg-white/35 dark:hover:bg-[#111827]/40'
             }`}
           >
             {n}
@@ -427,7 +426,7 @@ function VoteFooter({
         className={`h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
           review.userVote === 'helpful'
             ? 'bg-brand-primary text-on-brand border-brand-primary/30 shadow-[0_2px_8px_rgba(20,90,220,0.25)]'
-            : 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-xl border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-brand-primary hover:bg-white/80 dark:hover:bg-[#111827]/80'
+            : 'bg-white/20 dark:bg-[#111827]/25 backdrop-blur-xs border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-brand-primary hover:bg-white/35 dark:hover:bg-[#111827]/40'
         }`}
       >
         <ThumbsUp size={13} />
@@ -439,7 +438,7 @@ function VoteFooter({
         className={`h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 cursor-pointer border ${
           review.userVote === 'not_helpful'
             ? 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30 shadow-xs'
-            : 'bg-white/55 dark:bg-[#111827]/55 backdrop-blur-xl border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/80 dark:hover:bg-[#111827]/80'
+            : 'bg-white/20 dark:bg-[#111827]/25 backdrop-blur-xs border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/35 dark:hover:bg-[#111827]/40'
         }`}
       >
         <ThumbsDown size={13} />
@@ -448,7 +447,7 @@ function VoteFooter({
       <button 
         type="button" 
         aria-label="Báo cáo"
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/55 dark:bg-[#111827]/55 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/80 dark:hover:bg-[#111827]/80 transition-all duration-300 active:scale-95 cursor-pointer"
+        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 dark:bg-[#111827]/25 backdrop-blur-xs border border-black/[0.08] dark:border-white/[0.12] text-text-secondary hover:text-danger hover:bg-white/35 dark:hover:bg-[#111827]/40 transition-all duration-300 active:scale-95 cursor-pointer"
       >
         <Flag size={13} />
       </button>
