@@ -93,13 +93,12 @@ export const CompareInstModal: React.FC<CompareInstModalProps> = ({
             />
           </div>
 
-          <div className="flex flex-col gap-sm max-h-64 overflow-y-auto">
+          <div className="flex flex-col gap-sm max-h-72 overflow-y-auto dropdown-scrollbar scroll-smooth overscroll-contain pr-xs">
             {institutions
               .filter(i =>
                 i.id !== selectedInst.id &&
                 (!compareInstSearch || i.name.toLowerCase().includes(compareInstSearch.toLowerCase()) || i.short_name.toLowerCase().includes(compareInstSearch.toLowerCase()))
               )
-              .slice(0, 8)
               .map(i => {
                 const stats = calculateInstStats(i.id)
                 return (

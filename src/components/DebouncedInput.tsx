@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef, InputHTMLAttributes } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, InputHTMLAttributes } from 'react';
 
-interface DebouncedInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+export interface DebouncedInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value: string;
   onChange: (value: string) => void;
   onImmediateChange?: (value: string) => void;
   debounceMs?: number;
 }
 
-export default function DebouncedInput({ 
+const DebouncedInput = forwardRef<HTMLInputElement, DebouncedInputProps>(function DebouncedInput({ 
   value: initialValue, 
-  onChange,
+  onChange, 
   onImmediateChange,
   debounceMs = 300, 
   ...props 
-}: DebouncedInputProps) {
+}, ref) {
   const [value, setValue] = useState(initialValue);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -48,9 +48,12 @@ export default function DebouncedInput({
 
   return (
     <input
+      ref={ref}
       {...props}
       value={value}
       onChange={handleChange}
     />
   );
-}
+});
+
+export default DebouncedInput;

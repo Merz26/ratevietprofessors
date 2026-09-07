@@ -132,7 +132,7 @@ export const CompareProfModal: React.FC<CompareProfModalProps> = ({
               />
             </div>
           </div>
-          <div className="flex flex-col gap-sm max-h-64 overflow-y-auto">
+          <div className="flex flex-col gap-sm max-h-72 overflow-y-auto dropdown-scrollbar scroll-smooth overscroll-contain pr-xs">
             {professors
               .filter(p =>
                 p.id !== selectedProf.id &&
@@ -140,7 +140,6 @@ export const CompareProfModal: React.FC<CompareProfModalProps> = ({
                 (!compareUniv || p.university === compareUniv) &&
                 (!compareDept || p.department === compareDept)
               )
-              .slice(0, 8)
               .map(p => {
                 const s = calculateProfStats(p.id)
                 return (

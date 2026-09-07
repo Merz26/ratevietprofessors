@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Bookmark, BookmarkCheck, X } from 'lucide-react'
 import { Avatar } from '@figma/astraui'
 import { Skeleton } from '../Skeletons'
@@ -27,6 +27,18 @@ export const BookmarkDrawer: React.FC<BookmarkDrawerProps> = ({
   toggleBookmark,
   navigate,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   return (
     <>
       {/* Desktop Bookmark Panel */}

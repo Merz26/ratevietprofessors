@@ -1,5 +1,5 @@
-import React, { useState, useMemo, memo } from 'react'
-import { Plus, Search, Bookmark, BookmarkCheck } from 'lucide-react'
+import React, { useState, useEffect, useRef, useMemo, memo } from 'react'
+import { Plus, Search, Bookmark, BookmarkCheck, X } from 'lucide-react'
 import { Avatar } from '@figma/astraui'
 import { Institution, Professor, ProfStats } from '../types'
 import { Button, ScoreBadge } from '../components/ui/UIComponents'
@@ -94,6 +94,44 @@ export const DepartmentView: React.FC<DepartmentViewProps> = ({
   renderBreadcrumb,
 }) => {
   const [deptSearchTerm, setDeptSearchTerm] = useState('')
+  const deptSearchInputRef = useRef<HTMLInputElement>(null)
+
+  // Keyboard navigation on DepartmentView
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Esc: blur search or clear if focused
+      if (e.key === 'Escape') {
+        if (document.activeElement === deptSearchInputRef.current) {
+          e.preventDefault()
+          deptSearchInputRef.current?.blur()
+        }
+        return
+      }
+
+      // 2. Ctrl+K or Cmd+K
+      const isCmdK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'
+
+      // 3. '/' key when not inside an editable field
+      const activeEl = document.activeElement
+      const isTyping = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.getAttribute('contenteditable') === 'true'
+      )
+      const isSlash = e.key === '/' && !isTyping
+
+      if (isCmdK || isSlash) {
+        e.preventDefault()
+        deptSearchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        deptSearchInputRef.current?.focus()
+        deptSearchInputRef.current?.select()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   if (isLoadingData || !selectedInst || !selectedDept) {
     return <DepartmentDetailsSkeleton />
@@ -132,12 +170,39 @@ export const DepartmentView: React.FC<DepartmentViewProps> = ({
         <div className="relative flex items-center gap-md glass-search shadow-sm rounded-2xl focus-within:border-brand-primary transition-colors px-xl">
           <Search size={18} className="text-text-secondary shrink-0" />
           <DebouncedInput
+            ref={deptSearchInputRef}
+            id="dept-search-input"
             type="text"
             value={deptSearchTerm}
             placeholder="Tìm kiếm giảng viên..."
             onChange={val => setDeptSearchTerm(val)}
             className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full placeholder:text-text-tertiary"
           />
+          <div className="flex items-center gap-1.5 shrink-0">
+            {deptSearchTerm ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeptSearchTerm('')
+                  deptSearchInputRef.current?.focus()
+                }}
+                aria-label="Xóa tìm kiếm"
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            ) : (
+              <div className="hidden sm:flex items-center gap-1 shrink-0 select-none pointer-events-none">
+                <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-medium rounded-md border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-text-tertiary shadow-2xs">
+                  Ctrl+K
+                </kbd>
+                <span className="text-text-tertiary text-[11px]">/</span>
+                <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-medium rounded-md border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-text-tertiary shadow-2xs">
+                  /
+                </kbd>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

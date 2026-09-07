@@ -123,6 +123,80 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [location.pathname])
 
+  // Global keyboard shortcuts: Esc to close active modals/panels, Ctrl+K / '/' to focus search
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 1. Esc: close active modals or drawer
+      if (e.key === 'Escape') {
+        if (showInfoMenu) {
+          setShowInfoMenu(false)
+          return
+        }
+        if (compareInstModal) {
+          setCompareInstModal(false)
+          return
+        }
+        if (compareModal) {
+          setCompareModal(false)
+          return
+        }
+        if (showBookmarkPanel) {
+          setShowBookmarkPanel(false)
+          return
+        }
+      }
+
+      // 2. Ctrl+K or Cmd+K
+      const isCmdK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'
+
+      // 3. '/' key when not typing inside an editable element
+      const activeEl = document.activeElement
+      const isTyping = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.getAttribute('contenteditable') === 'true'
+      )
+      const isSlash = e.key === '/' && !isTyping
+
+      if (isCmdK || isSlash) {
+        e.preventDefault()
+
+        // Close any open modals
+        setShowInfoMenu(false)
+        setCompareInstModal(false)
+        setCompareModal(false)
+
+        const mainSearch = document.getElementById('main-search-input') as HTMLInputElement | null
+        const deptSearch = document.getElementById('dept-search-input') as HTMLInputElement | null
+
+        if (mainSearch) {
+          mainSearch.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          mainSearch.focus()
+          mainSearch.select()
+        } else if (deptSearch) {
+          deptSearch.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          deptSearch.focus()
+          deptSearch.select()
+        } else {
+          // Navigate to home and focus main search bar
+          routerNavigate('/')
+          setTimeout(() => {
+            const input = document.getElementById('main-search-input') as HTMLInputElement | null
+            if (input) {
+              input.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              input.focus()
+              input.select()
+            }
+          }, 80)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [showInfoMenu, compareInstModal, compareModal, showBookmarkPanel, routerNavigate])
+
   useEffect(() => {
     const prevParts = lastPathname.current.split('/').filter(Boolean)
     const currentParts = location.pathname.split('/').filter(Boolean)

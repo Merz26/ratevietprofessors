@@ -8,6 +8,7 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react'
 import { Institution, Professor, InstStats, ProfStats } from '../types'
 import { VIETNAM_PROVINCES } from '../constants'
@@ -73,12 +74,59 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('')
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([])
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(-1)
   const [sortBy, setSortBy] = useState<'name' | 'rating' | 'reviews'>('name')
   const [locationFilter, setLocationFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const entriesPerPage = 16
 
   const searchContainerRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const suggestionsListRef = useRef<HTMLDivElement>(null)
+
+  // Keyboard navigation: Ctrl+K / Cmd+K or '/' to focus search, Esc to close suggestions/blur
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Esc: close suggestions or blur
+      if (e.key === 'Escape') {
+        if (showSearchSuggestions) {
+          e.preventDefault()
+          setShowSearchSuggestions(false)
+          setSelectedSuggestionIndex(-1)
+        } else if (document.activeElement === searchInputRef.current) {
+          e.preventDefault()
+          searchInputRef.current?.blur()
+        }
+        return
+      }
+
+      // 2. Ctrl+K or Cmd+K
+      const isCmdK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'
+
+      // 3. '/' key when not inside an input/textarea/select/contenteditable
+      const activeEl = document.activeElement
+      const isTyping = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.getAttribute('contenteditable') === 'true'
+      )
+      const isSlash = e.key === '/' && !isTyping
+
+      if (isCmdK || isSlash) {
+        e.preventDefault()
+        searchContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select()
+        if (searchTerm.length >= 1) {
+          setShowSearchSuggestions(true)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showSearchSuggestions, searchTerm])
 
   // Reset filters when resetKey changes (e.g., clicked "Trang chủ" in sidebar)
   useEffect(() => {
@@ -88,6 +136,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       setSortBy('name')
       setCurrentPage(1)
       setShowSearchSuggestions(false)
+      setSelectedSuggestionIndex(-1)
     }
   }, [resetKey])
 
@@ -99,34 +148,47 @@ export const HomeView: React.FC<HomeViewProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setShowSearchSuggestions(false)
+        setSelectedSuggestionIndex(-1)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Predictive search suggestions
+  // Predictive search suggestions - remove limit so all results are scrollable
   useEffect(() => {
-    if (searchTerm.length >= 1) {
-      const term = searchTerm.toLowerCase()
+    if (searchTerm.trim().length >= 1) {
+      const term = searchTerm.trim().toLowerCase()
       const instMatches = institutions.filter(inst =>
         (inst.name || '').toLowerCase().includes(term) ||
         (inst.short_name || '').toLowerCase().includes(term)
-      ).slice(0, 3).map(inst => ({ type: 'institution', item: inst }))
+      ).map(inst => ({ type: 'institution' as const, item: inst }))
 
       const profMatches = professors.filter(prof =>
         (prof.name || '').toLowerCase().includes(term) ||
         (prof.university || '').toLowerCase().includes(term) ||
         (prof.department || '').toLowerCase().includes(term)
-      ).slice(0, 3).map(prof => ({ type: 'professor', item: prof }))
+      ).map(prof => ({ type: 'professor' as const, item: prof }))
 
       setSearchSuggestions([...instMatches, ...profMatches])
       setShowSearchSuggestions(true)
+      setSelectedSuggestionIndex(-1)
     } else {
       setSearchSuggestions([])
       setShowSearchSuggestions(false)
+      setSelectedSuggestionIndex(-1)
     }
   }, [searchTerm, institutions, professors])
+
+  // Scroll active suggestion into view when navigating via arrow keys
+  useEffect(() => {
+    if (selectedSuggestionIndex >= 0) {
+      const el = document.getElementById(`search-suggestion-${selectedSuggestionIndex}`)
+      if (el) {
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
+  }, [selectedSuggestionIndex])
 
   // Memoized Home filtering & sorting for high performance
   const filteredInstitutions = useMemo(() => {
@@ -186,6 +248,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="relative flex items-center gap-md glass-search rounded-2xl focus-within:border-brand-primary transition-all duration-300 px-xl shadow-sm">
             <Search size={18} className="text-text-secondary shrink-0" />
             <DebouncedInput
+              ref={searchInputRef}
+              id="main-search-input"
               type="text"
               value={searchTerm}
               placeholder="Tìm kiếm theo tên trường, mã trường hoặc giảng viên..."
@@ -196,72 +260,149 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   setShowSearchSuggestions(true)
                 }
               }}
+              onKeyDown={(e) => {
+                if (!showSearchSuggestions || searchSuggestions.length === 0) return
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  setSelectedSuggestionIndex(prev => 
+                    prev < searchSuggestions.length - 1 ? prev + 1 : 0
+                  )
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  setSelectedSuggestionIndex(prev => 
+                    prev > 0 ? prev - 1 : searchSuggestions.length - 1
+                  )
+                } else if (e.key === 'Enter') {
+                  if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < searchSuggestions.length) {
+                    e.preventDefault()
+                    const suggestion = searchSuggestions[selectedSuggestionIndex]
+                    if (suggestion.type === 'institution') {
+                      navigate('institution', suggestion.item)
+                      setShowSearchSuggestions(false)
+                    } else {
+                      const prof = suggestion.item
+                      const inst = institutions.find(i => i.name === prof.university)
+                      if (inst) {
+                        navigate('professor', inst, prof.department, prof)
+                        setShowSearchSuggestions(false)
+                      }
+                    }
+                  }
+                }
+              }}
               className="flex-1 bg-transparent border-none py-lg text-label text-text-primary focus:outline-none w-full placeholder:text-text-tertiary"
             />
+            <div className="flex items-center gap-1.5 shrink-0">
+              {searchTerm ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('')
+                    setShowSearchSuggestions(false)
+                    searchInputRef.current?.focus()
+                  }}
+                  aria-label="Xóa tìm kiếm"
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              ) : (
+                <div className="hidden sm:flex items-center gap-1 shrink-0 select-none pointer-events-none">
+                  <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-medium rounded-md border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-text-tertiary shadow-2xs">
+                    Ctrl+K
+                  </kbd>
+                  <span className="text-text-tertiary text-[11px]">/</span>
+                  <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-medium rounded-md border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-text-tertiary shadow-2xs">
+                    /
+                  </kbd>
+                </div>
+              )}
+            </div>
           </div>
 
           {showSearchSuggestions && searchSuggestions.length > 0 && (
             <div 
-              className="absolute top-full left-0 right-0 mt-md glass-dropdown rounded-2xl z-[100] animate-scaleIn overflow-hidden py-xs shadow-2xl divide-y divide-black/[0.05] dark:divide-white/[0.08] max-h-[380px] overflow-y-auto dropdown-scrollbar"
+              className="absolute top-full left-0 right-0 mt-md glass-dropdown rounded-2xl z-[100] animate-scaleIn overflow-hidden shadow-2xl flex flex-col border border-black/10 dark:border-white/15"
             >
-              {searchSuggestions.map((suggestion, idx) => {
-                if (suggestion.type === 'institution') {
-                  const inst = suggestion.item
-                  const stats = calculateInstStats(inst.id)
-                  return (
-                    <button
-                      key={`inst-${inst.id}-${idx}`}
-                      type="button"
-                      onClick={() => { navigate('institution', inst); setShowSearchSuggestions(false) }}
-                      className="w-full flex items-center justify-between px-xl py-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
-                    >
-                      <div className="flex items-center gap-lg">
-                        <div className="w-8 h-8 bg-brand-tertiary rounded-corner-md flex items-center justify-center shrink-0">
-                          <GraduationCap size={14} className="text-brand-primary" />
+              {/* Sticky header indicating result count & scroll hint */}
+              <div className="flex items-center justify-between px-xl py-2 bg-black/[0.03] dark:bg-white/[0.04] border-b border-black/[0.05] dark:border-white/[0.08] text-video-title text-text-tertiary select-none shrink-0">
+                <span className="font-medium text-text-secondary">{searchSuggestions.length} kết quả tìm kiếm</span>
+                <span className="hidden sm:inline">Cuộn để xem thêm • Dùng ↑↓ để chọn</span>
+              </div>
+
+              {/* Scrollable results container */}
+              <div 
+                ref={suggestionsListRef}
+                className="max-h-[380px] sm:max-h-[460px] overflow-y-auto overscroll-contain dropdown-scrollbar scroll-smooth divide-y divide-black/[0.05] dark:divide-white/[0.08] py-xs"
+              >
+                {searchSuggestions.map((suggestion, idx) => {
+                  const isSelected = idx === selectedSuggestionIndex
+                  if (suggestion.type === 'institution') {
+                    const inst = suggestion.item
+                    const stats = calculateInstStats(inst.id)
+                    return (
+                      <button
+                        key={`inst-${inst.id}-${idx}`}
+                        id={`search-suggestion-${idx}`}
+                        type="button"
+                        onClick={() => { navigate('institution', inst); setShowSearchSuggestions(false) }}
+                        onMouseEnter={() => setSelectedSuggestionIndex(idx)}
+                        className={`w-full flex items-center justify-between px-xl py-lg transition-colors text-left cursor-pointer ${
+                          isSelected ? 'bg-brand-primary/10 dark:bg-brand-primary/20' : 'hover:bg-black/5 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center gap-lg min-w-0 pr-md">
+                          <div className="w-8 h-8 bg-brand-tertiary rounded-corner-md flex items-center justify-center shrink-0">
+                            <GraduationCap size={14} className="text-brand-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-label-sm truncate ${isSelected ? 'text-brand-primary font-medium' : 'text-text-primary'}`}>{inst.name}</p>
+                            <p className="text-video-title text-text-secondary flex items-center gap-xs truncate">
+                              <MapPin size={10} className="shrink-0" />
+                              <span className="truncate">{inst.location}</span>
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-label-sm text-text-primary">{inst.name}</p>
-                          <p className="text-video-title text-text-secondary flex items-center gap-xs">
-                            <MapPin size={10} />
-                            {inst.location}
-                          </p>
+                        <ScoreBadge value={stats.overall} />
+                      </button>
+                    )
+                  } else {
+                    const prof = suggestion.item
+                    const stats = calculateProfStats(prof.id)
+                    return (
+                      <button
+                        key={`prof-${prof.id}-${idx}`}
+                        id={`search-suggestion-${idx}`}
+                        type="button"
+                        onClick={() => { 
+                          const inst = institutions.find(i => i.name === prof.university)
+                          if (inst) {
+                            navigate('professor', inst, prof.department, prof)
+                            setShowSearchSuggestions(false)
+                          }
+                        }}
+                        onMouseEnter={() => setSelectedSuggestionIndex(idx)}
+                        className={`w-full flex items-center justify-between px-xl py-lg transition-colors text-left cursor-pointer ${
+                          isSelected ? 'bg-brand-primary/10 dark:bg-brand-primary/20' : 'hover:bg-black/5 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center gap-lg min-w-0 pr-md">
+                          <div className="w-8 h-8 bg-black/5 dark:bg-white/10 rounded-full flex items-center justify-center shrink-0">
+                            <Star size={14} className="text-brand-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-label-sm truncate ${isSelected ? 'text-brand-primary font-medium' : 'text-text-primary'}`}>{prof.name}</p>
+                            <p className="text-video-title text-text-secondary flex items-center gap-xs truncate">
+                              <span className="truncate">{prof.university} • {prof.department}</span>
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <ScoreBadge value={stats.overall} />
-                    </button>
-                  )
-                } else {
-                  const prof = suggestion.item
-                  const stats = calculateProfStats(prof.id)
-                  return (
-                    <button
-                      key={`prof-${prof.id}-${idx}`}
-                      type="button"
-                      onClick={() => { 
-                        const inst = institutions.find(i => i.name === prof.university)
-                        if (inst) {
-                          navigate('professor', inst, prof.department, prof)
-                          setShowSearchSuggestions(false)
-                        }
-                      }}
-                      className="w-full flex items-center justify-between px-xl py-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
-                    >
-                      <div className="flex items-center gap-lg">
-                        <div className="w-8 h-8 bg-black/5 dark:bg-white/10 rounded-full flex items-center justify-center shrink-0">
-                          <Star size={14} className="text-brand-primary" />
-                        </div>
-                        <div>
-                          <p className="text-label-sm text-text-primary">{prof.name}</p>
-                          <p className="text-video-title text-text-secondary flex items-center gap-xs">
-                            {prof.university} • {prof.department}
-                          </p>
-                        </div>
-                      </div>
-                      <ScoreBadge value={stats.avg_rating} />
-                    </button>
-                  )
-                }
-              })}
+                        <ScoreBadge value={stats.avg_rating} />
+                      </button>
+                    )
+                  }
+                })}
+              </div>
             </div>
           )}
         </div>
