@@ -1,4 +1,4 @@
-import React, { useState, useEffect, InputHTMLAttributes } from 'react';
+import React, { useState, useEffect, useRef, InputHTMLAttributes } from 'react';
 
 interface DebouncedInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value: string;
@@ -15,6 +15,9 @@ export default function DebouncedInput({
   ...props 
 }: DebouncedInputProps) {
   const [value, setValue] = useState(initialValue);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const isFirstMount = useRef(true);
 
   useEffect(() => {
     if (value !== initialValue) {
@@ -23,12 +26,17 @@ export default function DebouncedInput({
   }, [initialValue]);
 
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+
     const timeout = setTimeout(() => {
-      onChange(value);
+      onChangeRef.current(value);
     }, debounceMs);
     
     return () => clearTimeout(timeout);
-  }, [value, debounceMs, onChange]);
+  }, [value, debounceMs]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

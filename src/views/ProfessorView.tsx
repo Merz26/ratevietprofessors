@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Share2,
   GitCompare,
@@ -59,27 +59,39 @@ export const ProfessorView: React.FC<ProfessorViewProps> = ({
   }
 
   const stats = calculateProfStats(selectedProf.id)
-  let reviews = profReviews.filter(r => r.prof_id === selectedProf.id)
 
-  if (profSort === 'highest-quality') reviews.sort((a, b) => b.teaching_rating - a.teaching_rating)
-  else if (profSort === 'lowest-quality') reviews.sort((a, b) => a.teaching_rating - b.teaching_rating)
-  else if (profSort === 'highest-difficulty') reviews.sort((a, b) => b.difficulty_rating - a.difficulty_rating)
-  else if (profSort === 'helpful') {
-    reviews.sort((a, b) => {
-      const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
-      const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
-      if (scoreB !== scoreA) return scoreB - scoreA
-      return (b.helpful || 0) - (a.helpful || 0)
+  const reviews = useMemo(() => {
+    let list = profReviews.filter(r => r.prof_id === selectedProf.id)
+
+    if (profSort === 'highest-quality') list.sort((a, b) => b.teaching_rating - a.teaching_rating)
+    else if (profSort === 'lowest-quality') list.sort((a, b) => a.teaching_rating - b.teaching_rating)
+    else if (profSort === 'highest-difficulty') list.sort((a, b) => b.difficulty_rating - a.difficulty_rating)
+    else if (profSort === 'helpful') {
+      list.sort((a, b) => {
+        const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
+        const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
+        if (scoreB !== scoreA) return scoreB - scoreA
+        return (b.helpful || 0) - (a.helpful || 0)
+      })
+    }
+    else if (profSort === 'oldest') list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    else list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+    if (profTagFilter !== 'all') list = list.filter(r => r.tags?.includes(profTagFilter))
+    return list
+  }, [profReviews, selectedProf.id, profSort, profTagFilter])
+
+  const { distribution, maxDist } = useMemo(() => {
+    const dist: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+    reviews.forEach(r => {
+      const rating = Math.round(r.teaching_rating)
+      if (rating >= 1 && rating <= 5) dist[rating]++
     })
-  }
-  else if (profSort === 'oldest') reviews.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-  else reviews.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  if (profTagFilter !== 'all') reviews = reviews.filter(r => r.tags?.includes(profTagFilter))
-
-  const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
-  reviews.forEach(r => { const rating = Math.round(r.teaching_rating); if (rating >= 1 && rating <= 5) distribution[rating]++ })
-  const maxDist = Math.max(...Object.values(distribution), 1)
+    return {
+      distribution: dist,
+      maxDist: Math.max(...Object.values(dist), 1)
+    }
+  }, [reviews])
 
   const isBookmarked = bookmarkedProfIds.includes(selectedProf.id)
 

@@ -26,7 +26,7 @@ const InstitutionCard = memo<InstitutionCardProps>(({ inst, stats, onNavigate })
     <button
       type="button"
       onClick={() => onNavigate(inst)}
-      className="glass-panel glass-panel-interactive rounded-3xl p-6 flex flex-col h-full text-left group animate-scaleIn active:scale-[0.99] cursor-pointer"
+      className="glass-panel glass-panel-interactive rounded-3xl p-6 flex flex-col h-full text-left group animate-scaleIn active:scale-[0.99] cursor-pointer transform-gpu"
     >
       <div className="flex flex-col gap-2 flex-1 min-w-0 mb-5">
         <div className="flex items-start justify-between gap-sm">
@@ -143,11 +143,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const sortedInstitutions = useMemo(() => {
     const list = [...filteredInstitutions]
     if (sortBy === 'name') {
-      list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'vi', { sensitivity: 'base' }))
     } else if (sortBy === 'rating') {
-      list.sort((a, b) => (calculateInstStats(b.id).overall || 0) - (calculateInstStats(a.id).overall || 0))
+      const scoreMap = new Map<number, number>()
+      for (let i = 0; i < list.length; i++) {
+        scoreMap.set(list[i].id, calculateInstStats(list[i].id).overall || 0)
+      }
+      list.sort((a, b) => (scoreMap.get(b.id) || 0) - (scoreMap.get(a.id) || 0))
     } else {
-      list.sort((a, b) => (calculateInstStats(b.id).total || 0) - (calculateInstStats(a.id).total || 0))
+      const countMap = new Map<number, number>()
+      for (let i = 0; i < list.length; i++) {
+        countMap.set(list[i].id, calculateInstStats(list[i].id).total || 0)
+      }
+      list.sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0))
     }
     return list
   }, [filteredInstitutions, sortBy, calculateInstStats])

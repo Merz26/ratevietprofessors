@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { MapPin, Share2, ChevronRight } from 'lucide-react'
 import { Institution, Professor, InstitutionReview, InstStats } from '../types'
 import { CRITERIA_KEYS } from '../constants'
@@ -46,24 +46,28 @@ export const InstitutionView: React.FC<InstitutionViewProps> = ({
   }
 
   const stats = calculateInstStats(selectedInst.id)
-  let reviews = instReviews.filter(r => r.inst_id === selectedInst.id)
+  
+  const reviews = useMemo(() => {
+    const list = instReviews.filter(r => r.inst_id === selectedInst.id)
 
-  if (instSort === 'highest-rating') {
-    reviews.sort((a, b) => reviewAvg(b.metrics || {}) - reviewAvg(a.metrics || {}))
-  } else if (instSort === 'lowest-rating') {
-    reviews.sort((a, b) => reviewAvg(a.metrics || {}) - reviewAvg(b.metrics || {}))
-  } else if (instSort === 'helpful') {
-    reviews.sort((a, b) => {
-      const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
-      const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
-      if (scoreB !== scoreA) return scoreB - scoreA
-      return (b.helpful || 0) - (a.helpful || 0)
-    })
-  } else if (instSort === 'oldest') {
-    reviews.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-  } else {
-    reviews.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  }
+    if (instSort === 'highest-rating') {
+      list.sort((a, b) => reviewAvg(b.metrics || {}) - reviewAvg(a.metrics || {}))
+    } else if (instSort === 'lowest-rating') {
+      list.sort((a, b) => reviewAvg(a.metrics || {}) - reviewAvg(b.metrics || {}))
+    } else if (instSort === 'helpful') {
+      list.sort((a, b) => {
+        const scoreA = (a.helpful || 0) - (a.not_helpful || 0)
+        const scoreB = (b.helpful || 0) - (b.not_helpful || 0)
+        if (scoreB !== scoreA) return scoreB - scoreA
+        return (b.helpful || 0) - (a.helpful || 0)
+      })
+    } else if (instSort === 'oldest') {
+      list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    } else {
+      list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    }
+    return list
+  }, [instReviews, selectedInst.id, instSort])
 
   const leftCriteria = CRITERIA_KEYS.slice(0, 5)
   const rightCriteria = CRITERIA_KEYS.slice(5)

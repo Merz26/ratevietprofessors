@@ -199,6 +199,36 @@ body.light .text-heading,
   animation: scaleIn 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes toastFloatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastFloatDown {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+}
+
+.animate-toastFloatUp {
+  animation: toastFloatUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-toastFloatDown {
+  animation: toastFloatDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -267,6 +297,9 @@ body.light .text-heading,
   box-shadow: 
     0 4px 16px -2px rgba(0, 0, 0, 0.03),
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.45);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 :is([data-theme="dark"], [data-theme="dark"] *) .glass-panel {
@@ -281,6 +314,7 @@ body.light .text-heading,
 
 .glass-panel-interactive {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, background-color, border-color;
 }
 
 .glass-panel-interactive:hover {
@@ -418,6 +452,37 @@ body.light .text-heading,
 }
 :is([data-theme="dark"], [data-theme="dark"] *) .dropdown-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.38);
+}
+
+/* Cross-Platform Hardware Compositing & Momentum Scrolling */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Isolate off-screen grid cards to prevent unnecessary repaint loops */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+}
+
+/* Reduced motion preference: eliminate heavy transforms/transitions on low-spec/power devices */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 

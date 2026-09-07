@@ -6,7 +6,6 @@ import logoImg from './logo.jpg'
 import {
   SidebarButton,
   Tooltip,
-  Toast,
 } from '@figma/astraui'
 import {
   Home,
@@ -43,6 +42,7 @@ import { InfoModal } from './components/modals/InfoModal'
 import { CompareInstModal } from './components/modals/CompareInstModal'
 import { CompareProfModal } from './components/modals/CompareProfModal'
 import { BookmarkDrawer } from './components/modals/BookmarkDrawer'
+import { ToastNotification } from './components/ui/ToastNotification'
 
 export default function App() {
   const { theme, setTheme } = useContext(ThemeContext)
@@ -281,7 +281,6 @@ export default function App() {
 
   const showToast = useCallback((message: string, variant: 'success' | 'error' | 'default' = 'default') => {
     setToast({ message, variant })
-    setTimeout(() => setToast(null), 3000)
   }, [])
 
   // Inst stats map cache
@@ -371,6 +370,8 @@ export default function App() {
     if (!result.success) {
       console.error("Failed to push vote to Supabase:", result.error || (result.rlsBlocked ? 'RLS blocked' : 'Unknown error'))
       showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
+    } else {
+      showToast(nextVote ? 'Đã ghi nhận bình chọn của bạn!' : 'Đã hủy bình chọn', 'success')
     }
   }, [instReviews, showToast])
 
@@ -409,6 +410,8 @@ export default function App() {
     if (!result.success) {
       console.error("Failed to push vote to Supabase:", result.error || (result.rlsBlocked ? 'RLS blocked' : 'Unknown error'))
       showToast('Lỗi khi lưu tương tác. Vui lòng thử lại.', 'error')
+    } else {
+      showToast(nextVote ? 'Đã ghi nhận bình chọn của bạn!' : 'Đã hủy bình chọn', 'success')
     }
   }, [profReviews, showToast])
 
@@ -689,17 +692,13 @@ export default function App() {
         </button>
       </nav>
 
-      {/* Toast Notification */}
+      {/* Confirmation Toast Notification */}
       {toast && (
-        <div className="fixed bottom-20 md:bottom-2xl right-2xl z-50 animate-scaleIn overflow-hidden">
-          <Toast
-            message={toast.message}
-            variant={toast.variant}
-            showCancel={false}
-            progress={100}
-            onDismiss={() => setToast(null)}
-          />
-        </div>
+        <ToastNotification
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
       )}
     </div>
   )
